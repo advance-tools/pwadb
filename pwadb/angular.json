@@ -1,0 +1,50 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "pwadb-lib": {
+      "projectType": "library",
+      "root": "projects/pwadb-lib",
+      "sourceRoot": "projects/pwadb-lib/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-ng-packagr:build",
+          "options": {
+            "tsConfig": "projects/pwadb-lib/tsconfig.lib.json",
+            "project": "projects/pwadb-lib/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/pwadb-lib/tsconfig.lib.prod.json"
+            }
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/pwadb-lib/src/test.ts",
+            "tsConfig": "projects/pwadb-lib/tsconfig.spec.json",
+            "karmaConfig": "projects/pwadb-lib/karma.conf.js"
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/pwadb-lib/tsconfig.lib.json",
+              "projects/pwadb-lib/tsconfig.spec.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        }
+      }
+    }},
+  "cli": {
+    "analytics": "5aad97e8-c04d-4cf9-b258-47a7ecf231fe"
+  },
+  "defaultProject": "pwadb-lib"
+}
