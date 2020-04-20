@@ -1,4 +1,4 @@
-import { PwaDocType, PwaDocMethods, Datatype, getSchema } from "./document";
+import { PwaDocType, PwaDocMethods, Datatype, getSchema, PwaDocument } from "./document";
 import { RxCollection } from 'rxdb';
 
 export type PwaCollectionMethods = {}
@@ -21,3 +21,27 @@ export const getCollectionCreator = (name: string, collectionMethods: PwaCollect
 });
 
 export const pwaCollectionMethods: PwaCollectionMethods = {};
+
+///////////////////////
+// interfaces
+///////////////////////
+
+export interface ListResponse<T extends Datatype> {
+    count: number;
+    next: string;
+    previous: string;
+    results: T[];
+}
+
+export interface CollectionListResponse<T extends Datatype> {
+    getCount: number;
+    postCount: number;
+    putResults: PwaDocument<T>[];
+    delResults: PwaDocument<T>[];
+    results: PwaDocument<T>[];
+}
+
+export interface PwaListResponse<T extends Datatype> {
+    count: number;
+    results: PwaDocument<T>[];
+}

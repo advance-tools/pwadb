@@ -1,0 +1,35 @@
+<div fxLayout="column" *ngIf="{profile: profile$ | async} as changes" >
+
+    <div [style.padding.px]="16">
+    
+        <h1>{{changes.profile?.data?.name}}</h1>
+    
+        <h3>{{changes.profile?.data?.email}}</h3>
+    
+    </div>
+    
+    <mat-grid-list cols="4" rowHeight="1:1">
+    
+        <mat-grid-tile>
+    
+            <button mat-button fxLayoutAlign="center center" class="mat-elevation-z1" [style.width.px]="250" [style.height.px]="250" (click)="onCountryClick(changes.profile?.data.id)" routerLinkActive="active">
+    
+                <h1>Countries</h1>
+    
+            </button>
+    
+        </mat-grid-tile>
+    
+        <mat-grid-tile>
+    
+            <button mat-button fxLayoutAlign="center center" class="mat-elevation-z1" [style.width.px]="250" [style.height.px]="250" (click)="onTreeClick(changes.profile?.data.id)" routerLinkActive="active">
+    
+                <h1>Tree Example</h1>
+    
+            </button>
+    
+        </mat-grid-tile>
+    
+    </mat-grid-list>
+      
+</div>

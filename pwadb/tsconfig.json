@@ -17,8 +17,10 @@
     ],
     "paths": {
       "pwadb-lib": [
-        "dist/pwadb-lib/pwadb-lib",
         "dist/pwadb-lib"
+      ],
+      "pwadb-api-lib": [
+        "dist/pwadb-api-lib"
       ]
     }
   },

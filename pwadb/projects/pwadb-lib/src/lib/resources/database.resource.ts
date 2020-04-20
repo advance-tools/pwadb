@@ -24,7 +24,10 @@ export class PwaDatabaseService<T> {
 
         this.db$ = from(RxDB.create(dbCreator)).pipe(
 
-            switchMap(db => db.waitForLeadership()),
+            switchMap(db => from(db.waitForLeadership()).pipe(
+
+                map(() => db),
+            )),
 
             share(),
 

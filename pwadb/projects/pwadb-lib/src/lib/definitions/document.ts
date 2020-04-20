@@ -47,7 +47,6 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
         },
         tenant: {
             type: 'string',
-            index: true,
         }
     }
 });

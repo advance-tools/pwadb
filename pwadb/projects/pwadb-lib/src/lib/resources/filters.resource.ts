@@ -184,30 +184,33 @@ export function getQuery(key: string, value: string): {queryType: Query, fields:
 
 export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: PwaDocument<any>[]) {
 
-    params.keys().forEach(k => {
+    if (params) {
 
-        if (k in validQueryKeys) {
-
-            const query = getQuery(k, params[k]);
-
-            if (query.queryType === 'distinct') {
-
-                docs = distinct(query.fields, docs);
-
-            } else if (query.queryType === 'filter') {
-
-                docs = filter(query.fields[0], query.inputValue, docs, query.lookup);
-
-            } else if (query.queryType === 'exclude') {
-
-                docs = exclude(query.fields[0], query.inputValue, docs, query.lookup);
-
-            } else if (query.queryType === 'order_by') {
-
-                docs = orderBy(query.fields, docs);
+        params.keys().forEach(k => {
+    
+            if (k in validQueryKeys) {
+    
+                const query = getQuery(k, params.getAll(k).join(','));
+    
+                if (query.queryType === 'distinct') {
+    
+                    docs = distinct(query.fields, docs);
+    
+                } else if (query.queryType === 'filter') {
+    
+                    docs = filter(query.fields[0], query.inputValue, docs, query.lookup);
+    
+                } else if (query.queryType === 'exclude') {
+    
+                    docs = exclude(query.fields[0], query.inputValue, docs, query.lookup);
+    
+                } else if (query.queryType === 'order_by') {
+    
+                    docs = orderBy(query.fields, docs);
+                }
             }
-        }
-    });
+        });
+    }
 
     return docs;
 }

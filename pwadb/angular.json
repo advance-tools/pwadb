@@ -42,7 +42,167 @@
           }
         }
       }
-    }},
+    },
+    "pwadb-api-lib": {
+      "projectType": "library",
+      "root": "projects/pwadb-api-lib",
+      "sourceRoot": "projects/pwadb-api-lib/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-ng-packagr:build",
+          "options": {
+            "tsConfig": "projects/pwadb-api-lib/tsconfig.lib.json",
+            "project": "projects/pwadb-api-lib/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/pwadb-api-lib/tsconfig.lib.prod.json"
+            }
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/pwadb-api-lib/src/test.ts",
+            "tsConfig": "projects/pwadb-api-lib/tsconfig.spec.json",
+            "karmaConfig": "projects/pwadb-api-lib/karma.conf.js"
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/pwadb-api-lib/tsconfig.lib.json",
+              "projects/pwadb-api-lib/tsconfig.spec.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        }
+      }
+    },
+    "pwa-test": {
+      "projectType": "application",
+      "schematics": {},
+      "root": "projects/pwa-test",
+      "sourceRoot": "projects/pwa-test/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/pwa-test",
+            "index": "projects/pwa-test/src/index.html",
+            "main": "projects/pwa-test/src/main.ts",
+            "polyfills": "projects/pwa-test/src/polyfills.ts",
+            "tsConfig": "projects/pwa-test/tsconfig.app.json",
+            "aot": true,
+            "assets": [
+              "projects/pwa-test/src/favicon.ico",
+              "projects/pwa-test/src/assets"
+            ],
+            "styles": [
+              "./node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
+              "projects/pwa-test/src/styles.css"
+            ],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "projects/pwa-test/src/environments/environment.ts",
+                  "with": "projects/pwa-test/src/environments/environment.prod.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "all",
+              "sourceMap": false,
+              "extractCss": true,
+              "namedChunks": false,
+              "extractLicenses": true,
+              "vendorChunk": false,
+              "buildOptimizer": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "5mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb",
+                  "maximumError": "10kb"
+                }
+              ]
+            }
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "pwa-test:build"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "pwa-test:build:production"
+            }
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "browserTarget": "pwa-test:build"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/pwa-test/src/test.ts",
+            "polyfills": "projects/pwa-test/src/polyfills.ts",
+            "tsConfig": "projects/pwa-test/tsconfig.spec.json",
+            "karmaConfig": "projects/pwa-test/karma.conf.js",
+            "assets": [
+              "projects/pwa-test/src/favicon.ico",
+              "projects/pwa-test/src/assets"
+            ],
+            "styles": [
+              "./node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
+              "projects/pwa-test/src/styles.css"
+            ],
+            "scripts": []
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/pwa-test/tsconfig.app.json",
+              "projects/pwa-test/tsconfig.spec.json",
+              "projects/pwa-test/e2e/tsconfig.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        },
+        "e2e": {
+          "builder": "@angular-devkit/build-angular:protractor",
+          "options": {
+            "protractorConfig": "projects/pwa-test/e2e/protractor.conf.js",
+            "devServerTarget": "pwa-test:serve"
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "pwa-test:serve:production"
+            }
+          }
+        }
+      }
+    }
+  },
   "cli": {
     "analytics": "5aad97e8-c04d-4cf9-b258-47a7ecf231fe"
   },

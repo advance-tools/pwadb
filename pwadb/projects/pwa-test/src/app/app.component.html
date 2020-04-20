@@ -1,0 +1,31 @@
+<div fxLayout="row" class="mat-elevation-z1">
+
+    <div fxFlex [style.paddingLeft.px]="5" fxLayoutAlign="start center">
+
+        <label [style.fontSize.px]="24">Test App</label>
+
+    </div>
+
+    <div fxFlex fxLayoutAlign="end center">
+    
+        <button mat-icon-button [matMenuTriggerFor]="menu">
+    
+            <mat-icon color="primary" svgIcon="account-plus"></mat-icon>
+    
+        </button>
+        
+    </div>
+
+</div>
+
+<mat-menu #menu="matMenu">
+  
+    <ng-template matMenuContent>
+
+        <button [style.minWidth.px]="200" mat-menu-item *ngFor="let profile of profiles | async" (click)="navigate(profile.data.id)">{{profile.data.name | titlecase}}</button>
+
+    </ng-template>
+
+</mat-menu>
+
+<router-outlet></router-outlet>
