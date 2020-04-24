@@ -1,122 +1,91 @@
-import { PwaCollectionAPI, PwaDocument, PwaListResponse, TableLoadMoreDatabase, DatasourceService, TreeLoadMoreDatabase } from 'pwadb-lib';
+import { PwaCollectionAPI, PwaDocument, PwaListResponse, DatabaseService, Database, ReactiveDatabase } from 'pwadb-lib';
 import { Country, MyDatabase, Collections, hostURL } from '../resources/schema.resource';
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { DatabaseService } from './database.service';
-import { Observable, Subscription } from 'rxjs';
-import { ActivatedRoute } from '@angular/router';
-import { map, switchMap, filter } from 'rxjs/operators';
+import { DatabaseService as APIDatabaseService } from './database.service';
+import { Observable } from 'rxjs';
+import { ProfileApiService } from './profile.service';
 
 @Injectable({
     providedIn: 'root',
 })
-export class CountriesApiService extends PwaCollectionAPI<Country, MyDatabase> implements OnDestroy, DatasourceService<Country> {
+export class CountriesApiService extends PwaCollectionAPI<Country, MyDatabase> implements DatabaseService<Country> {
 
-    validQueryKeys = [];
-    tenant$: Observable<string>;
+    validQueryKeys = [
+        'order_by',
+        'filter:created_at',
+        'filter:created_at.gte',
+        'filter:created_at.lte',
+        'filter:created_at.gt',
+        'filter:created_at.lt',
+        'filter:created_at.range',
 
-    subs: Subscription;
+        'filter:updated_at',
+        'filter:updated_at.gte',
+        'filter:updated_at.lte',
+        'filter:updated_at.gt',
+        'filter:updated_at.lt',
+        'filter:updated_at.range',
 
-    constructor(private dbService: DatabaseService, private httpService: HttpClient, private route: ActivatedRoute) {
+        'name',
+        'name.iexact',
+        'name.exact',
+        'name.icontains',
+        'name.contains',
+        'name.in',
+        'name.isnull',
+        'name.startswith',
+        'name.endswith',
+    ];
+
+    constructor(private dbService: APIDatabaseService, private httpService: HttpClient, private profileService: ProfileApiService) {
 
         super(Collections.country, dbService.db$, httpService);
 
-        this.subs = new Subscription();
-
-        this.tenant$ = this.route.queryParamMap.pipe(
-
-            map(queryParams => queryParams.get('tenantId')),
-
-            filter(tenantId => !!tenantId),
-        )
-
-        // const subs = concat(this.collectionAPI.trim(), this.download()).subscribe();
-
-        // this.subs.add(subs);
-    }
-
-    ngOnDestroy() {
-        
-        this.subs.unsubscribe();
-    }
-    
-    download(): Observable<PwaDocument<Country>[]> {
-
-        const params = new HttpParams();
-
-        params.append('offset', '0');
-
-        params.append('limit', '1000');
-
-        return this.tenant$.pipe(
-
-            switchMap(tenant => this.preload(tenant, `${hostURL}/countries-base`, params))
-        );
-    }
-
-    retrieveReactive(id: string, params?: HttpParams): Observable<PwaDocument<Country>> {
-
-        return this.tenant$.pipe(
-
-            switchMap(tenant => this.get$(tenant, `${hostURL}/countries-base/${id}`, params))
-        );
     }
 
     retrieve(id: string, params?: HttpParams): Observable<PwaDocument<Country>> {
 
-        return this.tenant$.pipe(
-
-            switchMap(tenant => this.getExec(tenant, `${hostURL}/countries-base/${id}`, params))
-        );
+        return this.get(this.profileService.id, `${hostURL}/countries-base/${id}`, params)
     }
 
-    fetchReactive(params?: HttpParams): Observable<PwaListResponse<Country>> {
+    retrieveReactive(id: string, params?: HttpParams): Observable<PwaDocument<Country>> {
 
-        return this.tenant$.pipe(
-
-            switchMap(tenant => this.list$(tenant, `${hostURL}/countries-base`, params, this.validQueryKeys))
-        );
+        return this.getReactive(this.profileService.id, `${hostURL}/countries-base/${id}`, params)
     }
 
     fetch(params?: HttpParams): Observable<PwaListResponse<Country>> {
 
-        return this.tenant$.pipe(
+        return this.list(this.profileService.id, `${hostURL}/countries-base`, params, this.validQueryKeys)
+    }
 
-            switchMap(tenant => this.listExec(tenant, `${hostURL}/countries-base`, params, this.validQueryKeys))
-        );
+    fetchReactive(params?: HttpParams): Observable<PwaListResponse<Country>> {
+
+        return this.listReactive(this.profileService.id, `${hostURL}/countries-base`, params, this.validQueryKeys)
     }
 
     create(data: Country): Observable<PwaDocument<Country>> {
 
-        return this.tenant$.pipe(
-
-            switchMap(tenant => this.collectionAPI.post(tenant, `${hostURL}/countries-base`, data))
-        );
+        return this.collectionAPI.post(this.profileService.id, `${hostURL}/countries-base`, data)
     }
 
     update(data: Country): Observable<PwaDocument<Country>> {
 
-        return this.tenant$.pipe(
-
-            switchMap(tenant => this.collectionAPI.put(tenant, `${hostURL}/countries-base/${data.id}`, data))
-        );
+        return this.collectionAPI.put(this.profileService.id, `${hostURL}/countries-base/${data.id}`, data)
     }
 
     delete(id: string): Observable<boolean | PwaDocument<Country>> {
 
-        return this.tenant$.pipe(
-
-            switchMap(tenant => this.collectionAPI.delete(tenant, `${hostURL}/countries-base/${id}`))
-        );
+        return this.collectionAPI.delete(this.profileService.id, `${hostURL}/countries-base/${id}`)
     }
 
-    getTableLoadMoreDatabase(limit=20): TableLoadMoreDatabase<Country> {
+    getDatabase(limit=20): Database<Country> {
 
-        return new TableLoadMoreDatabase(this, limit);
+        return new Database(this, limit);
     }
 
-    getTreeLoadMoreDatabase(limit=20): TreeLoadMoreDatabase<Country> {
+    getReactiveDatabase(limit=20): ReactiveDatabase<Country> {
 
-        return new TreeLoadMoreDatabase(this, {}, limit);
+        return new ReactiveDatabase(this, limit);
     }
 }

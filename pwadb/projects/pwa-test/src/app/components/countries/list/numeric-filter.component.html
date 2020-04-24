@@ -1,0 +1,79 @@
+<div fxLayoutGap="20px">
+
+    <h2>Numeric Filter</h2>
+    
+    <div fxLayout="column">
+
+        <mat-form-field appearance="fill">
+
+            <mat-label>Filters</mat-label>
+
+            <mat-select [(ngModel)]="filter">
+
+                <mat-option *ngFor="let f of filters" [value]="f">{{f.display}}</mat-option>
+
+            </mat-select>
+
+        </mat-form-field>
+
+        <div fxLayout="row" fxLayoutAlign="center center" *ngIf="data.fieldType === 'number'" fxLayoutGap="10px">
+
+            <mat-form-field appearance="outline" fxFlex>
+
+                <mat-label>{{filter.display.toLowerCase() === 'range' ? 'From' : 'Field'}}</mat-label>
+    
+                <input matInput type="number" [value]="filter.display.toLowerCase() === 'range' ? 0 : 'Field Value'" [(ngModel)]="value1" [readonly]="filter.display.toLowerCase() !== 'range'" [disabled]="!filter.value">
+    
+            </mat-form-field>
+
+            <h2 fxFlex><strong>{{filter.value}}</strong></h2>
+
+            <mat-form-field appearance="outline" fxFlex>
+
+                <mat-label>{{filter.display.toLowerCase() === 'range' ? 'To' : 'Filter Value'}}</mat-label>
+    
+                <input matInput type="number" [(ngModel)]="value2" [disabled]="!filter.value">
+    
+            </mat-form-field>
+
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="center center" *ngIf="data.fieldType === 'date'" fxLayoutGap="10px">
+
+            <mat-form-field appearance="outline" fxFlex>
+
+                <mat-label>{{filter.display.toLowerCase() === 'range' ? 'From' : 'Field'}}</mat-label>
+
+                <input matInput [matDatepicker]="picker1" [(ngModel)]="value1" [readonly]="filter.display.toLowerCase() !== 'range'" [disabled]="!filter.value">
+
+                <mat-datepicker-toggle matSuffix [for]="picker1" [disabled]="filter.display.toLowerCase() !== 'range' || !filter.value"></mat-datepicker-toggle>
+
+                <mat-datepicker #picker1></mat-datepicker>
+
+            </mat-form-field>
+              
+            <h2 fxFlex><strong>{{filter.value}}</strong></h2>
+
+            <mat-form-field appearance="outline" fxFlex>
+
+                <mat-label>{{filter.display.toLowerCase() === 'range' ? 'To' : 'Filter Value'}}</mat-label>
+
+                <input matInput [matDatepicker]="picker2" [(ngModel)]="value2" [disabled]="!filter.value">
+
+                <mat-datepicker-toggle matSuffix [for]="picker2"></mat-datepicker-toggle>
+
+                <mat-datepicker #picker2></mat-datepicker>
+
+            </mat-form-field>
+
+        </div>
+
+    </div>
+
+    <div fxLayoutAlign="end end">
+    
+        <button mat-raised-button color="primary" [disabled]="data.database.isLoading" (click)="apply()">Apply</button>
+    
+    </div>
+
+</div>

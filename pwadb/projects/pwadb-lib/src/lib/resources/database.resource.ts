@@ -1,6 +1,6 @@
 import RxDB, { RxDatabase, RxDatabaseCreator } from 'rxdb';
 import idb from 'pouchdb-adapter-idb';
-import { from, Observable, combineLatest, BehaviorSubject } from 'rxjs';
+import { from, Observable, combineLatest, BehaviorSubject, forkJoin } from 'rxjs';
 import { share, map, switchMap, filter, catchError } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { PwaCollection } from '../definitions/collection';
@@ -11,6 +11,8 @@ export class PwaDatabaseService<T> {
     db$: Observable<RxDatabase<T>>;
 
     retrySync: BehaviorSubject<boolean>;
+
+    evictionDays = 14;
 
     constructor(private httpClient: HttpClient, dbCreator: RxDatabaseCreator = {
         name: 'pwadb',
@@ -36,13 +38,13 @@ export class PwaDatabaseService<T> {
         this.retrySync = new BehaviorSubject(false);
     }
 
-    unsynchronised(tenant: string, collectionNames: string[], order: 'desc' | 'asc' = 'asc') {
+    unsynchronised(tenant: string, collectionNames: string[], order: 'desc' | 'asc' = 'asc'): Observable<PwaDocument<any>[]> {
 
         return this.db$.pipe(
 
             map(db => collectionNames.map(k => db[k]) as PwaCollection<any>[]),
 
-            map(cols => cols.map(c => c.findOne({$and: [{tenant: {$eq: tenant}}, {method: {$ne: 'GET'}}, {time: {$gte: 0}}]}).sort({time: order}).$)),
+            map(cols => cols.map(c => c.findOne({$and: [{tenant: {$eq: tenant}}, {method: {$ne: 'GET'}}]}).sort({time: order}).$)),
 
             switchMap(cols => combineLatest(cols)),
 
@@ -52,9 +54,9 @@ export class PwaDatabaseService<T> {
         );
     }
 
-    synchronise(tenant: string, collectionNames: string[], order: 'desc' | 'asc' = 'asc') {
+    synchronise(tenant: string, collectionNames: string[]): Observable<boolean> {
 
-        const pop: Observable<PwaDocument<any>> = this.unsynchronised(tenant, collectionNames, order).pipe(
+        const pop: Observable<PwaDocument<any>> = this.unsynchronised(tenant, collectionNames, 'asc').pipe(
 
             filter(sortedDocs => sortedDocs.length > 0),
 
@@ -102,5 +104,24 @@ export class PwaDatabaseService<T> {
 
 
     }
+
+    evict(collectionNames: string[]): Observable<PwaDocument<any>[]> {
+
+        return this.db$.pipe(
+
+            map(db => collectionNames.map(k => db[k]) as PwaCollection<any>[]),
+
+            map(cols => cols.map(c => {
+
+                const today = new Date();
+
+                const evictionTime = new Date(today.setDate(today.getDate() - this.evictionDays)).getTime();
+
+                return c.find({$and: [{method: {$eq: 'GET'}}, {time: {$lt: evictionTime}}]}).remove();
+            })),
+
+            switchMap(v => forkJoin(...v))
+        );
+    } 
 
 }

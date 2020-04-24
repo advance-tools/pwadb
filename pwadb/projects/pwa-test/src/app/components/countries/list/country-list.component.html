@@ -1,57 +1,155 @@
-<table mat-table [dataSource]="dataSource" multiTemplateDataRows>
+<div fxFill class="example-loading-shade" *ngIf="tableDatabase.isLoadingChange | async">
 
-    <ng-container matColumnDef="position">
-        <th mat-header-cell *matHeaderCellDef> # </th>
-        <td mat-cell *matCellDef="let element; let i = index;"> {{i}} </td>
-    </ng-container>
+  <mat-spinner></mat-spinner>
 
-    <ng-container matColumnDef="name">
-      <th mat-header-cell *matHeaderCellDef> Name </th>
-      <td mat-cell *matCellDef="let element"> {{element.data.name | titlecase}} </td>
-    </ng-container>
+</div>
+
+<div fxLayout="column" class="example-table-container">
+
+  <div fxLayout="row">
+
+    <button mat-button (click)="tableDatabase.refresh()">Refresh</button>
   
-    <ng-container matColumnDef="phone_code">
-      <th mat-header-cell *matHeaderCellDef> Phone Code </th>
-      <td mat-cell *matCellDef="let element"> {{element.data.phone_code | titlecase}} </td>
-    </ng-container>
+    <button mat-button (click)="tableDatabase.reset()">Reset</button>
+
+  </div>
+
+  <mat-table [dataSource]="dataSource" matSort (matSortChange)="sortChange($event)" multiTemplateDataRows>
   
-    <ng-container matColumnDef="code">
-      <th mat-header-cell *matHeaderCellDef> Code </th>
-      <td mat-cell *matCellDef="let element"> {{element.data.code | titlecase}} </td>
-    </ng-container>
+      <ng-container matColumnDef="position">
+          <mat-header-cell *matHeaderCellDef> # </mat-header-cell>
+          <mat-cell *matCellDef="let element; let i = index;"> {{i}} </mat-cell>
+      </ng-container>
   
-    <ng-container matColumnDef="my_currency_name">
-      <th mat-header-cell *matHeaderCellDef> Currency Name </th>
-      <td mat-cell *matCellDef="let element"> {{element.data.my_currency_name | titlecase}} </td>
-    </ng-container>
+      <ng-container matColumnDef="name">
+        <mat-header-cell *matHeaderCellDef>
 
-    <ng-container matColumnDef="iso2">
-        <th mat-header-cell *matHeaderCellDef> ISO 2 </th>
-        <td mat-cell *matCellDef="let element"> {{element.data.iso2}} </td>
-    </ng-container>
+            <div fxFlex="80%" fxLayoutAlign="start center" mat-sort-header [disabled]="tableDatabase.isLoading">Name</div>
 
-    <ng-container matColumnDef="iso3">
-        <th mat-header-cell *matHeaderCellDef> ISO 3 </th>
-        <td mat-cell *matCellDef="let element"> {{element.data.iso3}} </td>
-    </ng-container>
+            <div fxFlex="20%" fxLayoutAlign="end center">
+              
+              <button mat-icon-button (click)="openStringBottomSheet('name')"><mat-icon svgIcon="filter-variant"></mat-icon></button>
+              
+            </div>
 
-    <ng-container matColumnDef="loadMore">
+        </mat-header-cell>
+        <mat-cell *matCellDef="let element"> {{element.data.name | titlecase}} </mat-cell>
+      </ng-container>
+    
+      <ng-container matColumnDef="phone_code">
+        <mat-header-cell *matHeaderCellDef> 
+          
+          <div fxFlex="80%" fxLayoutAlign="start center" mat-sort-header [disabled]="tableDatabase.isLoading">Phone Code</div>
 
-        <td mat-cell *matCellDef="let element" [attr.colspan]="displayedColumns.length">
-
-          <div fxFlex="100%" fxLayoutAlign="center center" *ngIf="{isLoading: tableDatabase.isLoadingChange | async} as changes">
-
-            <button mat-button color="primary" fxFlex="100%" (click)="tableDatabase.loadMore()" *ngIf="!changes.isLoading">Load More</button>
-
-            <mat-spinner *ngIf="changes.isLoading" color="accent" [diameter]="40"></mat-spinner>
-
+          <div fxFlex="20%" fxLayoutAlign="end center">
+            
+            <button mat-icon-button (click)="openStringBottomSheet('phone_code')"><mat-icon svgIcon="filter-variant"></mat-icon></button>
+            
           </div>
 
-        </td>
+        </mat-header-cell>
+        <mat-cell *matCellDef="let element"> {{element.data.phone_code | titlecase}} </mat-cell>
+      </ng-container>
+    
+      <ng-container matColumnDef="code">
+        <mat-header-cell *matHeaderCellDef>
 
-    </ng-container>
+          <div fxFlex="80%" fxLayoutAlign="start center" mat-sort-header [disabled]="tableDatabase.isLoading">Code</div>
+
+          <div fxFlex="20%" fxLayoutAlign="end center">
+            
+            <button mat-icon-button (click)="openStringBottomSheet('code')"><mat-icon svgIcon="filter-variant"></mat-icon></button>
+            
+          </div>
+
+        </mat-header-cell>
+        <mat-cell *matCellDef="let element"> {{element.data.code | titlecase}} </mat-cell>
+      </ng-container>
+    
+      <ng-container matColumnDef="my_currency__name">
+        <mat-header-cell *matHeaderCellDef>
+          <div fxFlex="80%" fxLayoutAlign="start center" mat-sort-header [disabled]="tableDatabase.isLoading">Currency Name </div>
+
+          <div fxFlex="20%" fxLayoutAlign="end center">
+            
+            <button mat-icon-button (click)="openStringBottomSheet('my_currency__name')"><mat-icon svgIcon="filter-variant"></mat-icon></button>
+            
+          </div>
+        </mat-header-cell>
+        <mat-cell *matCellDef="let element"> {{element.data.my_currency__name | titlecase}} </mat-cell>
+      </ng-container>
   
-    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-    <tr mat-row *matRowDef="let row; columns: displayedColumns; when: isObject;"></tr>
-    <tr mat-row *matRowDef="let row; columns: ['loadMore']; when: isLoadMore;"></tr>
-</table>
+      <ng-container matColumnDef="iso2">
+          <mat-header-cell *matHeaderCellDef>
+            <div fxFlex="80%" fxLayoutAlign="start center" mat-sort-header [disabled]="tableDatabase.isLoading">ISO 2 </div>
+
+            <div fxFlex="20%" fxLayoutAlign="end center">
+              
+              <button mat-icon-button (click)="openStringBottomSheet('iso2')"><mat-icon svgIcon="filter-variant"></mat-icon></button>
+              
+            </div>
+          </mat-header-cell>
+          <mat-cell *matCellDef="let element"> {{element.data.iso2}} </mat-cell>
+      </ng-container>
+  
+      <ng-container matColumnDef="iso3">
+          <mat-header-cell *matHeaderCellDef>
+            <div fxFlex="80%" fxLayoutAlign="start center" mat-sort-header [disabled]="tableDatabase.isLoading">ISO 3</div>
+
+            <div fxFlex="20%" fxLayoutAlign="end center">
+              
+              <button mat-icon-button (click)="openStringBottomSheet('iso3')"><mat-icon svgIcon="filter-variant"></mat-icon></button>
+              
+            </div>
+          </mat-header-cell>
+          <mat-cell *matCellDef="let element"> {{element.data.iso3}} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="created_at">
+        <mat-header-cell *matHeaderCellDef>
+          <div fxFlex="80%" fxLayoutAlign="start center" mat-sort-header [disabled]="tableDatabase.isLoading">Created At</div>
+
+          <div fxFlex="20%" fxLayoutAlign="end center">
+            
+            <button mat-icon-button (click)="openNumericBottomSheet('created_at', 'date')"><mat-icon svgIcon="filter-variant"></mat-icon></button>
+            
+          </div>
+        </mat-header-cell>
+        <mat-cell *matCellDef="let element"> {{element.data.created_at}} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="updated_at">
+        <mat-header-cell *matHeaderCellDef>
+          <div fxFlex="80%" fxLayoutAlign="start center" mat-sort-header [disabled]="tableDatabase.isLoading">Updated At</div>
+
+          <div fxFlex="20%" fxLayoutAlign="end center">
+            
+            <button mat-icon-button (click)="openNumericBottomSheet('updated_at', 'date')"><mat-icon svgIcon="filter-variant"></mat-icon></button>
+            
+          </div>
+        </mat-header-cell>
+        <mat-cell *matCellDef="let element"> {{element.data.updated_at}} </mat-cell>
+      </ng-container>
+  
+      <ng-container matColumnDef="loadMore">
+          
+          <mat-cell *matCellDef="let element" [attr.colspan]="displayedColumns.length">
+  
+            <div fxFlex="100%" fxLayoutAlign="center center">
+  
+              <button mat-button color="primary" fxFlex="100%" (click)="tableDatabase.loadMore()" *ngIf="!tableDatabase.isLoading">Load More</button>
+  
+              <mat-spinner *ngIf="tableDatabase.isLoading" color="accent" [diameter]="40"></mat-spinner>
+  
+            </div>
+  
+          </mat-cell>
+  
+      </ng-container>
+    
+      <mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></mat-header-row>
+      <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+      <mat-row *matRowDef="let row; columns: ['loadMore']; when: isLoadMore;"></mat-row>
+  </mat-table>
+  
+</div>

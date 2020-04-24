@@ -15,20 +15,20 @@ export type FieldDataType = string | number | boolean | null;
 ////////////////
 export function parseNumber(fieldValue: FieldDataType, inputValue: string) {
 
-    const parsedFieldValue = parseFloat(fieldValue.toString());
+    const parsedFieldValue = parseFloat(fieldValue?.toString() || '');
 
-    const parsedInputValue = parseFloat(inputValue.toString());
+    const parsedInputValue = parseFloat(inputValue?.toString() || '');
 
-    return parsedFieldValue !== NaN && parsedInputValue !== NaN ? {parsedFieldValue, parsedInputValue} : false;
+    return isNaN(parsedFieldValue) && isNaN(parsedInputValue) ? null : {parsedFieldValue, parsedInputValue};
 }
 
 export function parseDate(fieldValue: FieldDataType, inputValue: string) {
 
-    const parsedFieldValue = Date.parse(fieldValue.toString());
+    const parsedFieldValue = Date.parse(fieldValue?.toString() || '');
 
-    const parsedInputValue = Date.parse(inputValue.toString());
+    const parsedInputValue = Date.parse(inputValue?.toString() || '');
 
-    return parsedFieldValue !== NaN && parsedInputValue !== NaN ? {parsedFieldValue, parsedInputValue} : false;
+    return isNaN(parsedFieldValue) && isNaN(parsedInputValue) ? null : {parsedFieldValue, parsedInputValue};
 }
 
 ///////////////////////////////////////////////
@@ -37,13 +37,13 @@ export function parseDate(fieldValue: FieldDataType, inputValue: string) {
 
 export const eq = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
+    const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
+    
+    if (isDate) return isDate.parsedFieldValue === isDate.parsedInputValue;
+    
     const isNumber = parseNumber(v.data[field] as FieldDataType, inputValue);
 
     if (isNumber) return isNumber.parsedFieldValue === isNumber.parsedInputValue;
-
-    const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
-
-    if (isDate) return isDate.parsedFieldValue === isDate.parsedInputValue;
 
     return v.data[field] === inputValue;
 }
@@ -53,53 +53,53 @@ export const eq = (v: PwaDocument<any>, field: string, inputValue: string) => {
 ///////////////////////////////////////////////
 
 export const gte = (v: PwaDocument<any>, field: string, inputValue: string) => {
+    
+    const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
+    
+    if (isDate) return isDate.parsedFieldValue >= isDate.parsedInputValue;
 
     const isNumber = parseNumber(v.data[field] as FieldDataType, inputValue);
 
     if (isNumber) return isNumber.parsedFieldValue >= isNumber.parsedInputValue;
-
-    const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
-
-    if (isDate) return isDate.parsedFieldValue >= isDate.parsedInputValue;
 
     return v.data[field] >= inputValue;
 }
 
 export const lte = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
+    const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
+    
+    if (isDate) return isDate.parsedFieldValue <= isDate.parsedInputValue;
+    
     const isNumber = parseNumber(v.data[field] as FieldDataType, inputValue);
 
     if (isNumber) return isNumber.parsedFieldValue <= isNumber.parsedInputValue;
-
-    const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
-
-    if (isDate) return isDate.parsedFieldValue <= isDate.parsedInputValue;
 
     return v.data[field] <= inputValue;
 }
 
 export const gt = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
+    const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
+    
+    if (isDate) return isDate.parsedFieldValue > isDate.parsedInputValue;
+    
     const isNumber = parseNumber(v.data[field] as FieldDataType, inputValue);
 
     if (isNumber) return isNumber.parsedFieldValue > isNumber.parsedInputValue;
-
-    const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
-
-    if (isDate) return isDate.parsedFieldValue > isDate.parsedInputValue;
 
     return v.data[field] > inputValue;
 }
 
 export const lt = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
+    const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
+    
+    if (isDate) return isDate.parsedFieldValue < isDate.parsedInputValue;
+    
     const isNumber = parseNumber(v.data[field] as FieldDataType, inputValue);
 
     if (isNumber) return isNumber.parsedFieldValue < isNumber.parsedInputValue;
-
-    const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
-
-    if (isDate) return isDate.parsedFieldValue < isDate.parsedInputValue;
 
     return v.data[field] < inputValue;
 }
@@ -108,17 +108,17 @@ export const range = (v: PwaDocument<any>, field: string, inputValue: string) =>
 
     const values = inputValue.toString().split(',');
 
+    const isDate1 = parseDate(v.data[field] as FieldDataType, values[0]);
+    
+    const isDate2 = parseDate(v.data[field] as FieldDataType, values[1]);
+    
+    if (isDate1 && isDate2) return isDate1.parsedFieldValue >= isDate1.parsedInputValue && isDate2.parsedFieldValue < isDate2.parsedInputValue;
+    
     const isNumber1 = parseNumber(v.data[field] as FieldDataType, values[0]);
 
     const isNumber2 = parseNumber(v.data[field] as FieldDataType, values[1]);
 
     if (isNumber1 && isNumber2) return isNumber1.parsedFieldValue >= isNumber1.parsedInputValue && isNumber2.parsedFieldValue < isNumber2.parsedInputValue;
-
-    const isDate1 = parseDate(v.data[field] as FieldDataType, values[0]);
-
-    const isDate2 = parseDate(v.data[field] as FieldDataType, values[1]);
-
-    if (isDate1 && isDate2) return isDate1.parsedFieldValue >= isDate1.parsedInputValue && isDate2.parsedFieldValue < isDate2.parsedInputValue;
 
     return v.data[field] >= values[0] && v.data[field] < values[1];
 };
@@ -127,13 +127,13 @@ export const range = (v: PwaDocument<any>, field: string, inputValue: string) =>
 // Lookup Filters (string)
 ///////////////////////////////////////////////
 
-export const startswith = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().match(new RegExp(`^${inputValue}.*`)).length > 0;
+export const startswith = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().startsWith(inputValue);
 
-export const endswith   = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().match(new RegExp(`*.${inputValue}$`)).length > 0;
+export const endswith   = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().endsWith(inputValue);
 
-export const iexact     = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().match(new RegExp(`^${inputValue}$`, 'i')).length > 0;
+export const iexact     = (v: PwaDocument<any>, field: string, inputValue: string) => !!(v.data[field] as FieldDataType).toString().match(new RegExp(`^${inputValue}$`, 'i'));
 
-export const exact      = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().match(new RegExp(`^${inputValue}$`)).length > 0;
+export const exact      = (v: PwaDocument<any>, field: string, inputValue: string) => !!(v.data[field] as FieldDataType).toString().match(new RegExp(`^${inputValue}$`));
 
 export const icontains  = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().toLowerCase().includes(inputValue);
 
@@ -164,19 +164,19 @@ export function getQuery(key: string, value: string): {queryType: Query, fields:
 
         const fieldAndLookup = key.split(':')[1].split('.');
 
-        return {queryType: 'exclude', fields: [fieldAndLookup[0]], lookup: fieldAndLookup.length === 1 ? fieldAndLookup[1] as Lookup : 'eq', inputValue: value};
+        return {queryType: 'exclude', fields: [fieldAndLookup[0]], lookup: fieldAndLookup.length > 1 ? fieldAndLookup[1] as Lookup : 'eq', inputValue: value};
 
     } else if (key.includes('filter')) {
 
         const fieldAndLookup = key.split(':')[1].split('.');
 
-        return {queryType: 'filter', fields: [fieldAndLookup[0]], lookup: fieldAndLookup.length === 1 ? fieldAndLookup[1] as Lookup : 'eq', inputValue: value};
+        return {queryType: 'filter', fields: [fieldAndLookup[0]], lookup: fieldAndLookup.length > 1 ? fieldAndLookup[1] as Lookup : 'eq', inputValue: value};
 
     } else {
 
         const fieldAndLookup = key.split('.');
 
-        return {queryType: 'filter', fields: [fieldAndLookup[0]], lookup: fieldAndLookup.length === 1 ? fieldAndLookup[1] as Lookup : 'eq', inputValue: value}
+        return {queryType: 'filter', fields: [fieldAndLookup[0]], lookup: fieldAndLookup.length > 1 ? fieldAndLookup[1] as Lookup : 'eq', inputValue: value}
     }
 
 }
@@ -188,7 +188,7 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
 
         params.keys().forEach(k => {
     
-            if (k in validQueryKeys) {
+            if (validQueryKeys.indexOf(k) > -1) {
     
                 const query = getQuery(k, params.getAll(k).join(','));
     
@@ -216,6 +216,8 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
 }
 
 export function filter(field: string, inputValue: string, docs: PwaDocument<any>[], lookup?: Lookup) {
+
+    debugger;
 
     // in lookup would same as eq with OR values
     let f = (v: PwaDocument<any>) => inputValue.split(',').reduce((acc, cur) => acc || eq(v, field, cur), false);
@@ -262,7 +264,7 @@ export function distinct(fields: string[], docs: PwaDocument<any>[]) {
 
     docs.forEach(v => {
 
-        const key = fields.reduce((acc, cur) => acc += `-${(v.data[cur] as FieldDataType).toString()}`, '');
+        const key = fields.reduce((acc, cur) => acc += `-${(v.data[cur] as FieldDataType)?.toString() || 'null'}`, '');
 
         if (!uniques.has(key)) {
 
@@ -283,25 +285,27 @@ export function orderBy(fields: string[], docs: PwaDocument<any>[]) {
 
             const order = fields[i].indexOf('-') === 0 ? 'desc' : 'asc';
 
-            const isNumber = parseNumber(a.data[fields[i]], b.data[fields[i]]);
+            const parseFieldName = order === 'desc' ? fields[i].split('-')[1] : fields[i]
+            
+            const isDate = parseDate(a.data[parseFieldName], b.data[parseFieldName]);
+            
+            if (isDate && order === 'asc' && isDate.parsedFieldValue !== isDate.parsedInputValue) return isDate.parsedFieldValue - isDate.parsedInputValue;
+            
+            if (isDate && order === 'desc' && isDate.parsedInputValue !== isDate.parsedFieldValue) return isDate.parsedInputValue - isDate.parsedFieldValue;
+            
+            const isNumber = parseNumber(a.data[parseFieldName], b.data[parseFieldName]);
 
             if (isNumber && order === 'asc' && isNumber.parsedFieldValue !== isNumber.parsedInputValue) return isNumber.parsedFieldValue - isNumber.parsedInputValue;
 
             if (isNumber && order === 'desc' && isNumber.parsedInputValue !== isNumber.parsedFieldValue) return isNumber.parsedInputValue - isNumber.parsedFieldValue;
 
-            const isDate = parseDate(a.data[fields[i]], b.data[fields[i]]);
+            const valueA = ((a.data[parseFieldName] as FieldDataType)?.toString() || '').toLowerCase();
 
-            if (isDate && order === 'asc' && isDate.parsedFieldValue !== isDate.parsedInputValue) return isDate.parsedFieldValue - isDate.parsedInputValue;
+            const valueB = ((b.data[parseFieldName] as FieldDataType)?.toString() || '').toLowerCase();
 
-            if (isDate && order === 'desc' && isDate.parsedInputValue !== isDate.parsedFieldValue) return isDate.parsedInputValue - isDate.parsedFieldValue;
+            if (valueA < valueB) return order === 'asc' ? -1 : 1;
 
-            const valueA = (a.data[fields[i]] as FieldDataType).toString().toLowerCase();
-
-            const valueB = (b.data[fields[i]] as FieldDataType).toString().toLowerCase();
-
-            if (valueA < valueB) return -1;
-
-            if (valueA > valueB) return 1;
+            if (valueA > valueB) return order === 'asc' ? 1 : -1;
 
         }
 

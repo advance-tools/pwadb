@@ -11,7 +11,7 @@ export const hostURL = 'http://localhost:8000/api';
 ////////////////////
 export interface MyDatabase {
     countries: PwaCollection<Country>,
-    tenants: PwaCollection<Tenant>,
+    tenants: PwaCollection<Profile>,
 }
 
 ////////////////////
@@ -27,7 +27,7 @@ export enum Collections {
 // Doctypes
 ////////////////////
 
-export interface Tenant {
+export interface Profile {
     id: string;
     name: string;
     email: string;

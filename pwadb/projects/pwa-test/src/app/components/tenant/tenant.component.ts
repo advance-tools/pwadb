@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
-import { Tenant, TenantApiService } from 'pwadb-api-lib';
+import { Profile, ProfileApiService } from 'pwadb-api-lib';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { Guid } from 'guid-typescript';
@@ -16,7 +16,7 @@ export class TenantComponent implements OnDestroy {
 
     subs: Subscription;
 
-    constructor(private tenantService: TenantApiService) {
+    constructor(private profileService: ProfileApiService) {
 
         this.formGroup = new FormGroup({
             name: new FormControl(null, [Validators.required]),
@@ -33,13 +33,13 @@ export class TenantComponent implements OnDestroy {
 
     create() {
 
-        const data: Tenant = {
+        const data: Profile = {
             id: Guid.create().toString(),
             name: this.formGroup.value.name,
             email: this.formGroup.value.email,
         };
 
-        const subs = this.tenantService.create(data).subscribe(() => this.formGroup.reset());
+        const subs = this.profileService.create(data).subscribe(() => this.formGroup.reset());
 
         this.subs.add(subs);
 

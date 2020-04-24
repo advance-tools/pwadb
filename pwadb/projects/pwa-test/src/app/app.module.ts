@@ -54,7 +54,10 @@ import {MatTabsModule} from '@angular/material/tabs';
 import {MatToolbarModule} from '@angular/material/toolbar';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatTreeModule} from '@angular/material/tree';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { CanActivateRouteGuard } from './guards/profile.guard';
+import { StringFilterComponent } from './components/countries/list/string-filter.component';
+import { NumericFilter } from './components/countries/list/numeric-filter.component';
 
 
 @NgModule({
@@ -64,7 +67,9 @@ import { ReactiveFormsModule } from '@angular/forms';
     CountryDetailComponent,
     CountryListComponent,
     DashboardComponent,
-    TreeExampleComponent
+    TreeExampleComponent,
+    StringFilterComponent,
+    NumericFilter,
   ],
   imports: [
     BrowserModule,
@@ -73,6 +78,7 @@ import { ReactiveFormsModule } from '@angular/forms';
     AppRoutingModule,
     FlexLayoutModule,
     ReactiveFormsModule,
+    FormsModule,
 
     A11yModule,
     ClipboardModule,
@@ -118,7 +124,7 @@ import { ReactiveFormsModule } from '@angular/forms';
     PortalModule,
     ScrollingModule,
   ],
-  providers: [],
+  providers: [CanActivateRouteGuard],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

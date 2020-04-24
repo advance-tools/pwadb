@@ -9,7 +9,7 @@ export const getCollectionCreator = (name: string, collectionMethods: PwaCollect
     name: name,
     schema: getSchema(name),
     pouchSettings: {
-        revs_limit: 1,
+        revs_limit: 0,
         auto_compaction: true,
     }, // (optional)
     statics: collectionMethods, // (optional) // ORM-functions for this collection

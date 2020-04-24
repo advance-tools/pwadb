@@ -1,7 +1,7 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, filter, take, tap, share} from 'rxjs/operators';
-import { Observable, Subscription, combineLatest, forkJoin, of, concat } from 'rxjs';
+import { switchMap, map, take, tap, share, catchError } from 'rxjs/operators';
+import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
@@ -14,27 +14,27 @@ export class RestAPI<T extends Datatype> {
     // CRUD
     ////////////////
 
-    get(url: string, params?: HttpParams) {
+    get(url: string, params?: HttpParams): Observable<T> {
 
         return this.httpClient.get(url, {params}) as Observable<T>;
     }
 
-    post(url: string, data: Partial<T>) {
+    post(url: string, data: Partial<T>): Observable<T> {
 
         return this.httpClient.post(url, data) as Observable<T>;
     }
 
-    put(url: string, data: Partial<T>) {
+    put(url: string, data: Partial<T>): Observable<T> {
 
         return this.httpClient.put(url, data) as Observable<T>;
     }
 
-    list(url: string, params?: HttpParams) {
+    list(url: string, params?: HttpParams): Observable<ListResponse<T>> {
 
         return this.httpClient.get(url, {params}) as Observable<ListResponse<T>>;
     }
 
-    delete(url: string) {
+    delete(url: string): Observable<any> {
 
         return this.httpClient.delete(url) as Observable<any>;
     }
@@ -62,40 +62,36 @@ export class CollectionAPI<T extends Datatype, Database> {
         return `${tenant}-${url}`;
     }
 
-    dataToDoc(d: T, tenant: string, url: string):PwaDocType<T> {
-
-        return {tenantUrl: `${this.makeTenantUrl(tenant, url)}/${d.id}`, data: d, time: new Date().getTime(), method: 'GET', error: null, tenant};
-    }
-
     ////////////////
     // CRUD
     ////////////////
 
-    get$(tenant: string, url: string) {
+    getReactive(tenant: string, url: string): Observable<PwaDocument<T>> {
 
         return this.collection$.pipe(
 
-            switchMap(col => col.findOne({tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}).$)
-
-        ) as Observable<PwaDocument<T>>;
+            switchMap(col => col.findOne({tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}).$),
+        );
     }
 
-    getExec(tenant: string, url: string) {
+    get(tenant: string, url: string): Observable<PwaDocument<T>> {
 
-        return this.get$(tenant, url).pipe(
+        return this.getReactive(tenant, url).pipe(
 
             take(1),
 
-        ) as Observable<PwaDocument<T>>;
+        );
     }
 
-    list$(tenant: string, url: string, params?: HttpParams, validQueryKeys = []) {
+    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
         const start = parseInt(params?.get('offset') || '0');
 
         const end = start + parseInt(params?.get('limit') || '100');
 
-        return this.data$(tenant, url).pipe(
+        return this.collection$.pipe(
+
+            switchMap(col => col.find({tenantUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}}).sort({time: 'desc'}).$),
 
             map(docs => queryFilter(validQueryKeys, params, docs)),
 
@@ -107,19 +103,19 @@ export class CollectionAPI<T extends Datatype, Database> {
                 results: docs.slice(start, end)
             })),
 
-        ) as Observable<CollectionListResponse<T>>;
+        );
     }
 
-    listExec(tenant: string, url: string, params?: HttpParams, validQueryKeys = []) {
+    list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
-        return this.list$(tenant, url, params, validQueryKeys).pipe(
+        return this.listReactive(tenant, url, params, validQueryKeys).pipe(
 
             take(1),
 
-        ) as Observable<CollectionListResponse<T>>;
+        );
     }
 
-    post(tenant: string, url: string, data: T) {
+    post(tenant: string, url: string, data: T): Observable<PwaDocument<T>> {
 
         return this.collection$.pipe(
 
@@ -127,9 +123,9 @@ export class CollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    put(tenant: string, url: string, data: T) {
+    put(tenant: string, url: string, data: T): Observable<PwaDocument<T>> {
 
-        return this.getExec(tenant, url).pipe(
+        return this.get(tenant, url).pipe(
 
             switchMap(doc => {
 
@@ -147,9 +143,9 @@ export class CollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    delete(tenant: string, url: string) {
+    delete(tenant: string, url: string): Observable<boolean | PwaDocument<T>> {
 
-        return this.getExec(tenant, url).pipe(
+        return this.get(tenant, url).pipe(
 
             switchMap(doc => {
 
@@ -170,27 +166,6 @@ export class CollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    /////////////////
-    // Miscellaneous
-    /////////////////
-
-    data$(tenant: string, url: string) {
-
-        return this.collection$.pipe(
-
-            switchMap(col => col.find({tenantUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}}).$),
-
-        );
-    }
-
-    trim(skip = 1000, order: 'desc' | 'asc' = 'desc') {
-
-        return this.collection$.pipe(
-
-            switchMap(col => col.find({$and: [{method: {$eq: 'GET'}}, {time: {$gte: 0}}]}).sort({time: order}).skip(skip).remove()),
-        );
-    }
-
 }
 
 export class PwaCollectionAPI<T extends Datatype, Database> {
@@ -199,137 +174,115 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     restAPI: RestAPI<T>;
 
-    // unsubscrive OnDestroy in service
-    subs: Subscription;
-
     constructor(private name: string, private db$: Observable<RxDatabase<Database>>, private httpClient: HttpClient) {
 
         this.collectionAPI = new CollectionAPI<T, Database>(name, db$);
 
         this.restAPI = new RestAPI<T>(httpClient);
-
-        this.subs = new Subscription();
     }
 
     //////////////
-    // CRUDS
-    ///////////////
+    // Retrieve
+    //////////////
 
-    preload(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>[]> {
+    downloadRetrieve(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T> | null> {
 
-        const preloadData$ = this.restAPI.list(url, params).pipe(
-
-            map(res => res.results),
-
-            map(v => v.map(d => this.collectionAPI.dataToDoc(d, tenant, url)))
-
-        ) as Observable<PwaDocType<T>[]>;
-
-        const bulkInsert$ = combineLatest([this.collectionAPI.collection$, preloadData$]).pipe(
+        return combineLatest([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
 
             take(1),
 
-            switchMap(([col, preloadData]) => forkJoin(concat(...preloadData.map(v => col.atomicUpsert(v))))),
-        );
+            switchMap(([res, col]) => col.atomicUpsert({tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url), data: res, time: new Date().getTime(), error: null, tenant})),
 
-        return this.collectionAPI.collection$.pipe(
-
-            switchMap(col => col.findOne({tenant: {$eq: tenant}}).exec()),
-
-            filter(doc => !!doc),
-
-            switchMap(() => bulkInsert$),
-
-        );
+            catchError(() => of(null)),
+        )
     }
 
-    get$(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
+    getReactive(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
-        let count = 0;
+        const idbGetReactive = this.collectionAPI.getReactive(tenant, url);
 
-        return this.collectionAPI.get$(tenant, url).pipe(
+        const apiFetch = this.downloadRetrieve(tenant, url, params);
 
-            tap(doc => {
-                
-                if (count === 0 && doc?.method === 'GET') {
-                    
-                    count = 1;
+        return apiFetch.pipe(
 
-                    const subs = this.restAPI.get(url, params).pipe(
-
-                        switchMap(res => doc.collection.atomicUpsert({tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url), data: res, time: new Date().getTime(), error: null, tenant})),
-
-                    ).subscribe();
-                    
-                    this.subs.add(subs);
-                }
-            })
-
+            switchMap(() => idbGetReactive)
         );
 
     }
 
-    getExec(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
+    get(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
-        return this.get$(tenant, url, params).pipe(
+        return this.getReactive(tenant, url, params).pipe(
 
-            take(2),
-
-        );
+            take(1),
+        )
     }
 
-    list$(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<PwaListResponse<T>> {
+    //////////////
+    // List
+    //////////////
 
-        let count = 0;
+    downloadList(idbRes: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams): Observable<{apiCount: number, success: PwaDocument<T>[], error: any[]}> {
+
+        // Exclude locally unsynced data in the api results
+        let httpParams = params || new HttpParams();
+
+        idbRes.putResults.concat(idbRes.delResults).forEach(v => httpParams = httpParams.has('exclude:id') ? httpParams.append('exclude:id', v.data.id) : httpParams.set('exclude:id', v.data.id));
+
+        return this.restAPI.list(url, httpParams).pipe(
+
+            catchError(() => of({count: 0, results: []} as ListResponse<T>)),
+
+            switchMap(networkRes => combineLatest([of(networkRes), this.collectionAPI.collection$]).pipe(take(1))),
+
+            switchMap(([networkRes, col]) => {
+
+                // map network data to doctype
+                const docs: PwaDocType<T>[] = networkRes.results.map(d => ({tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${d.id}`, data: d, time: new Date().getTime(), method: 'GET', error: null, tenant}));
+
+                return from(col.bulkInsert(docs)).pipe(
+
+                    map(v => ({apiCount: networkRes.count, success: v.success, error: v.error})),
+                );
+            }),
+        );
+
+    }
+
+    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<PwaListResponse<T>> {
+
         let apiCount = 0;
 
-        return this.collectionAPI.list$(tenant, url, params, validQueryKeys).pipe(
+        const idbFetchOne = this.collectionAPI.list(tenant, url, params, validQueryKeys);
 
-            tap(res => {
-
-                if (count === 0) {
-
-                    count = 1;
-
-                    const subs = this.collectionAPI.collection$.pipe(
-
-                        switchMap(col => {
-
-                            let httpParams = params || new HttpParams();
-
-                            res.putResults.concat(res.delResults).forEach(v => httpParams = httpParams.append('exclude:id', v.data.id));
-
-                            return this.restAPI.list(url, httpParams).pipe(
-
-                                tap(apiRes => apiCount = apiRes.count),
-
-                                switchMap(apiRes => forkJoin(concat(...apiRes.results.map(d => col.atomicUpsert(this.collectionAPI.dataToDoc(d, tenant, url))))))
-                            );
-                        }),
-
-                    ).subscribe();
-
-                    this.subs.add(subs);
-                }
-
-            }),
+        const idbFetchReactive = this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
 
             map(res => ({
                 count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
                 results: res.results
-            })),
+            }))
+        );
 
+        const apiFetch = idbFetchOne.pipe(
+
+            switchMap(idbRes => this.downloadList(idbRes, tenant, url, params)),
+
+            tap(v => apiCount = v.apiCount),
+        );
+
+        return apiFetch.pipe(
+
+            switchMap(() => idbFetchReactive)
         );
 
     }
 
-    listExec(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<PwaListResponse<T>> {
+    list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<PwaListResponse<T>> {
 
-        return this.list$(tenant, url, params, validQueryKeys).pipe(
+        return this.listReactive(tenant, url, params, validQueryKeys).pipe(
 
-            take(2),
-
-        );
+            take(1),
+        )
     }
 
 }

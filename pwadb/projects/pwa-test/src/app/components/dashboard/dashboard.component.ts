@@ -1,8 +1,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PwaDocument } from 'pwadb-lib';
-import { Tenant, TenantApiService } from 'pwadb-api-lib';
-import { Router } from '@angular/router';
+import { Profile, ProfileApiService } from 'pwadb-api-lib';
 
 @Component({
     selector: 'app-dashboard',
@@ -12,20 +11,11 @@ import { Router } from '@angular/router';
 })
 export class DashboardComponent {
 
-    profile$: Observable<PwaDocument<Tenant>>;
+    profile$: Observable<PwaDocument<Profile>>;
 
-    constructor(private tenantService: TenantApiService, private router: Router) {
+    constructor(private profileService: ProfileApiService) {
 
-        this.profile$ = this.tenantService.retrieveReactive();
+        this.profile$ = this.profileService.retrieve();
     }
 
-    onCountryClick(profileId: string) {
-
-        this.router.navigate(['../countries'], {queryParams: {tenantId: profileId}})
-    }
-
-    onTreeClick(profileId: string) {
-
-        this.router.navigate(['../tree-example'], {queryParams: {tenantId: profileId}})
-    }
 }

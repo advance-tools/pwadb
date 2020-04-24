@@ -2,11 +2,10 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { map } from 'rxjs/operators';
-import { Tenant, TenantApiService } from 'pwadb-api-lib';
+import { Profile, ProfileApiService } from 'pwadb-api-lib';
 import { Observable } from 'rxjs';
 import { PwaDocument } from 'pwadb-lib';
 import { Router } from '@angular/router';
-
 
 @Component({
   selector: 'app-root',
@@ -16,26 +15,28 @@ import { Router } from '@angular/router';
 })
 export class AppComponent {
 
-  profiles: Observable<PwaDocument<Tenant>[]>
+  profiles: Observable<PwaDocument<Profile>[]>
   
   constructor(
     private matIconRegistery: MatIconRegistry,
     private domSanitizer: DomSanitizer,
-    private tenantService: TenantApiService,
+    private profileService: ProfileApiService,
     private router: Router
   ) {
 
     this.matIconRegistery.addSvgIconSet(this.domSanitizer.bypassSecurityTrustResourceUrl('./assets/mdi.svg'));
 
-    this.profiles = this.tenantService.fetchReactive().pipe(
+    this.profiles = this.profileService.fetch().pipe(
 
       map(res => res.results)
-    )
+    );
 
   }
 
   navigate(profileId: string) {
 
-    this.router.navigate(['dashboard'], {queryParams: {tenantId: profileId}});
+    this.profileService.id = profileId;
+
+    this.router.navigate(['dashboard']);
   }
 }

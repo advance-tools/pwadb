@@ -5,6 +5,7 @@ import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { CountryListComponent } from './components/countries/list/country-list.component';
 import { CountryDetailComponent } from './components/countries/detail/country-detail.component';
 import { TreeExampleComponent } from './components/tree-example/tree-example.component';
+import { CanActivateRouteGuard } from './guards/profile.guard';
 
 const routes: Routes = [
     {
@@ -13,20 +14,28 @@ const routes: Routes = [
     },
     {
         path: 'dashboard',
-        component: DashboardComponent
+        component: DashboardComponent,
+        canActivate: [CanActivateRouteGuard]
     },
     {
         path: 'countries',
-        component: CountryListComponent
+        component: CountryListComponent,
+        canActivate: [CanActivateRouteGuard]
     },
     {
         path: 'countries/:id',
-        component: CountryDetailComponent
+        component: CountryDetailComponent,
+        canActivate: [CanActivateRouteGuard]
     },
     {
         path: 'tree-example',
-        component: TreeExampleComponent
+        component: TreeExampleComponent,
+        canActivate: [CanActivateRouteGuard]
     },
+    {
+        path: '**',
+        redirectTo: '',
+    }
 ]
 
 @NgModule({
