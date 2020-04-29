@@ -1,6 +1,6 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, take, tap, share, catchError } from 'rxjs/operators';
+import { switchMap, map, take, tap, share, catchError, startWith } from 'rxjs/operators';
 import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -51,6 +51,8 @@ export class CollectionAPI<T extends Datatype, Database> {
             switchMap(db => name in db ? of([db[name]]) : forkJoin(db.collection(getCollectionCreator(this.name, pwaCollectionMethods, pwaDocMethods)))),
 
             map(collections => collections[0]),
+
+            take(1),
 
             share(),
         );
@@ -119,26 +121,46 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return this.collection$.pipe(
 
-            switchMap(col => col.atomicUpsert({tenantUrl: this.makeTenantUrl(tenant, `${url}/${data.id}`), data, time: new Date().getTime(), method: 'POST', error: null, tenant}))
+            switchMap(col => col.atomicUpsert({
+                tenantUrl: this.makeTenantUrl(tenant, `${url}/${data.id}`),
+                data,
+                method: 'POST',
+                error: null,
+                time: new Date().getTime(),
+                tenant
+            })),
         );
     }
 
     put(tenant: string, url: string, data: T): Observable<PwaDocument<T>> {
 
-        return this.get(tenant, url).pipe(
+        return combineLatest([this.get(tenant, url), this.collection$]).pipe(
 
-            switchMap(doc => {
+            switchMap(([doc, col]) => {
 
-                const docData: PwaDocType<T> = {
-                    tenantUrl: this.makeTenantUrl(tenant, url),
-                    data,
-                    method: doc?.method || 'PUT',
-                    error: null,
-                    time: doc?.time || new Date().getTime(),
-                    tenant
-                };
+                if (doc) {
 
-                return doc.collection.atomicUpsert(docData);
+                    return doc.atomicUpdate((oldData) => ({
+                        ...oldData,
+                        method: oldData.method !== 'POST' ? 'PUT' : oldData.method,
+                        data,
+                        error: null
+                    }));
+
+                } else {
+
+                    const docData: PwaDocType<T> = {
+                        tenantUrl: this.makeTenantUrl(tenant, url),
+                        data,
+                        method: 'PUT',
+                        error: null,
+                        time: new Date().getTime(),
+                        tenant
+                    };
+    
+                    return col.atomicUpsert(docData);
+                }
+
             }),
         );
     }
@@ -155,11 +177,11 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 } else if (doc?.method === 'PUT' || doc?.method === 'DELETE') {
 
-                    return doc.collection.atomicUpsert({tenantUrl: this.makeTenantUrl(tenant, url), method: 'DELETE', error: null});
+                    return doc.atomicUpdate((oldData) => ({...oldData, method: 'DELETE', error: null}));
 
                 }  else {
 
-                    return doc.collection.atomicUpsert({tenantUrl: this.makeTenantUrl(tenant, url), method: 'DELETE', error: null, time: new Date().getTime()});
+                    return doc.atomicUpdate((oldData) => ({...oldData, method: 'DELETE', error: null, time: new Date().getTime()}));
                 }
 
             })
@@ -185,23 +207,37 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     // Retrieve
     //////////////
 
-    downloadRetrieve(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T> | null> {
+    downloadRetrieve(idbRes: PwaDocument<T>, tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T> | null> {
+
+        if (idbRes?.method !== 'GET') return of(idbRes);
 
         return combineLatest([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
 
-            take(1),
-
-            switchMap(([res, col]) => col.atomicUpsert({tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url), data: res, time: new Date().getTime(), error: null, tenant})),
+            switchMap(([res, col]) => col.atomicUpsert({
+                tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url),
+                data: res,
+                method: 'GET',
+                error: null,
+                time: new Date().getTime(),
+                tenant
+            })),
 
             catchError(() => of(null)),
-        )
+        );
     }
 
     getReactive(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
+        const idbGet = this.collectionAPI.get(tenant, url);
+
         const idbGetReactive = this.collectionAPI.getReactive(tenant, url);
 
-        const apiFetch = this.downloadRetrieve(tenant, url, params);
+        const apiFetch = idbGet.pipe(
+
+            switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
+
+            startWith(null),
+        );
 
         return apiFetch.pipe(
 
@@ -212,10 +248,17 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     get(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
-        return this.getReactive(tenant, url, params).pipe(
+        const idbGet = this.collectionAPI.get(tenant, url);
 
-            take(1),
-        )
+        const apiFetch = idbGet.pipe(
+
+            switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
+        );
+
+        return apiFetch.pipe(
+
+            switchMap(() => idbGet)
+        );
     }
 
     //////////////
@@ -233,12 +276,19 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             catchError(() => of({count: 0, results: []} as ListResponse<T>)),
 
-            switchMap(networkRes => combineLatest([of(networkRes), this.collectionAPI.collection$]).pipe(take(1))),
+            switchMap(networkRes => combineLatest([of(networkRes), this.collectionAPI.collection$])),
 
             switchMap(([networkRes, col]) => {
 
                 // map network data to doctype
-                const docs: PwaDocType<T>[] = networkRes.results.map(d => ({tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${d.id}`, data: d, time: new Date().getTime(), method: 'GET', error: null, tenant}));
+                const docs: PwaDocType<T>[] = networkRes.results.map(d => ({
+                    tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${d.id}`,
+                    data: d,
+                    method: 'GET',
+                    error: null,
+                    time: new Date().getTime(),
+                    tenant
+                }));
 
                 return from(col.bulkInsert(docs)).pipe(
 
@@ -268,6 +318,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             switchMap(idbRes => this.downloadList(idbRes, tenant, url, params)),
 
             tap(v => apiCount = v.apiCount),
+
+            startWith(null),
         );
 
         return apiFetch.pipe(
@@ -279,10 +331,26 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<PwaListResponse<T>> {
 
-        return this.listReactive(tenant, url, params, validQueryKeys).pipe(
+        let apiCount = 0;
 
-            take(1),
-        )
+        const idbFetchOne = this.collectionAPI.list(tenant, url, params, validQueryKeys);
+
+        const apiFetch = idbFetchOne.pipe(
+
+            switchMap(idbRes => this.downloadList(idbRes, tenant, url, params)),
+
+            tap(v => apiCount = v.apiCount),
+        );
+
+        return apiFetch.pipe(
+
+            switchMap(() => idbFetchOne),
+
+            map(res => ({
+                count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
+                results: res.results
+            }))
+        );
     }
 
 }

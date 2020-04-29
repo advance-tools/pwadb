@@ -10,6 +10,9 @@ export const hostURL = 'http://localhost:8000/api';
 // Database
 ////////////////////
 export interface MyDatabase {
+    cities: PwaCollection<City>,
+    states: PwaCollection<State>,
+    currencies: PwaCollection<Currency>,
     countries: PwaCollection<Country>,
     tenants: PwaCollection<Profile>,
 }
@@ -19,6 +22,9 @@ export interface MyDatabase {
 ////////////////////
 
 export enum Collections {
+    cities = 'cities',
+    states = 'states',
+    currency = 'currencies',
     country = 'countries',
     tenant = 'tenants',
 }
@@ -44,4 +50,42 @@ export interface Country {
     my_currency__name: string,
     created_at: string,
     updated_at: string
+}
+
+export interface Currency {
+    id: string;
+    name: string;
+    symbol: string;
+    decimal_places: number;
+    code: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface State {
+    id: string;
+    name: string;
+    gst_code: string;
+    my_country_id: string;
+    my_country__name: string;
+    my_country__code: string;
+    my_country__my_currency_id: string;
+    my_country__my_currency__name: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface City {
+    id: string;
+    name: string;
+    my_state_id: string;
+    my_state__name: string;
+    my_state__gst_code: string;
+    my_state__my_country_id: string;
+    my_state__my_country__name: string;
+    my_state__my_country__code: string;
+    my_state__my_country__my_currency_id: string;
+    my_state__my_country__my_currency__name: string;
+    created_at: string;
+    updated_at: string;
 }

@@ -2,6 +2,7 @@
  * Public API Surface of pwadb-api-lib
  */
 
+export * from './lib/apis/currency.service';
 export * from './lib/apis/countries.service';
 export * from './lib/apis/database.service';
 export * from './lib/apis/profile.service';

@@ -6,6 +6,7 @@ import { CountryListComponent } from './components/countries/list/country-list.c
 import { CountryDetailComponent } from './components/countries/detail/country-detail.component';
 import { TreeExampleComponent } from './components/tree-example/tree-example.component';
 import { CanActivateRouteGuard } from './guards/profile.guard';
+import { TreeExampleReactiveComponent } from './components/tree-example-reactive/tree-example-reactive.component';
 
 const routes: Routes = [
     {
@@ -30,6 +31,11 @@ const routes: Routes = [
     {
         path: 'tree-example',
         component: TreeExampleComponent,
+        canActivate: [CanActivateRouteGuard]
+    },
+    {
+        path: 'tree-example-reactive',
+        component: TreeExampleReactiveComponent,
         canActivate: [CanActivateRouteGuard]
     },
     {

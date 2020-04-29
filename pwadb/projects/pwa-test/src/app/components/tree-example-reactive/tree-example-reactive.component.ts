@@ -8,12 +8,12 @@ import { Subscription } from 'rxjs';
 type NestedDocuments = Country | State | City;
 
 @Component({
-    selector: 'app-tree-example',
-    templateUrl: './tree-example.component.html',
-    styleUrls: ['./tree-example.component.css'],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    selector: 'app-tree-example-reactive',
+    templateUrl: './tree-example-reactive.component.html',
+    styleUrls: ['./tree-example-reactive.component.css'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TreeExampleComponent implements OnDestroy {
+export class TreeExampleReactiveComponent implements OnDestroy {
 
     treeControl: FlatTreeControl<DynamicFlatNode<NestedDocuments>>;
     treeFlattener: MatTreeFlattener<TreeNode<NestedDocuments>, DynamicFlatNode<NestedDocuments>>;
@@ -52,7 +52,7 @@ export class TreeExampleComponent implements OnDestroy {
 
         this.subs = new Subscription();
 
-        this.database = this.c.getTreeDatabase(5);
+        this.database = this.c.getTreeReactiveDatabase(5);
 
         const subs = this.database.dataChange.subscribe(v => this.dataSource.data = v);
 

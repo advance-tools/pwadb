@@ -15,9 +15,9 @@ export type FieldDataType = string | number | boolean | null;
 ////////////////
 export function parseNumber(fieldValue: FieldDataType, inputValue: string) {
 
-    const parsedFieldValue = parseFloat(fieldValue?.toString() || '');
+    const parsedFieldValue = Number(fieldValue?.toString() || '');
 
-    const parsedInputValue = parseFloat(inputValue?.toString() || '');
+    const parsedInputValue = Number(inputValue?.toString() || '');
 
     return isNaN(parsedFieldValue) && isNaN(parsedInputValue) ? null : {parsedFieldValue, parsedInputValue};
 }
@@ -135,7 +135,7 @@ export const iexact     = (v: PwaDocument<any>, field: string, inputValue: strin
 
 export const exact      = (v: PwaDocument<any>, field: string, inputValue: string) => !!(v.data[field] as FieldDataType).toString().match(new RegExp(`^${inputValue}$`));
 
-export const icontains  = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().toLowerCase().includes(inputValue);
+export const icontains  = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().toLowerCase().includes(inputValue.toLowerCase());
 
 export const contains   = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().includes(inputValue);
 
@@ -186,38 +186,94 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
 
     if (params) {
 
-        params.keys().forEach(k => {
-    
+        const keys = params.keys();
+
+        //////////////
+        // Filters (1)
+        //////////////
+        keys.forEach(k => {
+            
             if (validQueryKeys.indexOf(k) > -1) {
-    
+
                 const query = getQuery(k, params.getAll(k).join(','));
-    
-                if (query.queryType === 'distinct') {
-    
-                    docs = distinct(query.fields, docs);
-    
-                } else if (query.queryType === 'filter') {
-    
-                    docs = filter(query.fields[0], query.inputValue, docs, query.lookup);
-    
-                } else if (query.queryType === 'exclude') {
-    
-                    docs = exclude(query.fields[0], query.inputValue, docs, query.lookup);
-    
-                } else if (query.queryType === 'order_by') {
-    
-                    docs = orderBy(query.fields, docs);
-                }
-            }
+           
+                if (query.queryType === 'filter') docs = filter(query.fields[0], query.inputValue, docs, query.lookup); 
+            } 
         });
+
+        ///////////////
+        // Exclude (2)
+        ///////////////
+
+        keys.forEach(k => {
+            
+            if (validQueryKeys.indexOf(k) > -1) {
+
+                const query = getQuery(k, params.getAll(k).join(','));
+           
+                if (query.queryType === 'exclude') docs = exclude(query.fields[0], query.inputValue, docs, query.lookup); 
+            } 
+        });
+
+        ////////////////
+        // Order By (3)
+        ////////////////
+
+        keys.forEach(k => {
+            
+            if (validQueryKeys.indexOf(k) > -1) {
+
+                const query = getQuery(k, params.getAll(k).join(','));
+           
+                if (query.queryType === 'order_by') docs = orderBy(query.fields, docs); 
+            } 
+        });
+
+        ////////////////
+        // Distinct (4)
+        ////////////////
+
+        keys.forEach(k => {
+            
+            if (validQueryKeys.indexOf(k) > -1) {
+
+                const query = getQuery(k, params.getAll(k).join(','));
+           
+                if (query.queryType === 'distinct') docs = distinct(query.fields, docs); 
+            } 
+        });
+
+
+        // params.keys().forEach(k => {
+    
+        //     if (validQueryKeys.indexOf(k) > -1) {
+    
+        //         const query = getQuery(k, params.getAll(k).join(','));
+    
+        //         if (query.queryType === 'distinct') {
+    
+        //             docs = distinct(query.fields, docs);
+    
+        //         } else if (query.queryType === 'filter') {
+    
+        //             docs = filter(query.fields[0], query.inputValue, docs, query.lookup);
+    
+        //         } else if (query.queryType === 'exclude') {
+    
+        //             docs = exclude(query.fields[0], query.inputValue, docs, query.lookup);
+    
+        //         } else if (query.queryType === 'order_by') {
+    
+        //             docs = orderBy(query.fields, docs);
+        //         }
+        //     }
+        // });
     }
 
     return docs;
 }
 
 export function filter(field: string, inputValue: string, docs: PwaDocument<any>[], lookup?: Lookup) {
-
-    debugger;
 
     // in lookup would same as eq with OR values
     let f = (v: PwaDocument<any>) => inputValue.split(',').reduce((acc, cur) => acc || eq(v, field, cur), false);

@@ -7,8 +7,6 @@
 <div fxLayout="column" class="example-table-container">
 
   <div fxLayout="row">
-
-    <button mat-button (click)="tableDatabase.refresh()">Refresh</button>
   
     <button mat-button (click)="tableDatabase.reset()">Reset</button>
 
@@ -148,7 +146,7 @@
       </ng-container>
     
       <mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></mat-header-row>
-      <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+      <mat-row *matRowDef="let row; columns: displayedColumns;" [routerLink]="[row.data.id]" [class.pending-color]="row?.method !== 'GET'" [matTooltip]="row?.method"></mat-row>
       <mat-row *matRowDef="let row; columns: ['loadMore']; when: isLoadMore;"></mat-row>
   </mat-table>
   

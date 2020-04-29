@@ -1,10 +1,13 @@
-import { PwaCollectionAPI, PwaDocument, PwaListResponse, DatabaseService, Database, ReactiveDatabase } from 'pwadb-lib';
-import { Country, MyDatabase, Collections, hostURL } from '../resources/schema.resource';
+import { PwaCollectionAPI, PwaDocument, PwaListResponse, DatabaseService, Database, ReactiveDatabase, TreeDatabase } from 'pwadb-lib';
+import { Country, MyDatabase, Collections, hostURL, State, City } from '../resources/schema.resource';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { DatabaseService as APIDatabaseService } from './database.service';
 import { Observable } from 'rxjs';
 import { ProfileApiService } from './profile.service';
+import { StatesApiService } from './states.service';
+import { CitiesApiService } from './cities.service';
+import { CurrencyApiService } from './currency.service';
 
 @Injectable({
     providedIn: 'root',
@@ -36,9 +39,18 @@ export class CountriesApiService extends PwaCollectionAPI<Country, MyDatabase> i
         'name.isnull',
         'name.startswith',
         'name.endswith',
+
+        'exclude:id',
     ];
 
-    constructor(private dbService: APIDatabaseService, private httpService: HttpClient, private profileService: ProfileApiService) {
+    constructor(
+        private dbService: APIDatabaseService,
+        private httpService: HttpClient,
+        private profileService: ProfileApiService,
+        private statesApiService: StatesApiService,
+        private citiesApiService: CitiesApiService,
+        private currencyApiService: CurrencyApiService,
+    ) {
 
         super(Collections.country, dbService.db$, httpService);
 
@@ -79,6 +91,10 @@ export class CountriesApiService extends PwaCollectionAPI<Country, MyDatabase> i
         return this.collectionAPI.delete(this.profileService.id, `${hostURL}/countries-base/${id}`)
     }
 
+    /////////////////
+    // Table
+    /////////////////
+
     getDatabase(limit=20): Database<Country> {
 
         return new Database(this, limit);
@@ -87,5 +103,58 @@ export class CountriesApiService extends PwaCollectionAPI<Country, MyDatabase> i
     getReactiveDatabase(limit=20): ReactiveDatabase<Country> {
 
         return new ReactiveDatabase(this, limit);
+    }
+
+    /////////////////
+    // Tree
+    /////////////////
+
+    getTreeDatabase(limit=20): TreeDatabase<Country | State | City> {
+
+        return new TreeDatabase({
+            countries: {
+                getDatabase: this.getDatabase.bind(this, limit),
+                children: {
+                    states: {
+                        getDatabase: this.statesApiService.getDatabase.bind(this.statesApiService, limit),
+                        onCreationSetup: (parentDoc, db, params) => db.httpParams = params.set('my_country_id', parentDoc.data.id),
+                        children: {
+                            cities: {
+                                getDatabase: this.citiesApiService.getDatabase.bind(this.citiesApiService, limit),
+                                onCreationSetup: (parentDoc, db, params) => db.httpParams = params.set('my_state_id', parentDoc.data.id),
+                                children: {}
+                            }
+                        }
+                    }
+                }
+            }
+        }, limit);
+    }
+
+    getTreeReactiveDatabase(limit=20): TreeDatabase<Country | State | City> {
+
+        return new TreeDatabase({
+            countries: {
+                getDatabase: this.getReactiveDatabase.bind(this, limit),
+                children: {
+                    states: {
+                        getDatabase: this.statesApiService.getReactiveDatabase.bind(this.statesApiService, limit),
+                        onCreationSetup: (parentDoc, db, params) => db.httpParams = params.set('my_country_id', parentDoc.data.id),
+                        children: {
+                            cities: {
+                                getDatabase: this.citiesApiService.getReactiveDatabase.bind(this.citiesApiService, limit),
+                                onCreationSetup: (parentDoc, db, params) => db.httpParams = params.set('my_state_id', parentDoc.data.id),
+                                children: {}
+                            }
+                        }
+                    },
+                    currencies: {
+                        getDatabase: this.currencyApiService.getReactiveDatabase.bind(this.currencyApiService, limit),
+                        onCreationSetup: (parentDoc, db, params) => (parentDoc as PwaDocument<Country>).data.my_currency_id ? db.httpParams = params.set('id', (parentDoc as PwaDocument<Country>).data.my_currency_id) : db.httpParams = params,
+                        children: {}
+                    }
+                }
+            }
+        }, limit);
     }
 }

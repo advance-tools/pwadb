@@ -2,7 +2,7 @@ import { BehaviorSubject, Observable, Subscription, combineLatest, Subject } fro
 import { PwaDocument } from '../definitions/document';
 import { HttpParams } from '@angular/common/http';
 import { PwaListResponse } from '../definitions/collection';
-import { switchMap, tap, filter, debounceTime, shareReplay} from 'rxjs/operators';
+import { switchMap, tap, filter, debounceTime, shareReplay, map, startWith} from 'rxjs/operators';
 
 /////////////////////
 // Interfaces
@@ -22,15 +22,10 @@ export interface DatabaseService<T extends DatabaseDatatype> {
 	getDatabase?: (limit?: number) => Database<T>;
 
 	getReactiveDatabase?: (limit?: number) => ReactiveDatabase<T>;
-
-	// getTreeLoadMoreDatabase?: (limit?: number) => TreeLoadMoreDatabase<T>;
 }
-
-export const LOAD_MORE = 'LOAD_MORE';
 
 export interface IBaseDatabase {
 	reset: () => void;
-	refresh: () => void;
 	initialise: () => void;
 	loadMore: () => void;
 	stop: () => void;
@@ -54,7 +49,7 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 
 		this._httpParams = v;
 
-		if (!this._firstTime) this.refresh();
+		if (!this._firstTime) this.reset();
 	}
 
 	get isLoading() { return this.isLoadingChange.value; }
@@ -87,16 +82,6 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 		this.initialise();
 	}
 
-	refresh() {
-
-		this._httpParams = this.httpParams.set('offset', '0');
-		this._httpParams = this.httpParams.set('limit', this.offset.toString());
-
-		if (!this.httpParams.has('order_by')) this._httpParams = this.httpParams.set('order_by', 'updated_at');
-
-		this.data = [];
-	}
-
 	loadMore() {
 
 		this._httpParams = this.httpParams.set('offset', this.offset.toString());
@@ -119,10 +104,10 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
 	private queueChange: Subject<HttpParams>;
 
-	constructor(private apiService: DatabaseService<T>, private _limit = 100) {
+	constructor(private apiService: DatabaseService<T>, private _limit = 20) {
 
 		super(_limit);
-	
+
 		this.queueChange = new Subject();
 
 		const subs = this.queueChange.pipe(
@@ -130,7 +115,7 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 			tap(() => this.isLoadingChange.next(true)),
 
 			switchMap(httpParams => this.apiService.fetch(httpParams)),
-			
+
 		).subscribe(res => {
 
 			if (!this.isLoading) this.isLoadingChange.next(true);
@@ -143,15 +128,6 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 		});
 
 		this.subs.add(subs);
-	}
-
-	refresh() {
-
-		if (this.isLoading) return;
-
-		super.refresh();
-
-		this.queueChange.next(this.httpParams);
 	}
 
 	loadMore() {
@@ -174,10 +150,10 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 	get queue() { return this.queueChange.value; }
 	set queue(v: Observable<PwaListResponse<T>>[]) { this.queueChange.next(v); }
 
-	constructor(private apiService: DatabaseService<T>, private _limit = 100) {
+	constructor(private apiService: DatabaseService<T>, private _limit = 20) {
 
 		super(_limit);
-	
+
 		this.queueChange = new BehaviorSubject([]);
 
 		this.params = [];
@@ -223,19 +199,6 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 		super.reset();
 	}
 
-	refresh() {
-
-		if (this.isLoading) return;
-
-		super.refresh();
-
-		// refresh params
-		this.params = this.params.map(v => this.httpParams.set('offset', v.get('offset')).set('limit', v.get('limit')))
-
-		// refresh all views
-		this.queue = this.params.map(v => this.getView(v));
-	}
-
 	loadMore() {
 
 		if (!this.isLoadable || this.isLoading) return;
@@ -258,102 +221,272 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 // Tree
 ///////////////////////////
 
-// /** Flat node with expandable and level information */
-// export class LoadMoreFlatNode<T extends DatabaseDatatype> {
-//     constructor(
-//         public doc: PwaDocument<T> | string,
-//         public level = 1,
-// 		public expandable = false,
-// 		public database: TreeLoadMoreDatabase<T>,
-//     ) {}
-// }
+export type TreeNode<T extends DatabaseDatatype> = {item: PwaDocument<T>, children: TreeNode<any>[]};
 
-// export type TreeMap<T extends DatabaseDatatype> = Map<string | PwaDocument<T>, TreeLoadMoreDatabase<T> | TreeMap<any>[]>;
+export interface DatabaseInformation<T extends DatabaseDatatype> {
+	getDatabase: (limit?: number) => Database<T> | ReactiveDatabase<T>;
+	onCreationSetup?: (parentDoc: PwaDocument<T>, db: Database<T> | ReactiveDatabase<T>, params: HttpParams) => void;
+	children: TreeInformation<T>;
+}
 
-// export interface DatabaseInformation<T extends DatabaseDatatype> {
-// 	apiService: DatabaseService<T>;
-// 	onCreation: (parentDoc: PwaDocument<T>, db: TreeLoadMoreDatabase<T>, params: HttpParams) => void
-// }
+export interface TreeInformation<T extends DatabaseDatatype> {
+	[key: string]: DatabaseInformation<T>;
+}
 
-// export interface ChildTreeInformation<T extends DatabaseDatatype> {
-// 	[key: string]: DatabaseInformation<T>;
-// }
+export class TreeDatabase<T extends DatabaseDatatype> {
 
-// export class TreeLoadMoreDatabase<T extends DatabaseDatatype> extends TableDatabase<T> {
+	dataChange: BehaviorSubject<TreeNode<T>[]>;
+	databaseMap: Map<PwaDocument<T>, Database<T> | ReactiveDatabase<T>>;
 
-// 	dataMapChange: BehaviorSubject<TreeMap<T>>;
+	subs: Subscription;
+
+	private _firstTime = true;
+	private childTreeMap: Map<PwaDocument<T>, Observable<TreeNode<T>>>;
+	private _httpParams: HttpParams;
+
+    get data() { return this.dataChange.value; }
+	set data(v: TreeNode<T>[]) { this.dataChange.next(v); }
+
+	get httpParams() { return this._httpParams; }
+	set httpParams(v: HttpParams) {
+
+		this._httpParams = v;
+
+		if (!this._firstTime) this.reset();
+	}
+
+    constructor(private treeInfo: TreeInformation<T>, private limit = 20) {
+
+		this.databaseMap  = new Map();
+		this.childTreeMap = new Map();
+		this._httpParams  = new HttpParams();
+		this.dataChange   = new BehaviorSubject([]);
+
+		this.subs = new Subscription();
+	}
+
+	buildTree(treeInfo: TreeInformation<T>, parentDoc: PwaDocument<T> = null, params = new HttpParams()): Observable<TreeNode<T>[]> {
+
+		const treeNodes = Object.keys(treeInfo).map(key => {
+
+			const db = treeInfo[key].getDatabase();
+
+			// extract http params
+			const keys = params.keys().filter(pk => pk && pk.includes(`${key}--`));
+
+			// create new params associated to this database
+			let childParams = new HttpParams();
+
+			// set params
+			keys.forEach(pk => childParams = childParams.set(pk.split(`${key}--`)[1], params.getAll(pk).join(',')));
+
+			// run callback
+			if (parentDoc && treeInfo[key].onCreationSetup) treeInfo[key].onCreationSetup(parentDoc, db, childParams);
+
+			if (!treeInfo[key].onCreationSetup) db.httpParams = childParams;
+
+			// initialise db
+			db.initialise();
+
+			return db.dataChange.pipe(
+
+				switchMap(docs => {
+					
+					const obs = docs.map(doc => {
+
+						///////////////////
+						// Database Map
+						///////////////////
+						if (!this.databaseMap.has(doc)) this.databaseMap.set(doc, db);
+
+						///////////////////
+						// Child Tree
+						///////////////////
+
+						if (!this.childTreeMap.has(doc)) {
+
+							const childTree = this.buildTree(treeInfo[key].children, doc, childParams).pipe(
+
+								map(nodes => ({item: doc, children: nodes} as TreeNode<T>)),
+							);
+
+							this.childTreeMap.set(doc, childTree);
+						}
+
+						return this.childTreeMap.get(doc);
+
+					});
+
+					return combineLatest(obs);
+				}),
+			);
+		});
+
+		return combineLatest(treeNodes).pipe(
+
+			map(nodes => nodes.reduce((acc, cur) => acc.concat(cur), [])),
+
+			startWith([]),
+		)
+	}
+
+	initialise() {
+
+		this._firstTime = true;
+
+		const subs = this.buildTree(this.treeInfo, null, this.httpParams).subscribe(v => this.data = v);
+
+		this.subs.add(subs);
+
+		this._firstTime = false;
+	}
+
+	reset() {
+
+		this.stop();
+
+		this.databaseMap  = new Map();
+		this.childTreeMap = new Map();
+
+		this.initialise();
+	}
+
+	stop() {
+
+		this.databaseMap.forEach(v => v.stop());
+
+		this.subs.unsubscribe();
+	}
+
+}
+
+
+// export class TreeReactiveDatabase<T extends DatabaseDatatype> extends ReactiveDatabase<T> {
+
+// 	dataMapChange: BehaviorSubject<TreeNode<T>[]>;
+// 	databaseMap: Map<PwaDocument<any>, TreeReactiveDatabase<any>>
+// 	childDatabaseMap: Map<PwaDocument<any>, TreeReactiveDatabase<any>[]>;
 
 //     get dataMap() { return this.dataMapChange.value; }
-// 	set dataMap(v: TreeMap<T>) { this.dataMapChange.next(v); }
+// 	set dataMap(v: TreeNode<T>[]) { this.dataMapChange.next(v); }
 
 //     constructor(
-//       private _apiService: DatabaseService<T>,
-//       private childTreeInfo: ChildTreeInformation<any>,
-//       private _limit = 100
+// 		private __apiService: DatabaseService<T>,
+// 		private childTreeInfo: ChildTreeInformation<any>,
+// 		private __limit = 100
 //     ) {
 
-// 		super(_apiService, _limit);
+// 		super(__apiService, __limit);
 
-// 		this.dataMapChange = new BehaviorSubject(new Map());
+// 		this.databaseMap 		= new Map();
+// 		this.childDatabaseMap 	= new Map();
+// 		this.dataMapChange 		= new BehaviorSubject([]);
 
 // 		const subs = this.dataChange.pipe(
 
-// 			switchMap(docs => from(docs)),
+// 			switchMap(docs => {
 
-// 			filter(doc => typeof doc !== 'string' && !this.dataMap.has(doc)),
+// 				const obs = docs.map(doc => {
 
-// 			switchMap((doc: PwaDocument<T>) => {
+// 					///////////////////
+// 					// Database Map
+// 					///////////////////
+// 					if (!this.databaseMap.has(doc)) this.databaseMap.set(doc, this);
 
-// 				// create databases for each document
-// 				const childDatabases = Object.keys(this.childTreeInfo).map(k => {
+// 					/////////////////////
+// 					// ChildDatabase Map
+// 					/////////////////////
 
-// 					const db = this.childTreeInfo[k].apiService.getTreeLoadMoreDatabase();
+// 					const exisitingDatabase = this.childDatabaseMap.get(doc);
 
-// 					// extract http params
-// 					const keys = this.httpParams.keys().filter(k => k.includes(`${k}_`));
+// 					let curTreeDatabases: TreeReactiveDatabase<any>[];
 
-// 					let childParams = new HttpParams();
+// 					if (!exisitingDatabase) {
 
-// 					keys.forEach(k => childParams = childParams.set(k.split(`${k}_`)[1], this.httpParams.get(k)));
+// 						// create databases for each document
+// 						curTreeDatabases = Object.keys(this.childTreeInfo).map(k => {
+		
+// 							const db = this.childTreeInfo[k].apiService.getTreeReactiveDatabase(this.__limit);
+	
+// 							// extract http params
+// 							const keys = this.httpParams.keys().filter(pk => pk.includes(`${k}_`));
+	
+// 							let childParams = new HttpParams();
+	
+// 							keys.forEach(pk => childParams = childParams.set(pk.split(`${pk}_`)[1], this.httpParams.getAll(pk).join(',')));
+	
+// 							// do on-creation for each childDatabase
+// 							this.childTreeInfo[k].onCreation(doc, db, childParams);
+	
+// 							db.initialise();
+	
+// 							return db;
+// 						});
 
-// 					// do on-creation for each childDatabase
-// 					this.childTreeInfo[k].onCreation(doc, db, childParams);
+// 						this.childDatabaseMap.set(doc, curTreeDatabases);
 
-// 					return db;
+// 					} else {
+
+// 						curTreeDatabases = exisitingDatabase;
+// 					}
+
+// 					if (curTreeDatabases.length === 0) return of({item: doc, children: []});
+
+// 					return combineLatest(curTreeDatabases.map(v => v.dataMapChange)).pipe(
+
+// 						tap(() => curTreeDatabases.forEach(v => [...v.databaseMap.entries()].forEach(([ndoc, ndb]) => { if (!this.databaseMap.has(ndoc)) this.databaseMap.set(ndoc, ndb); }))),
+
+// 						tap(() => curTreeDatabases.forEach(v => [...v.childDatabaseMap.entries()].forEach(([ndoc, ndb]) => { if (!this.childDatabaseMap.has(ndoc)) this.childDatabaseMap.set(ndoc, ndb); }) )),
+
+// 						map(children => children.reduce((acc, cur) => acc.concat(cur), [])),
+
+// 						map(children => ({item: doc, children})),
+
+// 					);
 // 				});
 
-// 				return combineLatest(childDatabases.map(v => v.dataMapChange)).pipe(
-
-// 					map(maps => ({doc, maps}))
-
-// 				);
+// 				return combineLatest(obs);
 // 			}),
 
-// 		).subscribe(v => {
 
-// 			this.dataMap.set(v.doc, v.maps)
+// 		).subscribe((v: TreeNode<T>[]) => this.dataMap = v);
 
-// 			if (this.isLoadable) {
-
-// 				this.dataMap.set(LOAD_MORE, this);
-
-// 			} else {
-
-// 				this.dataMap.delete(LOAD_MORE);
-// 			}
-
-// 			this.dataMap = this.dataMap;
-// 		});
-
-// 		this._apiService.subs.add(subs);
-
+// 		this.subs.add(subs);
 // 	}
 
 // 	reset() {
 
-// 		this.dataMap = new Map();
+// 		this.childDatabaseMap.forEach(v => v.forEach(d => d.stop()));
+
+// 		this.databaseMap 		= new Map();
+// 		this.childDatabaseMap 	= new Map();
 
 // 		super.reset();
 // 	}
 
+// 	stop() {
+
+// 		this.childDatabaseMap.forEach(v => v.forEach(d => d.stop()));
+
+// 		this.databaseMap 		= new Map();
+// 		this.childDatabaseMap 	= new Map();
+
+// 		super.stop();
+// 	}
+
 // }
+
+/////////////////////
+// DataSource
+/////////////////////
+
+export const LOAD_MORE = 'LOAD_MORE';
+
+/** Flat node with expandable and level information */
+export class DynamicFlatNode<T extends DatabaseDatatype> {
+    constructor(
+        public item: PwaDocument<T> | string,
+        public level = 1,
+		public expandable = false,
+    ) {}
+}

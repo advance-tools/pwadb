@@ -58,6 +58,7 @@ import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CanActivateRouteGuard } from './guards/profile.guard';
 import { StringFilterComponent } from './components/countries/list/string-filter.component';
 import { NumericFilter } from './components/countries/list/numeric-filter.component';
+import { TreeExampleReactiveComponent } from './components/tree-example-reactive/tree-example-reactive.component';
 
 
 @NgModule({
@@ -68,6 +69,7 @@ import { NumericFilter } from './components/countries/list/numeric-filter.compon
     CountryListComponent,
     DashboardComponent,
     TreeExampleComponent,
+    TreeExampleReactiveComponent,
     StringFilterComponent,
     NumericFilter,
   ],

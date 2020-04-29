@@ -12,8 +12,6 @@ export class PwaDatabaseService<T> {
 
     retrySync: BehaviorSubject<boolean>;
 
-    evictionDays = 14;
-
     constructor(private httpClient: HttpClient, dbCreator: RxDatabaseCreator = {
         name: 'pwadb',
         adapter: 'idb',
@@ -105,19 +103,19 @@ export class PwaDatabaseService<T> {
 
     }
 
-    evict(collectionNames: string[]): Observable<PwaDocument<any>[]> {
+    evict(collectionInfo: {name: string, evictionDays?: number, skip?: number}[]): Observable<PwaDocument<any>[]> {
 
         return this.db$.pipe(
 
-            map(db => collectionNames.map(k => db[k]) as PwaCollection<any>[]),
-
-            map(cols => cols.map(c => {
+            map(db => collectionInfo.map(k => {
+                
+                const col = db[k.name] as PwaCollection<any>;
 
                 const today = new Date();
 
-                const evictionTime = new Date(today.setDate(today.getDate() - this.evictionDays)).getTime();
+                const evictionTime = new Date(today.setDate(today.getDate() - (k.evictionDays || 14))).getTime();
 
-                return c.find({$and: [{method: {$eq: 'GET'}}, {time: {$lt: evictionTime}}]}).remove();
+                return col.find({$and: [{method: {$eq: 'GET'}}, {time: {$lt: evictionTime}}]}).skip(k.skip || 0).remove();
             })),
 
             switchMap(v => forkJoin(...v))

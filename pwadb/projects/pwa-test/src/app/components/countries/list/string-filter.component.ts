@@ -47,12 +47,12 @@ export class StringFilterComponent implements OnDestroy {
 
             this.elements = v;
 
-            this.selectStringFilter();
             this.cd.markForCheck();
         });
 
         this.subs.add(subs);
-        
+
+        this.selectStringFilter();
 
         this.distinctDatabase.httpParams = this.distinctDatabase.httpParams.set('distinct', this.fieldName);
         this.distinctDatabase.initialise();
