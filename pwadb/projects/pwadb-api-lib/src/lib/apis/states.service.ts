@@ -5,7 +5,6 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { DatabaseService as APIDatabaseService } from './database.service';
 import { Observable } from 'rxjs';
 import { ProfileApiService } from './profile.service';
-import { CitiesApiService } from './cities.service';
 
 @Injectable({
     providedIn: 'root',

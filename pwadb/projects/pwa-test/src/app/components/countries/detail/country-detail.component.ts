@@ -63,8 +63,6 @@ export class CountryDetailComponent implements OnDestroy {
 
         this.crDatabase = this.cr.getDatabase();
 
-        this.crDatabase.initialise();
-
         /////////////////
         // Subscriptions
         /////////////////
@@ -114,8 +112,6 @@ export class CountryDetailComponent implements OnDestroy {
     }
 
     ngOnDestroy() {
-
-        this.crDatabase.stop();
 
         this.subs.unsubscribe();
     }

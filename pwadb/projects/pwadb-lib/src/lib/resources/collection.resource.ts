@@ -1,6 +1,6 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, take, tap, share, catchError, startWith } from 'rxjs/operators';
+import { switchMap, map, take, tap, share, catchError, startWith, shareReplay } from 'rxjs/operators';
 import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -42,9 +42,13 @@ export class RestAPI<T extends Datatype> {
 
 export class CollectionAPI<T extends Datatype, Database> {
 
+    cache: Map<string, Observable<PwaDocument<T>[]>>;
+
     collection$: Observable<PwaCollection<T>>;
 
     constructor(private name: string, private db$: Observable<RxDatabase<Database>>) {
+
+        this.cache = new Map();
 
         this.collection$ = this.db$.pipe(
 
@@ -54,7 +58,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             take(1),
 
-            share(),
         );
 
     }
@@ -62,6 +65,25 @@ export class CollectionAPI<T extends Datatype, Database> {
     makeTenantUrl(tenant: string, url: string) {
 
         return `${tenant}-${url}`;
+    }
+
+    getDocuments(tenant: string, url: string) {
+
+        const tenantUrl = this.makeTenantUrl(tenant, url);
+
+        if (!this.cache.has(tenantUrl)) {
+
+            const docs = this.collection$.pipe(
+
+                switchMap(col => col.find({tenantUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}}).sort({time: 'desc'}).$),
+
+                shareReplay(1),
+            );
+
+            this.cache.set(tenantUrl, docs);
+        }
+
+        return this.cache.get(tenantUrl);
     }
 
     ////////////////
@@ -91,9 +113,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         const end = start + parseInt(params?.get('limit') || '100');
 
-        return this.collection$.pipe(
-
-            switchMap(col => col.find({tenantUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}}).sort({time: 'desc'}).$),
+        return this.getDocuments(tenant, url).pipe(
 
             map(docs => queryFilter(validQueryKeys, params, docs)),
 
@@ -270,7 +290,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         // Exclude locally unsynced data in the api results
         let httpParams = params || new HttpParams();
 
-        idbRes.putResults.concat(idbRes.delResults).forEach(v => httpParams = httpParams.has('exclude:id') ? httpParams.append('exclude:id', v.data.id) : httpParams.set('exclude:id', v.data.id));
+        const ids = idbRes.putResults.concat(idbRes.delResults).map(v => v.data.id);
+
+        if (ids.length > 0) httpParams = httpParams.set('exclude:id', ids.join(','));
 
         return this.restAPI.list(url, httpParams).pipe(
 

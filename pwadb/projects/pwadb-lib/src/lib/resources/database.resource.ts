@@ -1,7 +1,7 @@
 import RxDB, { RxDatabase, RxDatabaseCreator } from 'rxdb';
 import idb from 'pouchdb-adapter-idb';
 import { from, Observable, combineLatest, BehaviorSubject, forkJoin } from 'rxjs';
-import { share, map, switchMap, filter, catchError } from 'rxjs/operators';
+import { map, switchMap, filter, catchError, startWith } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { PwaCollection } from '../definitions/collection';
 import { PwaDocument } from '../definitions/document';
@@ -24,14 +24,14 @@ export class PwaDatabaseService<T> {
 
         this.db$ = from(RxDB.create(dbCreator)).pipe(
 
-            switchMap(db => from(db.waitForLeadership()).pipe(
+            switchMap((db: any) => from(db.waitForLeadership()).pipe(
+
+                startWith(null),
 
                 map(() => db),
             )),
 
-            share(),
-
-        ) as Observable<RxDatabase<T>>;
+        );
 
         this.retrySync = new BehaviorSubject(false);
     }

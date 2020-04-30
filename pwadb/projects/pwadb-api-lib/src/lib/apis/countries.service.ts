@@ -128,7 +128,7 @@ export class CountriesApiService extends PwaCollectionAPI<Country, MyDatabase> i
                     }
                 }
             }
-        }, limit);
+        });
     }
 
     getTreeReactiveDatabase(limit=20): TreeDatabase<Country | State | City> {
@@ -155,6 +155,6 @@ export class CountriesApiService extends PwaCollectionAPI<Country, MyDatabase> i
                     }
                 }
             }
-        }, limit);
+        });
     }
 }

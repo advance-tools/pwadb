@@ -34,13 +34,9 @@ export class CountryListComponent implements OnDestroy {
         const subs = this.tableDatabase.dataChange.subscribe(v => this.dataSource.data = v);
 
         this.subs.add(subs);
-
-        this.tableDatabase.initialise();
     }
 
     ngOnDestroy() {
-
-        this.tableDatabase.stop();
         
         this.subs.unsubscribe();
     }

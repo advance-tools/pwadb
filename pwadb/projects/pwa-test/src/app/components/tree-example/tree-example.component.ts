@@ -26,9 +26,9 @@ export class TreeExampleComponent implements OnDestroy {
         
         const existingNode = this.flatNodeMap.get(node.item.tenantUrl);
 
-        if (existingNode?.item !== node.item || existingNode?.expandable !== node?.children.length > 0) {
+        if (existingNode?.item !== node.item || existingNode?.expandable !== node.children.length > 0) {
 
-            const flatNode = new DynamicFlatNode(node.item, level, node?.children.length > 0);
+            const flatNode = new DynamicFlatNode(node.item, level, node.children.length > 0);
 
             this.flatNodeMap.set(node.item.tenantUrl, flatNode);
 
@@ -54,18 +54,14 @@ export class TreeExampleComponent implements OnDestroy {
 
         this.database = this.c.getTreeDatabase(5);
 
-        const subs = this.database.dataChange.subscribe(v => this.dataSource.data = v);
-
-        this.subs.add(subs);
-
         this.database.httpParams = this.database.httpParams.set('countries--states--order_by', '-name').set('countries--states--cities--order_by', '-name')
-
-        this.database.initialise();
+        
+        const subs = this.database.dataChange.subscribe(v => this.dataSource.data = v);
+        
+        this.subs.add(subs);
     }
 
     ngOnDestroy() {
-
-        this.database.stop();
 
         this.subs.unsubscribe();
     }

@@ -43,6 +43,10 @@ export class StringFilterComponent implements OnDestroy {
 
         this.subs = new Subscription();
 
+        this.distinctDatabase.httpParams = this.distinctDatabase.httpParams.set('distinct', this.fieldName);
+
+        this.selectStringFilter();
+
         const subs = this.distinctDatabase.dataChange.subscribe(v => {
 
             this.elements = v;
@@ -52,15 +56,9 @@ export class StringFilterComponent implements OnDestroy {
 
         this.subs.add(subs);
 
-        this.selectStringFilter();
-
-        this.distinctDatabase.httpParams = this.distinctDatabase.httpParams.set('distinct', this.fieldName);
-        this.distinctDatabase.initialise();
     }
 
     ngOnDestroy() {
-
-        this.distinctDatabase.stop();
 
         this.subs.unsubscribe();
     }
