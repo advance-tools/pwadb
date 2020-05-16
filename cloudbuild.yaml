@@ -1,0 +1,21 @@
+steps:
+    -
+        name: 'gcr.io/cloud-builders/npm'
+        args: ['install']
+        dir: '/workspace/pwadb'
+
+    -
+        name: 'gcr.io/cloud-builders/npm'
+        args: ['run', 'build', 'pwadb-lib', '--prod']
+        dir: '/workspace/pwadb'
+
+    -   
+        name: 'gcr.io/cloud-builders/npm'
+        entrypoint: /bin/sh
+        args:
+        - '-c'
+        - |
+            npm config set @impriyanshub:registry ${_GIT_REGISTRY} &&
+            npm config set //npm.pkg.github.com/:_authToken ${_NPM_TOKEN} &&
+            npm publish
+        dir: '/workspace/pwadb/dist/pwadb-lib'

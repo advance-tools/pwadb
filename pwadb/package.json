@@ -43,9 +43,6 @@
     "tslint": "~6.1.0",
     "typescript": "~3.8.3"
   },
-  "repository": {
-    "url": "git://github.com/impriyanshub/Books-PWA.git"
-  },
   "paths": {
     "@angular/*": [
       "./node_modules/@angular/*"

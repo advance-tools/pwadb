@@ -1,9 +1,15 @@
 {
-  "name": "pwadb-lib",
-  "version": "0.0.1",
+  "name": "@impriyanshub/pwadb-lib",
+  "version": "0.0.1-0",
   "peerDependencies": {
     "@angular/common": "^9.1.1",
     "@angular/core": "^9.1.1",
+    "pouchdb-adapter-idb": "^7.2.1",
+    "rxdb": "^8.8.0",
+    "rxjs": "^6.5.5",
     "tslib": "^1.10.0"
+  },
+  "repository": {
+    "url": "git://github.com/impriyanshub/Books-PWA.git"
   }
 }

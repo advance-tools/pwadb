@@ -1,6 +1,6 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, take, tap, share, catchError, startWith, shareReplay } from 'rxjs/operators';
+import { switchMap, map, take, tap, catchError, startWith } from 'rxjs/operators';
 import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -42,13 +42,15 @@ export class RestAPI<T extends Datatype> {
 
 export class CollectionAPI<T extends Datatype, Database> {
 
-    cache: Map<string, Observable<PwaDocument<T>[]>>;
+    documentsCache: Map<string, Observable<PwaDocument<T>[]>>;
+    documentCache: Map<string, Observable<PwaDocument<T>>>;
 
     collection$: Observable<PwaCollection<T>>;
 
     constructor(private name: string, private db$: Observable<RxDatabase<Database>>) {
 
-        this.cache = new Map();
+        this.documentsCache = new Map();
+        this.documentCache = new Map();
 
         this.collection$ = this.db$.pipe(
 
@@ -67,23 +69,40 @@ export class CollectionAPI<T extends Datatype, Database> {
         return `${tenant}-${url}`;
     }
 
-    getDocuments(tenant: string, url: string) {
+    getDocumentsFromCache(tenant: string, url: string) {
 
         const tenantUrl = this.makeTenantUrl(tenant, url);
 
-        if (!this.cache.has(tenantUrl)) {
+        if (!this.documentsCache.has(tenantUrl)) {
 
             const docs = this.collection$.pipe(
 
                 switchMap(col => col.find({tenantUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}}).sort({time: 'desc'}).$),
 
-                shareReplay(1),
             );
 
-            this.cache.set(tenantUrl, docs);
+            this.documentsCache.set(tenantUrl, docs);
         }
 
-        return this.cache.get(tenantUrl);
+        return this.documentsCache.get(tenantUrl);
+    }
+
+    getDocumentFromCache(tenant: string, url: string) {
+
+        const tenantUrl = this.makeTenantUrl(tenant, url);
+
+        if (!this.documentCache.has(tenantUrl)) {
+
+            const doc = this.collection$.pipe(
+
+                switchMap(col => col.findOne({tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}).$),
+
+            );
+
+            this.documentCache.set(tenantUrl, doc);
+        }
+
+        return this.documentCache.get(tenantUrl);
     }
 
     ////////////////
@@ -92,10 +111,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     getReactive(tenant: string, url: string): Observable<PwaDocument<T>> {
 
-        return this.collection$.pipe(
-
-            switchMap(col => col.findOne({tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}).$),
-        );
+        return this.getDocumentFromCache(tenant, url);
     }
 
     get(tenant: string, url: string): Observable<PwaDocument<T>> {
@@ -113,7 +129,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         const end = start + parseInt(params?.get('limit') || '100');
 
-        return this.getDocuments(tenant, url).pipe(
+        return this.getDocumentsFromCache(tenant, url).pipe(
 
             map(docs => queryFilter(validQueryKeys, params, docs)),
 
@@ -231,7 +247,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     downloadRetrieve(idbRes: PwaDocument<T>, tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T> | null> {
 
-        const cacheAllowedAge = new Date().getMilliseconds() - (this.cacheMaxAge * 1000);
+        const cacheAllowedAge = new Date().getTime() - (this.cacheMaxAge * 1000);
 
         if (idbRes?.method !== 'GET' || (idbRes?.time || 0) > cacheAllowedAge) return of(idbRes);
 
@@ -329,7 +345,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         let apiCount = 0;
 
-        const idbFetchOne = this.collectionAPI.list(tenant, url, params, validQueryKeys);
+        const idbFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys);
 
         const idbFetchReactive = this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
 
@@ -339,7 +355,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             }))
         );
 
-        const apiFetch = idbFetchOne.pipe(
+        const apiFetch = idbFetch.pipe(
 
             switchMap(idbRes => this.downloadList(idbRes, tenant, url, params)),
 
@@ -359,9 +375,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         let apiCount = 0;
 
-        const idbFetchOne = this.collectionAPI.list(tenant, url, params, validQueryKeys);
+        const idbFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys);
 
-        const apiFetch = idbFetchOne.pipe(
+        const apiFetch = idbFetch.pipe(
 
             switchMap(idbRes => this.downloadList(idbRes, tenant, url, params)),
 
@@ -370,7 +386,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return apiFetch.pipe(
 
-            switchMap(() => idbFetchOne),
+            switchMap(() => idbFetch),
 
             map(res => ({
                 count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,

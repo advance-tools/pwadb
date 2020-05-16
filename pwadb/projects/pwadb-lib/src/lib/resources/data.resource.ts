@@ -65,7 +65,7 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 		this._httpParams = this.httpParams.set('offset', '0');
 		this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
-		if (!this.httpParams.has('order_by')) this._httpParams = this.httpParams.set('order_by', 'updated_at');
+		if (!this.httpParams.has('order_by')) this._httpParams = this.httpParams.set('order_by', '-updated_at');
 	}
 
 	loadMore() {
@@ -73,7 +73,7 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 		this._httpParams = this.httpParams.set('offset', this.offset.toString());
 		this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
-		if (!this.httpParams.has('order_by')) this._httpParams = this.httpParams.set('order_by', 'updated_at');
+		if (!this.httpParams.has('order_by')) this._httpParams = this.httpParams.set('order_by', '-updated_at');
 	}
 
 }
@@ -113,12 +113,15 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 			map(() => this.data),
 
 			shareReplay(1),
+
 		);
 	}
 
 	reset() {
 
 		super.reset();
+
+		this.data = [];
 
 		this.queueChange.next(this.httpParams);
 	}
@@ -168,7 +171,7 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 			
 			map(() => this.data),
 
-			shareReplay(1)
+			shareReplay(1),
 
 		);
 	}

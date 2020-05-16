@@ -1,6 +1,6 @@
 import RxDB, { RxDatabase, RxDatabaseCreator } from 'rxdb';
 import idb from 'pouchdb-adapter-idb';
-import { from, Observable, combineLatest, BehaviorSubject, forkJoin } from 'rxjs';
+import { from, Observable, combineLatest, BehaviorSubject, forkJoin, empty } from 'rxjs';
 import { map, switchMap, filter, catchError, startWith } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { PwaCollection } from '../definitions/collection';
@@ -10,7 +10,8 @@ export class PwaDatabaseService<T> {
 
     db$: Observable<RxDatabase<T>>;
 
-    retrySync: BehaviorSubject<boolean>;
+    private retryChange: BehaviorSubject<boolean>;
+    private retryTrigger = false;
 
     constructor(private httpClient: HttpClient, dbCreator: RxDatabaseCreator = {
         name: 'pwadb',
@@ -33,7 +34,14 @@ export class PwaDatabaseService<T> {
 
         );
 
-        this.retrySync = new BehaviorSubject(false);
+        this.retryChange = new BehaviorSubject(false);
+    }
+
+    retry() {
+
+        this.retryTrigger = true;
+
+        this.retryChange.next(true);
     }
 
     unsynchronised(tenant: string, collectionNames: string[], order: 'desc' | 'asc' = 'asc'): Observable<PwaDocument<any>[]> {
@@ -52,7 +60,7 @@ export class PwaDatabaseService<T> {
         );
     }
 
-    synchronise(tenant: string, collectionNames: string[]): Observable<boolean> {
+    synchronise(tenant: string, collectionNames: string[]): Observable<PwaDocument<any> | boolean> {
 
         const pop: Observable<PwaDocument<any>> = this.unsynchronised(tenant, collectionNames, 'asc').pipe(
 
@@ -62,48 +70,68 @@ export class PwaDatabaseService<T> {
 
         );
 
-        return this.retrySync.asObservable().pipe(
+        return this.retryChange.asObservable().pipe(
 
-            switchMap(trigger => pop.pipe(
+            switchMap(() => pop.pipe(
 
-                filter(doc => !doc.error || (!!doc.error && trigger)),
+                filter(doc => !doc.error || (doc.error && this.retryTrigger)),
 
                 switchMap(doc => {
 
-                    let request: Observable<any>;
+                    this.retryTrigger = false;
 
                     if (doc.method === 'POST') {
 
-                        request = this.httpClient.post(doc.tenantUrl.split('-')[1], doc.data);
+                        return this.httpClient.post(doc.tenantUrl.split('-')[1], doc.data).pipe(
+
+                            switchMap(res => doc.atomicUpdate(oldData => ({
+                                ...oldData,
+                                method: 'GET',
+                                data: res,
+                                error: null,
+                                time: new Date().getTime()
+                            }))),
+
+                            catchError(err => doc.atomicSet('error', JSON.stringify(err))),
+                            
+                        );
 
                     } else if (doc.method === 'PUT') {
 
-                        request = this.httpClient.put(doc.tenantUrl.split('-')[1], doc.data);
+                        return this.httpClient.put(doc.tenantUrl.split('-')[1], doc.data).pipe(
 
-                    } else {
+                            switchMap(res => doc.atomicUpdate(oldData => ({
+                                ...oldData,
+                                method: 'GET',
+                                data: res,
+                                error: null,
+                                time: new Date().getTime()
+                            }))),
 
-                        request = this.httpClient.delete(doc.tenantUrl.split('-')[1]);
+                            catchError(err => doc.atomicSet('error', JSON.stringify(err))),
+
+                        );
+
+                    } else if (doc.method === 'DELETE') {
+
+                        return this.httpClient.delete(doc.tenantUrl.split('-')[1]).pipe(
+
+                            switchMap(() => doc.remove()),
+
+                            catchError(err => doc.atomicSet('error', JSON.stringify(err))),
+
+                        );
                     }
 
-                    return request.pipe(
-
-                        switchMap(() => doc.atomicSet('error', null)),
-
-                        catchError(err => doc.atomicSet('error', JSON.stringify(err))),
-                    );
+                    return empty();
                 }),
-
-                filter(doc => !doc.error),
-
-                switchMap(doc => doc.remove()),
 
             ))
         );
 
-
     }
 
-    evict(collectionInfo: {name: string, evictionDays?: number, skip?: number}[]): Observable<PwaDocument<any>[]> {
+    evict(collectionInfo: {name: string, cacheMaxAge: number}[]): Observable<PwaDocument<any>[]> {
 
         return this.db$.pipe(
 
@@ -111,15 +139,28 @@ export class PwaDatabaseService<T> {
                 
                 const col = db[k.name] as PwaCollection<any>;
 
-                const today = new Date();
+                const cacheAllowedAge = new Date().getMilliseconds() - (k.cacheMaxAge * 1000);
 
-                const evictionTime = new Date(today.setDate(today.getDate() - (k.evictionDays || 14))).getTime();
-
-                return col.find({$and: [{method: {$eq: 'GET'}}, {time: {$lt: evictionTime}}]}).skip(k.skip || 0).remove();
+                return col.find({$and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]}).remove();
             })),
 
             switchMap(v => forkJoin(...v))
         );
-    } 
+    }
+    
+    trim(collectionInfo: {name: string, retainCacheSize: number}[]): Observable<PwaDocument<any>[]> {
+
+        return this.db$.pipe(
+
+            map(db => collectionInfo.map(k => {
+                
+                const col = db[k.name] as PwaCollection<any>;
+
+                return col.find({method: {$eq: 'GET'}}).sort({time: 'desc'}).skip(k.retainCacheSize).remove();
+            })),
+
+            switchMap(v => forkJoin(...v))
+        );
+    }
 
 }
