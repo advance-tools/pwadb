@@ -36,11 +36,9 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
         },
         data: {
             type: ['object', 'null'],
-            encrypted: true,
         },
         time: {
             type: 'integer',
-            index: true,
         },
         error: {
             type: ['string', 'null'],
@@ -48,7 +46,13 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
         tenant: {
             type: 'string',
         }
-    }
+    },
+    encrypted: [
+        'data'
+    ],
+    indexes: [
+        'time'
+    ]
 });
 
 export const pwaDocMethods: PwaDocMethods = {}

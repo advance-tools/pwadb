@@ -15,7 +15,7 @@
     "@angular/compiler": "~9.1.0",
     "@angular/core": "~9.1.0",
     "pouchdb-adapter-idb": "^7.2.1",
-    "rxdb": "^8.8.0",
+    "rxdb": "^9.0.0",
     "rxjs": "^6.5.5",
     "tslib": "^1.10.0",
     "zone.js": "~0.10.2"

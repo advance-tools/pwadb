@@ -77,7 +77,12 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             const docs = this.collection$.pipe(
 
-                switchMap(col => col.find({tenantUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}}).sort({time: 'desc'}).$),
+                switchMap(col => col.find({
+                    selector: {
+                        tenantUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}   
+                    },
+                    sort: [{time: 'desc'}] 
+                }).$),
 
             );
 
@@ -95,7 +100,11 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             const doc = this.collection$.pipe(
 
-                switchMap(col => col.findOne({tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}).$),
+                switchMap(col => col.findOne({
+                    selector: {
+                        tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}
+                    }
+                }).$),
 
             );
 

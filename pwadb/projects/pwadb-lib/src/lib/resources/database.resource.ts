@@ -1,4 +1,4 @@
-import RxDB, { RxDatabase, RxDatabaseCreator } from 'rxdb';
+import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import idb from 'pouchdb-adapter-idb';
 import { from, Observable, combineLatest, BehaviorSubject, forkJoin, empty } from 'rxjs';
 import { map, switchMap, filter, catchError, startWith } from 'rxjs/operators';
@@ -18,12 +18,13 @@ export class PwaDatabaseService<T> {
         adapter: 'idb',
         password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',     // <- password (optional)
         multiInstance: true,         // <- multiInstance (optional, default: true)
-        queryChangeDetection: true // <- queryChangeDetection (optional, default: false)
+        eventReduce: true, // <- queryChangeDetection (optional, default: false)
+
     }) {
 
-        RxDB.plugin(idb);
+        addRxPlugin(idb);
 
-        this.db$ = from(RxDB.create(dbCreator)).pipe(
+        this.db$ = from(createRxDatabase(dbCreator)).pipe(
 
             switchMap((db: any) => from(db.waitForLeadership()).pipe(
 
@@ -50,7 +51,12 @@ export class PwaDatabaseService<T> {
 
             map(db => collectionNames.map(k => db[k]) as PwaCollection<any>[]),
 
-            map(cols => cols.map(c => c.findOne({$and: [{tenant: {$eq: tenant}}, {method: {$ne: 'GET'}}]}).sort({time: order}).$)),
+            map(cols => cols.map(c => c.findOne({
+                selector: {
+                    $and: [{tenant: {$eq: tenant}}, {method: {$ne: 'GET'}}]
+                },
+                sort: [{time: order}]
+            }).$)),
 
             switchMap(cols => combineLatest(cols)),
 
@@ -141,7 +147,11 @@ export class PwaDatabaseService<T> {
 
                 const cacheAllowedAge = new Date().getMilliseconds() - (k.cacheMaxAge * 1000);
 
-                return col.find({$and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]}).remove();
+                return col.find({
+                    selector: {
+                        $and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]
+                    }
+                }).remove();
             })),
 
             switchMap(v => forkJoin(...v))
@@ -156,7 +166,11 @@ export class PwaDatabaseService<T> {
                 
                 const col = db[k.name] as PwaCollection<any>;
 
-                return col.find({method: {$eq: 'GET'}}).sort({time: 'desc'}).skip(k.retainCacheSize).remove();
+                return col.find({
+                    selector: {method: {$eq: 'GET'}},
+                    sort: [{time: 'desc'}],
+                    skip: k.retainCacheSize 
+                }).remove();
             })),
 
             switchMap(v => forkJoin(...v))
