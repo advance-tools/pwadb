@@ -1,6 +1,6 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, take, tap, catchError, startWith } from 'rxjs/operators';
+import { switchMap, map, take, tap, catchError, startWith, shareReplay } from 'rxjs/operators';
 import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -84,6 +84,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                     sort: [{time: 'desc'}] 
                 }).$),
 
+                shareReplay(1)
+
             );
 
             this.documentsCache.set(tenantUrl, docs);
@@ -106,6 +108,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                     }
                 }).$),
 
+                shareReplay(1),
             );
 
             this.documentCache.set(tenantUrl, doc);
@@ -125,20 +128,24 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     get(tenant: string, url: string): Observable<PwaDocument<T>> {
 
-        return this.getReactive(tenant, url).pipe(
+        return this.collection$.pipe(
 
-            take(1),
+            switchMap(col => col.findOne({
+                selector: {
+                    tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}
+                }
+            }).exec()),
 
         );
     }
 
-    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
+    filterList(docs: Observable<PwaDocument<T>[]>, params?: HttpParams, validQueryKeys = []) {
 
         const start = parseInt(params?.get('offset') || '0');
 
         const end = start + parseInt(params?.get('limit') || '100');
 
-        return this.getDocumentsFromCache(tenant, url).pipe(
+        return docs.pipe(
 
             map(docs => queryFilter(validQueryKeys, params, docs)),
 
@@ -149,17 +156,28 @@ export class CollectionAPI<T extends Datatype, Database> {
                 delResults: docs.filter(v => v.method === 'DELETE'),
                 results: docs.slice(start, end)
             })),
+        )
+    }
 
-        );
+    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
+
+        return this.filterList(this.getDocumentsFromCache(tenant, url), params, validQueryKeys);
     }
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
-        return this.listReactive(tenant, url, params, validQueryKeys).pipe(
+        const exec = this.collection$.pipe(
 
-            take(1),
+            switchMap(col => col.find({
+                selector: {
+                    matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}   
+                },
+                sort: [{time: 'desc'}] 
+            }).exec()),
 
         );
+
+        return this.filterList(exec, params, validQueryKeys);
     }
 
     post(tenant: string, url: string, data: T): Observable<PwaDocument<T>> {

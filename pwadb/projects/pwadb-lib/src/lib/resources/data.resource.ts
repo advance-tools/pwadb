@@ -268,7 +268,6 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 
 			map(() => this.data),
 
-			shareReplay(1),
 		);
 	}
 
