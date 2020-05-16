@@ -317,6 +317,8 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 
 								map(nodes => ({item: doc, children: nodes} as TreeNode<T>)),
 
+								shareReplay(1),
+
 							);
 
 							this.childTreeMap.set(doc, childTree);

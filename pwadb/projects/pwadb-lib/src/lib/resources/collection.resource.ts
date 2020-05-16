@@ -268,11 +268,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     getReactive(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
-        const idbGet = this.collectionAPI.get(tenant, url);
-
-        const idbGetReactive = this.collectionAPI.getReactive(tenant, url);
-
-        const apiFetch = idbGet.pipe(
+        const apiFetch = this.collectionAPI.get(tenant, url).pipe(
 
             switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
 
@@ -281,23 +277,21 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return apiFetch.pipe(
 
-            switchMap(() => idbGetReactive)
+            switchMap(() => this.collectionAPI.getReactive(tenant, url))
         );
 
     }
 
     get(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
-        const idbGet = this.collectionAPI.get(tenant, url);
-
-        const apiFetch = idbGet.pipe(
+        const apiFetch = this.collectionAPI.get(tenant, url).pipe(
 
             switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
         );
 
         return apiFetch.pipe(
 
-            switchMap(() => idbGet)
+            switchMap(() => this.collectionAPI.get(tenant, url))
         );
     }
 
@@ -345,17 +339,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         let apiCount = 0;
 
-        const idbFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys);
-
-        const idbFetchReactive = this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
-
-            map(res => ({
-                count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
-                results: res.results
-            }))
-        );
-
-        const apiFetch = idbFetch.pipe(
+        const apiFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
             switchMap(idbRes => this.downloadList(idbRes, tenant, url, params)),
 
@@ -366,7 +350,13 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return apiFetch.pipe(
 
-            switchMap(() => idbFetchReactive)
+            switchMap(() => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
+
+                map(res => ({
+                    count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
+                    results: res.results
+                }))
+            ))
         );
 
     }
@@ -375,9 +365,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         let apiCount = 0;
 
-        const idbFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys);
-
-        const apiFetch = idbFetch.pipe(
+        const apiFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
             switchMap(idbRes => this.downloadList(idbRes, tenant, url, params)),
 
@@ -386,7 +374,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return apiFetch.pipe(
 
-            switchMap(() => idbFetch),
+            switchMap(() => this.collectionAPI.list(tenant, url, params, validQueryKeys)),
 
             map(res => ({
                 count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
