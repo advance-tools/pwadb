@@ -337,7 +337,7 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 
 			map(nodes => [].concat(...nodes)),
 
-			startWith([]),
+			// startWith([]),
 		);
 	}
 
