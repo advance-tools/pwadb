@@ -79,7 +79,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 switchMap(col => col.find({
                     selector: {
-                        tenantUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}   
+                        matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}   
                     },
                     sort: [{time: 'desc'}] 
                 }).$),
@@ -167,12 +167,12 @@ export class CollectionAPI<T extends Datatype, Database> {
         return this.collection$.pipe(
 
             switchMap(col => col.atomicUpsert({
-                tenantUrl: this.makeTenantUrl(tenant, `${url}/${data.id}`),
+                tenantUrl: `${this.makeTenantUrl(tenant, url)}/${data.id}`,
+                matchUrl: `${this.makeTenantUrl(tenant, url)}/${data.id}`,
                 data,
                 method: 'POST',
                 error: null,
                 time: new Date().getTime(),
-                tenant
             })),
         );
     }
@@ -196,11 +196,11 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                     const docData: PwaDocType<T> = {
                         tenantUrl: this.makeTenantUrl(tenant, url),
+                        matchUrl: this.makeTenantUrl(tenant, url),
                         data,
                         method: 'PUT',
                         error: null,
                         time: new Date().getTime(),
-                        tenant
                     };
     
                     return col.atomicUpsert(docData);
@@ -264,11 +264,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(([res, col]) => col.atomicUpsert({
                 tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url),
+                matchUrl: this.collectionAPI.makeTenantUrl(tenant, url),
                 data: res,
                 method: 'GET',
                 error: null,
                 time: new Date().getTime(),
-                tenant
             })),
 
             catchError(() => of(null)),
@@ -326,13 +326,13 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             switchMap(([networkRes, col]) => {
 
                 // map network data to doctype
-                const docs: PwaDocType<T>[] = networkRes.results.map(d => ({
-                    tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${d.id}`,
-                    data: d,
+                const docs: PwaDocType<T>[] = networkRes.results.map(data => ({
+                    tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${data.id}`,
+                    matchUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${data.id}`,
+                    data,
                     method: 'GET',
                     error: null,
                     time: new Date().getTime(),
-                    tenant
                 }));
 
                 return from(col.bulkInsert(docs)).pipe(

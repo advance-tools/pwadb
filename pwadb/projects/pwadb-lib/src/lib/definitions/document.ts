@@ -8,11 +8,11 @@ export type Datatype = {
 
 export type PwaDocType<T extends Datatype> = {
     tenantUrl: string;
+    matchUrl: string;
     method: Method;
     data: T | null;
     time: number;
     error: string | null;
-    tenant: string;
 };
 
 export type PwaDocMethods = {};
@@ -30,6 +30,9 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
             type: 'string',
             primary: true,
         },
+        matchUrl: {
+            type: 'string',
+        },
         method: {
             type: 'string',
             enum: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -42,16 +45,10 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
         },
         error: {
             type: ['string', 'null'],
-        },
-        tenant: {
-            type: 'string',
         }
     },
     encrypted: [
         'data'
-    ],
-    indexes: [
-        'time'
     ]
 });
 
