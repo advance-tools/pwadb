@@ -1,16 +1,24 @@
 steps:
     -
-        name: 'gcr.io/cloud-builders/npm'
-        args: ['install']
+        name: node:alpine
+        entrypoint: npm
+        args:
+          - install
         dir: '/workspace/pwadb'
 
     -
-        name: 'gcr.io/cloud-builders/npm'
-        args: ['run', 'build', 'pwadb-lib', '--prod']
+        name: node:alpine
+        entrypoint: npm
+        args:
+            - run
+            - build
+            - "--"
+            - pwadb-lib
+            - "--prod"
         dir: '/workspace/pwadb'
 
     -   
-        name: 'gcr.io/cloud-builders/npm'
+        name: node:alpine
         entrypoint: /bin/sh
         args:
         - '-c'
