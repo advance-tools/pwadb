@@ -49,6 +49,9 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
     },
     encrypted: [
         'data'
+    ],
+    indexes: [
+        'time'
     ]
 });
 
