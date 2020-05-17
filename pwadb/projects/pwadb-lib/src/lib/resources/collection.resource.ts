@@ -1,6 +1,6 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, tap, catchError, startWith, first } from 'rxjs/operators';
+import { switchMap, map, tap, catchError, startWith, first, debounceTime } from 'rxjs/operators';
 import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -377,6 +377,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         );
 
         return apiFetch.pipe(
+
+            debounceTime(100), // adding delay
 
             switchMap(() => this.collectionAPI.list(tenant, url, params, validQueryKeys)),
 

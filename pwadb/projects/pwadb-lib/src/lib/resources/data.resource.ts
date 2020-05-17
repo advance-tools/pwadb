@@ -2,7 +2,7 @@ import { BehaviorSubject, Observable, combineLatest, of } from 'rxjs';
 import { PwaDocument } from '../definitions/document';
 import { HttpParams } from '@angular/common/http';
 import { PwaListResponse } from '../definitions/collection';
-import { switchMap, tap, shareReplay, map, startWith} from 'rxjs/operators';
+import { switchMap, tap, shareReplay, map, startWith, filter} from 'rxjs/operators';
 
 /////////////////////
 // Interfaces
@@ -95,11 +95,11 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
 		this.queueChange = new BehaviorSubject(null);
 
-		this.dataChange = of(1).pipe(
+		this.dataChange = this.queueChange.asObservable().pipe(
 
-			tap(() => this.loadMore(true)),
+			filter(v => !!v),
 
-			switchMap(() => this.queueChange.asObservable()),
+			startWith(this.httpParams),
 
 			tap(() => this.isLoadingChange.next(true)),
 
@@ -125,9 +125,9 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 		this.queueChange.next(this.httpParams);
 	}
 
-	loadMore(firstTime=false) {
+	loadMore() {
 
-		if (!firstTime) if (!this.isLoadable || this.isLoading) return;
+		if (this.isLoading) return;
 
 		super.loadMore();
 
@@ -149,11 +149,11 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
 		this.queueChange = new BehaviorSubject([]);
 
-		this.dataChange = of(1).pipe(
+		this.dataChange = this.queueChange.asObservable().pipe(
 
-			tap(() => this.loadMore(true)),
+			filter(v => !!v.length),
 
-			switchMap(() => this.queueChange.asObservable()),
+			startWith([this.getView(this.httpParams)]),
 
 			tap(() => this.isLoadingChange.next(true)),
 
@@ -189,9 +189,9 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 		this.queueChange.next([view]);
 	}
 
-	loadMore(firstTime = false) {
+	loadMore() {
 
-		if (!firstTime) if (!this.isLoadable || this.isLoading) return;
+		if (this.isLoading) return;
 
 		super.loadMore();
 
