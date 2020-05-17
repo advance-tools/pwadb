@@ -283,8 +283,6 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 
 				switchMap(docs => {
 
-					console.log('httpParams', db.offset, db.limit, db.totalCount, db.data)
-
 					const obs = docs.map(doc => {
 
 						///////////////////
