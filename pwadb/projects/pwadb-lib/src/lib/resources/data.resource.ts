@@ -289,11 +289,11 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 			// run callback
 			treeInfo[key].onCreationSetup ? treeInfo[key].onCreationSetup(parentDoc, db, childParams) : db.httpParams = childParams;
 
+			debugger;
+
 			return db.dataChange.pipe(
 
 				switchMap(docs => {
-					
-					debugger;
 
 					const obs = docs.map(doc => {
 
