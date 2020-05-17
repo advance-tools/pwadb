@@ -273,8 +273,6 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 
 	buildTree(treeInfo: TreeInformation<T>, parentDoc: PwaDocument<T> = null, params = new HttpParams()): Observable<TreeNode<T>[]> {
 
-		debugger;
-
 		const treeNodes = Object.keys(treeInfo).map(key => {
 
 			const db = treeInfo[key].getDatabase();
@@ -328,12 +326,18 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 			);
 		});
 
-		return combineLatest(treeNodes).pipe(
+		if (treeNodes.length) {
 
-			map(nodes => [].concat(...nodes)),
+			return combineLatest(treeNodes).pipe(
 
-			startWith([]),
-		);
+				map(nodes => [].concat(...nodes)),
+	
+			);
+
+		} else {
+
+			return of([]);
+		}
 	}
 
 	reset() {

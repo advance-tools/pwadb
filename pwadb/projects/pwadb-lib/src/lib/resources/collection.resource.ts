@@ -1,6 +1,6 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, take, tap, catchError, startWith, shareReplay } from 'rxjs/operators';
+import { switchMap, map, tap, catchError, startWith, first } from 'rxjs/operators';
 import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -58,8 +58,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             map(collections => collections[0]),
 
-            take(1),
-
+            first()
         );
 
     }
@@ -84,8 +83,6 @@ export class CollectionAPI<T extends Datatype, Database> {
                     sort: [{time: 'desc'}] 
                 }).$),
 
-                shareReplay(1)
-
             );
 
             this.documentsCache.set(tenantUrl, docs);
@@ -108,14 +105,32 @@ export class CollectionAPI<T extends Datatype, Database> {
                     }
                 }).$),
 
-                shareReplay(1),
-
             );
 
             this.documentCache.set(tenantUrl, doc);
         }
 
         return this.documentCache.get(tenantUrl);
+    }
+
+    filterList(allDocs: Observable<PwaDocument<T>[]>, params?: HttpParams, validQueryKeys = []) {
+
+        const start = parseInt(params?.get('offset') || '0');
+
+        const end = start + parseInt(params?.get('limit') || '100');
+
+        return allDocs.pipe(
+
+            map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
+
+            map(allDocs => ({
+                getCount: allDocs.filter(v => v.method === 'GET').length,
+                postCount: allDocs.filter(v => v.method === 'POST').length,
+                putResults: allDocs.filter(v => v.method === 'PUT'),
+                delResults: allDocs.filter(v => v.method === 'DELETE'),
+                results: allDocs.slice(start, end)
+            })),
+        );
     }
 
     ////////////////
@@ -131,38 +146,20 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return this.getReactive(tenant, url).pipe(
 
-            take(1),
-
+            first()
         );
     }
 
     listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
-
-        const start = parseInt(params?.get('offset') || '0');
-
-        const end = start + parseInt(params?.get('limit') || '100');
-
-        return this.getDocumentsFromCache(tenant, url).pipe(
-
-            map(docs => queryFilter(validQueryKeys, params, docs)),
-
-            map(docs => ({
-                getCount: docs.filter(v => v.method === 'GET').length,
-                postCount: docs.filter(v => v.method === 'POST').length,
-                putResults: docs.filter(v => v.method === 'PUT'),
-                delResults: docs.filter(v => v.method === 'DELETE'),
-                results: docs.slice(start, end)
-            })),
-
-        );
+   
+        return this.filterList(this.getDocumentsFromCache(tenant, url), params, validQueryKeys);
     }
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
         return this.listReactive(tenant, url, params, validQueryKeys).pipe(
 
-            take(1),
-
+            first()
         );
     }
 
@@ -297,14 +294,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     get(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
-        const apiFetch = this.collectionAPI.get(tenant, url).pipe(
+        return this.collectionAPI.get(tenant, url).pipe(
 
             switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
-        );
-
-        return apiFetch.pipe(
-
-            switchMap(() => this.collectionAPI.get(tenant, url))
         );
     }
 
@@ -363,13 +355,12 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return apiFetch.pipe(
 
-            switchMap(() => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
+            switchMap(() => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys)),
 
-                map(res => ({
-                    count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
-                    results: res.results
-                }))
-            ))
+            map(res => ({
+                count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
+                results: res.results
+            }))
         );
 
     }
