@@ -222,7 +222,7 @@ export type TreeNode<T extends DatabaseDatatype> = {item: PwaDocument<T>, childr
 
 export interface DatabaseInformation<T extends DatabaseDatatype> {
 	getDatabase: (limit?: number) => Database<T> | ReactiveDatabase<T>;
-	onCreationSetup?: (parentDoc: PwaDocument<T>, db: Database<T> | ReactiveDatabase<T>, params: HttpParams) => void;
+	onCreationSetup?: (parentDoc: PwaDocument<T> | null, db: Database<T> | ReactiveDatabase<T>, params: HttpParams) => void;
 	children: TreeInformation<T>;
 }
 
@@ -273,6 +273,8 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 
 	buildTree(treeInfo: TreeInformation<T>, parentDoc: PwaDocument<T> = null, params = new HttpParams()): Observable<TreeNode<T>[]> {
 
+		debugger;
+
 		const treeNodes = Object.keys(treeInfo).map(key => {
 
 			const db = treeInfo[key].getDatabase();
@@ -287,9 +289,7 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 			keys.forEach(pk => childParams = childParams.set(pk.split(`${key}--`)[1], params.getAll(pk).join(',')));
 
 			// run callback
-			if (parentDoc && treeInfo[key].onCreationSetup) treeInfo[key].onCreationSetup(parentDoc, db, childParams);
-
-			if (!treeInfo[key].onCreationSetup) db.httpParams = childParams;
+			treeInfo[key].onCreationSetup ? treeInfo[key].onCreationSetup(parentDoc, db, childParams) : db.httpParams = childParams;
 
 			return db.dataChange.pipe(
 

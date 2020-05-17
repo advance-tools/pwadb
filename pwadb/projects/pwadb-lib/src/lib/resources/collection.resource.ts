@@ -109,6 +109,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                 }).$),
 
                 shareReplay(1),
+
             );
 
             this.documentCache.set(tenantUrl, doc);
@@ -128,24 +129,20 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     get(tenant: string, url: string): Observable<PwaDocument<T>> {
 
-        return this.collection$.pipe(
+        return this.getReactive(tenant, url).pipe(
 
-            switchMap(col => col.findOne({
-                selector: {
-                    tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}
-                }
-            }).exec()),
+            take(1),
 
         );
     }
 
-    filterList(docs: Observable<PwaDocument<T>[]>, params?: HttpParams, validQueryKeys = []) {
+    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
         const start = parseInt(params?.get('offset') || '0');
 
         const end = start + parseInt(params?.get('limit') || '100');
 
-        return docs.pipe(
+        return this.getDocumentsFromCache(tenant, url).pipe(
 
             map(docs => queryFilter(validQueryKeys, params, docs)),
 
@@ -156,28 +153,17 @@ export class CollectionAPI<T extends Datatype, Database> {
                 delResults: docs.filter(v => v.method === 'DELETE'),
                 results: docs.slice(start, end)
             })),
-        )
-    }
 
-    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
-
-        return this.filterList(this.getDocumentsFromCache(tenant, url), params, validQueryKeys);
+        );
     }
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
-        const exec = this.collection$.pipe(
+        return this.listReactive(tenant, url, params, validQueryKeys).pipe(
 
-            switchMap(col => col.find({
-                selector: {
-                    matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}   
-                },
-                sort: [{time: 'desc'}] 
-            }).exec()),
+            take(1),
 
         );
-
-        return this.filterList(exec, params, validQueryKeys);
     }
 
     post(tenant: string, url: string, data: T): Observable<PwaDocument<T>> {
