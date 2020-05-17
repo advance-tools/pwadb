@@ -1,6 +1,6 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, tap, catchError, startWith, first, debounceTime } from 'rxjs/operators';
+import { switchMap, map, tap, catchError, startWith, first, debounceTime, shareReplay } from 'rxjs/operators';
 import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -83,6 +83,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                     sort: [{time: 'desc'}] 
                 }).$),
 
+                shareReplay(1),
+
             );
 
             this.documentsCache.set(tenantUrl, docs);
@@ -104,6 +106,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                         tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}
                     }
                 }).$),
+
+                shareReplay(1),
 
             );
 

@@ -2,7 +2,7 @@ import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { PwaDocument } from '../definitions/document';
 import { HttpParams } from '@angular/common/http';
 import { PwaListResponse } from '../definitions/collection';
-import { switchMap, tap, shareReplay, map, startWith, filter} from 'rxjs/operators';
+import { switchMap, tap, shareReplay, map, startWith, filter, debounceTime} from 'rxjs/operators';
 
 /////////////////////
 // Interfaces
