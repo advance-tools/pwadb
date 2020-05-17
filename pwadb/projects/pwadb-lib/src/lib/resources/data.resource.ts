@@ -33,7 +33,7 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 
 	_dataChange: BehaviorSubject<PwaDocument<T>[]>;
 	isLoadingChange: BehaviorSubject<boolean>;
-	totalCount = -1;
+	totalCount = 0;
 
 	private _httpParams: HttpParams;
 
@@ -50,9 +50,10 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 
 	get isLoading() { return this.isLoadingChange.value; }
 	get offset() { return this.data.length; }
-	get isLoadable(): boolean { return this.offset !== this.totalCount }
+	get isLoadable(): boolean { return this.offset < this.totalCount; }
+	get limit() { return this.__limit; }
 
-	constructor(private limit: number) {
+	constructor(private __limit: number) {
 
 		this._dataChange 		= new BehaviorSubject([]);
 		this.isLoadingChange 	= new BehaviorSubject(false);
@@ -139,7 +140,6 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
 	private queueChange: BehaviorSubject<Observable<PwaListResponse<T>>[]>;
-	private params: HttpParams[];
 
 	dataChange: Observable<PwaDocument<T>[]>
 
@@ -148,8 +148,6 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 		super(_limit);
 
 		this.queueChange = new BehaviorSubject([]);
-
-		this.params = [];
 
 		this.dataChange = of(1).pipe(
 
@@ -184,11 +182,6 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
 		super.reset();
 		
-		this.params = [];
-
-		// add params to list
-		this.params.push(this.httpParams);
-
 		// make view
 		const view = this.getView(this.httpParams);
 		
@@ -201,9 +194,6 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 		if (!this.isLoadable || this.isLoading) return;
 
 		super.loadMore();
-
-		// add params to list
-		this.params.push(this.httpParams);
 
 		// make view
 		const view = this.getView(this.httpParams);
@@ -289,11 +279,11 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 			// run callback
 			treeInfo[key].onCreationSetup ? treeInfo[key].onCreationSetup(parentDoc, db, childParams) : db.httpParams = childParams;
 
-			debugger;
-
 			return db.dataChange.pipe(
 
 				switchMap(docs => {
+
+					console.log('httpParams', db.offset, db.limit, db.totalCount, db.data)
 
 					const obs = docs.map(doc => {
 
