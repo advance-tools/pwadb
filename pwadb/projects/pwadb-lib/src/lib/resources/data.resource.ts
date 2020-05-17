@@ -1,4 +1,4 @@
-import { BehaviorSubject, Observable, combineLatest, of } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { PwaDocument } from '../definitions/document';
 import { HttpParams } from '@angular/common/http';
 import { PwaListResponse } from '../definitions/collection';
@@ -314,23 +314,16 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 					return combineLatest(obs);
 				}),
 
-				startWith([] as TreeNode<T>[])
-
 			);
 		});
 
-		if (treeNodes.length) {
+		return combineLatest(treeNodes).pipe(
 
-			return combineLatest(treeNodes).pipe(
+			map(nodes => [].concat(...nodes)),
 
-				map(nodes => [].concat(...nodes)),
-	
-			);
+			startWith([] as TreeNode<T>[])
 
-		} else {
-
-			return of([]);
-		}
+		);
 	}
 
 	reset() {
