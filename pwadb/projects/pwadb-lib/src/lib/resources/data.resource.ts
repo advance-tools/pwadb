@@ -127,7 +127,7 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
 	loadMore() {
 
-		if (!this.isLoadable || this.isLoading) return;
+		if (this.isLoading) return;
 
 		super.loadMore();
 
@@ -191,7 +191,7 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
 	loadMore() {
 
-		if (!this.isLoadable || this.isLoading) return;
+		if (this.isLoading) return;
 
 		super.loadMore();
 
@@ -282,8 +282,6 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 			return db.dataChange.pipe(
 
 				switchMap(docs => {
-
-					console.log('httpParams', db.offset, db.limit, db.totalCount, db.data)
 
 					const obs = docs.map(doc => {
 
