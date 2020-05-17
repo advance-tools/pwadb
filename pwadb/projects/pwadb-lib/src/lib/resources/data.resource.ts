@@ -113,8 +113,6 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 			
 			map(() => this.data),
 
-			shareReplay(1),
-
 		);
 	}
 
@@ -168,8 +166,6 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 			tap(() => this.isLoadingChange.next(false)),
 			
 			map(() => this.data),
-
-			shareReplay(1),
 
 		);
 	}
@@ -262,8 +258,6 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 
 			map(() => this.data),
 
-			shareReplay(1),
-
 		);
 	}
 
@@ -305,6 +299,8 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 							const childTree = this.buildTree(treeInfo[key].children, doc, childParams).pipe(
 
 								map(nodes => ({item: doc, children: nodes} as TreeNode<T>)),
+
+								shareReplay(1),
 
 							);
 

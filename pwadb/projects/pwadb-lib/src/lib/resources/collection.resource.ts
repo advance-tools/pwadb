@@ -83,6 +83,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                     sort: [{time: 'desc'}] 
                 }).$),
 
+                shareReplay(1),
+
             );
 
             this.documentsCache.set(tenantUrl, docs);
@@ -104,6 +106,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                         tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}
                     }
                 }).$),
+
+                shareReplay(1),
 
             );
 
