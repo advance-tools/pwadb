@@ -151,9 +151,9 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
 		this.dataChange = this.queueChange.asObservable().pipe(
 
+			tap(v => {if(!v.length) this.reset(); }),
+  
 			filter(v => !!v.length),
-
-			startWith([this.getView(this.httpParams)]),
 
 			tap(() => this.isLoadingChange.next(true)),
 
