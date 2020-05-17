@@ -97,7 +97,7 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
 		this.dataChange = of(1).pipe(
 
-			tap(() => this.loadMore()),
+			tap(() => this.loadMore(true)),
 
 			switchMap(() => this.queueChange.asObservable()),
 
@@ -125,9 +125,9 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 		this.queueChange.next(this.httpParams);
 	}
 
-	loadMore() {
+	loadMore(firstTime=false) {
 
-		if (this.isLoading) return;
+		if (!firstTime) if (!this.isLoadable || this.isLoading) return;
 
 		super.loadMore();
 
@@ -151,7 +151,7 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
 		this.dataChange = of(1).pipe(
 
-			tap(() => this.loadMore()),
+			tap(() => this.loadMore(true)),
 
 			switchMap(() => this.queueChange.asObservable()),
 
@@ -189,9 +189,9 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 		this.queueChange.next([view]);
 	}
 
-	loadMore() {
+	loadMore(firstTime = false) {
 
-		if (this.isLoading) return;
+		if (!firstTime) if (!this.isLoadable || this.isLoading) return;
 
 		super.loadMore();
 
@@ -282,6 +282,8 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 			return db.dataChange.pipe(
 
 				switchMap(docs => {
+
+					console.log('httpParams', db.offset, db.limit, db.totalCount, db.data)
 
 					const obs = docs.map(doc => {
 
