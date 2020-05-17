@@ -293,6 +293,8 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 
 				switchMap(docs => {
 					
+					debugger;
+
 					const obs = docs.map(doc => {
 
 						///////////////////
@@ -323,6 +325,9 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 
 					return combineLatest(obs);
 				}),
+
+				startWith([] as TreeNode<T>[])
+
 			);
 		});
 
