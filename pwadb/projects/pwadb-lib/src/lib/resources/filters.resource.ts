@@ -13,7 +13,7 @@ export type FieldDataType = string | number | boolean | null;
 ////////////////
 // Parsers
 ////////////////
-export function parseNumber(fieldValue: FieldDataType, inputValue: string) {
+export function parseNumber(fieldValue: FieldDataType, inputValue: string): null | {[key: string]: number} {
 
     const parsedFieldValue = Number(fieldValue?.toString() || '');
 
@@ -22,7 +22,7 @@ export function parseNumber(fieldValue: FieldDataType, inputValue: string) {
     return isNaN(parsedFieldValue) && isNaN(parsedInputValue) ? null : {parsedFieldValue, parsedInputValue};
 }
 
-export function parseDate(fieldValue: FieldDataType, inputValue: string) {
+export function parseDate(fieldValue: FieldDataType, inputValue: string): null | {[key: string]: number} {
 
     const parsedFieldValue = Date.parse(fieldValue?.toString() || '');
 
@@ -35,7 +35,7 @@ export function parseDate(fieldValue: FieldDataType, inputValue: string) {
 // Lookup Filters (num, date, string, boolean)
 ///////////////////////////////////////////////
 
-export const eq = (v: PwaDocument<any>, field: string, inputValue: string) => {
+export const eq: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
     
@@ -52,7 +52,7 @@ export const eq = (v: PwaDocument<any>, field: string, inputValue: string) => {
 // Lookup Filters (num, date)
 ///////////////////////////////////////////////
 
-export const gte = (v: PwaDocument<any>, field: string, inputValue: string) => {
+export const gte: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
     
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
     
@@ -65,7 +65,7 @@ export const gte = (v: PwaDocument<any>, field: string, inputValue: string) => {
     return v.data[field] >= inputValue;
 }
 
-export const lte = (v: PwaDocument<any>, field: string, inputValue: string) => {
+export const lte: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
     
@@ -78,7 +78,7 @@ export const lte = (v: PwaDocument<any>, field: string, inputValue: string) => {
     return v.data[field] <= inputValue;
 }
 
-export const gt = (v: PwaDocument<any>, field: string, inputValue: string) => {
+export const gt: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
     
@@ -91,7 +91,7 @@ export const gt = (v: PwaDocument<any>, field: string, inputValue: string) => {
     return v.data[field] > inputValue;
 }
 
-export const lt = (v: PwaDocument<any>, field: string, inputValue: string) => {
+export const lt: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
     
@@ -104,7 +104,7 @@ export const lt = (v: PwaDocument<any>, field: string, inputValue: string) => {
     return v.data[field] < inputValue;
 }
 
-export const range = (v: PwaDocument<any>, field: string, inputValue: string) => {
+export const range: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
     const values = inputValue.toString().split(',');
 
@@ -127,23 +127,23 @@ export const range = (v: PwaDocument<any>, field: string, inputValue: string) =>
 // Lookup Filters (string)
 ///////////////////////////////////////////////
 
-export const startswith = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().startsWith(inputValue);
+export const startswith: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().startsWith(inputValue);
 
-export const endswith   = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().endsWith(inputValue);
+export const endswith: (v: PwaDocument<any>, field: string, inputValue: string) => boolean   = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().endsWith(inputValue);
 
-export const iexact     = (v: PwaDocument<any>, field: string, inputValue: string) => !!(v.data[field] as FieldDataType).toString().match(new RegExp(`^${inputValue}$`, 'i'));
+export const iexact: (v: PwaDocument<any>, field: string, inputValue: string) => boolean     = (v: PwaDocument<any>, field: string, inputValue: string) => !!(v.data[field] as FieldDataType).toString().match(new RegExp(`^${inputValue}$`, 'i'));
 
-export const exact      = (v: PwaDocument<any>, field: string, inputValue: string) => !!(v.data[field] as FieldDataType).toString().match(new RegExp(`^${inputValue}$`));
+export const exact: (v: PwaDocument<any>, field: string, inputValue: string) => boolean      = (v: PwaDocument<any>, field: string, inputValue: string) => !!(v.data[field] as FieldDataType).toString().match(new RegExp(`^${inputValue}$`));
 
-export const icontains  = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().toLowerCase().includes(inputValue.toLowerCase());
+export const icontains: (v: PwaDocument<any>, field: string, inputValue: string) => boolean  = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().toLowerCase().includes(inputValue.toLowerCase());
 
-export const contains   = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().includes(inputValue);
+export const contains: (v: PwaDocument<any>, field: string, inputValue: string) => boolean   = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().includes(inputValue);
 
 ///////////////////////////////////////////////
 // Lookup Filters (boolean)
 ///////////////////////////////////////////////
 
-export const isnull     = (v: PwaDocument<any>, field: string, inputValue: string) => inputValue.toLowerCase() === 'true' ? v.data[field] === null : v.data[field] !== null;
+export const isnull: (v: PwaDocument<any>, field: string, inputValue: string) => boolean     = (v: PwaDocument<any>, field: string, inputValue: string) => inputValue.toLowerCase() === 'true' ? v.data[field] === null : v.data[field] !== null;
 
 
 export function getQuery(key: string, value: string): {queryType: Query, fields: string[], lookup?: Lookup ,inputValue?: string} {
@@ -182,7 +182,7 @@ export function getQuery(key: string, value: string): {queryType: Query, fields:
 }
 
 
-export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: PwaDocument<any>[]) {
+export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: PwaDocument<any>[]): PwaDocument<any>[] {
 
     if (params) {
 
@@ -243,37 +243,12 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
             } 
         });
 
-
-        // params.keys().forEach(k => {
-    
-        //     if (validQueryKeys.indexOf(k) > -1) {
-    
-        //         const query = getQuery(k, params.getAll(k).join(','));
-    
-        //         if (query.queryType === 'distinct') {
-    
-        //             docs = distinct(query.fields, docs);
-    
-        //         } else if (query.queryType === 'filter') {
-    
-        //             docs = filter(query.fields[0], query.inputValue, docs, query.lookup);
-    
-        //         } else if (query.queryType === 'exclude') {
-    
-        //             docs = exclude(query.fields[0], query.inputValue, docs, query.lookup);
-    
-        //         } else if (query.queryType === 'order_by') {
-    
-        //             docs = orderBy(query.fields, docs);
-        //         }
-        //     }
-        // });
     }
 
     return docs;
 }
 
-export function filter(field: string, inputValue: string, docs: PwaDocument<any>[], lookup?: Lookup) {
+export function filter(field: string, inputValue: string, docs: PwaDocument<any>[], lookup?: Lookup): PwaDocument<any>[] {
 
     // in lookup would same as eq with OR values
     let f = (v: PwaDocument<any>) => inputValue.split(',').reduce((acc, cur) => acc || eq(v, field, cur), false);
@@ -305,14 +280,14 @@ export function filter(field: string, inputValue: string, docs: PwaDocument<any>
     return docs.filter(f);
 }
 
-export function exclude(field: string, inputValue: string, docs: PwaDocument<any>[], lookup?: Lookup) {
+export function exclude(field: string, inputValue: string, docs: PwaDocument<any>[], lookup?: Lookup): PwaDocument<any>[] {
 
     const filteredDocs = new Set(filter(field, inputValue, docs, lookup));
 
     return docs.filter(v => !filteredDocs.has(v));
 }
 
-export function distinct(fields: string[], docs: PwaDocument<any>[]) {
+export function distinct(fields: string[], docs: PwaDocument<any>[]): PwaDocument<any>[] {
 
     const uniques = new Set<FieldDataType>();
 
@@ -333,7 +308,7 @@ export function distinct(fields: string[], docs: PwaDocument<any>[]) {
     return distinctArray;
 }
 
-export function orderBy(fields: string[], docs: PwaDocument<any>[]) {
+export function orderBy(fields: string[], docs: PwaDocument<any>[]): PwaDocument<any>[] {
 
     return docs.sort((a, b) => {
 

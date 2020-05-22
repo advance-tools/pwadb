@@ -63,12 +63,12 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     }
 
-    makeTenantUrl(tenant: string, url: string) {
+    makeTenantUrl(tenant: string, url: string): string {
 
         return `${tenant}-${url}`;
     }
 
-    getDocumentsFromCache(tenant: string, url: string) {
+    getDocumentsFromCache(tenant: string, url: string): Observable<PwaDocument<T>[]> {
 
         const tenantUrl = this.makeTenantUrl(tenant, url);
 
@@ -93,7 +93,7 @@ export class CollectionAPI<T extends Datatype, Database> {
         return this.documentsCache.get(tenantUrl);
     }
 
-    getDocumentFromCache(tenant: string, url: string) {
+    getDocumentFromCache(tenant: string, url: string): Observable<PwaDocument<T>> {
 
         const tenantUrl = this.makeTenantUrl(tenant, url);
 
@@ -117,7 +117,13 @@ export class CollectionAPI<T extends Datatype, Database> {
         return this.documentCache.get(tenantUrl);
     }
 
-    filterList(allDocs: Observable<PwaDocument<T>[]>, params?: HttpParams, validQueryKeys = []) {
+    filterList(allDocs: Observable<PwaDocument<T>[]>, params?: HttpParams, validQueryKeys = []): Observable<{
+        getCount: number;
+        postCount: number;
+        putResults: PwaDocument<T>[];
+        delResults: PwaDocument<T>[];
+        results: PwaDocument<T>[];
+    }> {
 
         const start = parseInt(params?.get('offset') || '0');
 

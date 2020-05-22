@@ -19,7 +19,6 @@ export class PwaDatabaseService<T> {
         password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',     // <- password (optional)
         multiInstance: true,         // <- multiInstance (optional, default: true)
         eventReduce: true, // <- queryChangeDetection (optional, default: false)
-
     }) {
 
         addRxPlugin(idb);

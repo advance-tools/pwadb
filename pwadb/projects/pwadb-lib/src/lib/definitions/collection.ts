@@ -1,11 +1,11 @@
 import { PwaDocType, PwaDocMethods, Datatype, getSchema, PwaDocument } from "./document";
-import { RxCollection } from 'rxdb';
+import { RxCollection, RxCollectionCreator } from 'rxdb';
 
 export type PwaCollectionMethods = {}
 
 export type PwaCollection<T extends Datatype> = RxCollection<PwaDocType<T>, PwaDocMethods, PwaCollectionMethods>;
 
-export const getCollectionCreator = (name: string, collectionMethods: PwaCollectionMethods, documentMethods: PwaDocMethods) => ({
+export const getCollectionCreator: (name: string, collectionMethods: PwaCollectionMethods, documentMethods: PwaDocMethods) => RxCollectionCreator = (name: string, collectionMethods: PwaCollectionMethods, documentMethods: PwaDocMethods) => ({
     name: name,
     schema: getSchema(name),
     pouchSettings: {
