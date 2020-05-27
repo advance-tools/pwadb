@@ -101,6 +101,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
+                shareReplay(1),
             );
 
             this.documentCache.set(tenantUrl, doc);
