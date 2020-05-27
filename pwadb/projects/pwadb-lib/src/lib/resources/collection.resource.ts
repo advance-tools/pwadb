@@ -300,7 +300,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
 
-            distinctUntilChanged((prev, cur) => JSON.stringify(prev) === JSON.stringify(cur)),
+            distinctUntilChanged((prev, cur) => prev?.method === cur?.method && JSON.stringify(prev) === JSON.stringify(cur)),
 
         );
 
