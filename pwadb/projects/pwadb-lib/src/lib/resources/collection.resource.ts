@@ -201,7 +201,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                         method: oldData.method !== 'POST' ? 'PUT' : oldData.method,
                         data,
                         error: null,
-                        time: oldData.method !== 'POST' ? new Date().getTime() : oldData.time
+                        time: oldData.method === 'GET' ? new Date().getTime() : oldData.time
                     }));
 
                 } else {
@@ -270,6 +270,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         const cacheAllowedAge = new Date().getTime() - (this.cacheMaxAge * 1000);
 
+        console.log('Age', idbRes?.time, cacheAllowedAge, (idbRes?.time || 0) > cacheAllowedAge);
+
         if (idbRes?.method !== 'GET' || (idbRes?.time || 0) > cacheAllowedAge) return of(idbRes);
 
         return combineLatest([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
@@ -300,7 +302,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
 
-            distinctUntilChanged((prev, cur) => prev?.method === cur?.method && JSON.stringify(prev) === JSON.stringify(cur)),
+            distinctUntilChanged((prev, cur) => prev?.method === cur?.method && prev?.time === cur?.time && prev?.error === cur?.error && JSON.stringify(prev) === JSON.stringify(cur)),
 
         );
 
