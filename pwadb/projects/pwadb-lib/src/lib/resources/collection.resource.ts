@@ -297,9 +297,10 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return apiFetch.pipe(
 
+            switchMap(() => this.collectionAPI.getReactive(tenant, url)),
+
             distinctUntilChanged(),
 
-            switchMap(() => this.collectionAPI.getReactive(tenant, url))
         );
 
     }
@@ -309,6 +310,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         return this.collectionAPI.get(tenant, url).pipe(
 
             switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
+
+            distinctUntilChanged(),
         );
     }
 
