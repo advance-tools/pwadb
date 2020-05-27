@@ -178,8 +178,8 @@ export class CollectionAPI<T extends Datatype, Database> {
             switchMap(col => col.atomicUpsert({
                 tenantUrl: `${this.makeTenantUrl(tenant, url)}/${data.id}`,
                 matchUrl: `${this.makeTenantUrl(tenant, url)}/${data.id}`,
-                data,
                 method: 'POST',
+                data,
                 error: null,
                 time: new Date().getTime(),
             })),
@@ -198,7 +198,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                         ...oldData,
                         method: oldData.method !== 'POST' ? 'PUT' : oldData.method,
                         data,
-                        error: null
+                        error: null,
+                        time: oldData.method !== 'POST' ? new Date().getTime() : oldData.time
                     }));
 
                 } else {
