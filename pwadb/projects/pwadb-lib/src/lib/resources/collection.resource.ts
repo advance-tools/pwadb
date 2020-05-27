@@ -1,6 +1,6 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, tap, catchError, startWith, first, debounceTime, shareReplay, distinctUntilKeyChanged} from 'rxjs/operators';
+import { switchMap, map, tap, catchError, startWith, first, debounceTime, shareReplay, distinctUntilChanged} from 'rxjs/operators';
 import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -106,8 +106,6 @@ export class CollectionAPI<T extends Datatype, Database> {
                         tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}
                     }
                 }).$),
-
-                shareReplay(1),
 
             );
 
@@ -299,7 +297,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
 
-            distinctUntilKeyChanged('time'),
+            distinctUntilChanged((prev, cur) => prev?.time === cur?.time),
 
         );
 
@@ -311,7 +309,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
 
-            distinctUntilKeyChanged('time'),
+            distinctUntilChanged((prev, cur) => prev?.time === cur?.time),
         );
     }
 
