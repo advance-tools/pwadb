@@ -253,7 +253,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     restAPI: RestAPI<T>;
 
-    cacheMaxAge = 10 // in seconds
+    retrieveCacheAge = 20 // in seconds
 
     constructor(private name: string, private db$: Observable<RxDatabase<Database>>, private httpClient: HttpClient) {
 
@@ -268,7 +268,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     downloadRetrieve(idbRes: PwaDocument<T>, tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T> | null> {
 
-        const cacheAllowedAge = new Date().getTime() - (this.cacheMaxAge * 1000);
+        const cacheAllowedAge = new Date().getTime() - (this.retrieveCacheAge * 1000);
 
         console.log('Age', idbRes?.time, cacheAllowedAge, (idbRes?.time || 0) > cacheAllowedAge);
 
