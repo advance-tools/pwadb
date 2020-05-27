@@ -298,7 +298,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
 
-            distinctUntilChanged(),
+            distinctUntilChanged((prev, cur) => JSON.stringify(prev) === JSON.stringify(cur)),
 
         );
 
@@ -309,8 +309,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         return this.collectionAPI.get(tenant, url).pipe(
 
             switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
-
-            distinctUntilChanged(),
         );
     }
 
