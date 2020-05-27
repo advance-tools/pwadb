@@ -107,6 +107,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                     }
                 }).$),
 
+                shareReplay(1),
+
             );
 
             this.documentCache.set(tenantUrl, doc);
