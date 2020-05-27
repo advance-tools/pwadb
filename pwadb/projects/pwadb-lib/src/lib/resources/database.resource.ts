@@ -51,9 +51,7 @@ export class PwaDatabaseService<T> {
             map(db => collectionNames.map(k => db[k]) as PwaCollection<any>[]),
 
             map(cols => cols.map(c => c.find({
-                selector: {
-                    $and: [{tenant: {$eq: tenant}}, {method: {$ne: 'GET'}}]
-                },
+                selector: {$and: [{tenant: {$eq: tenant}}, {method: {$ne: 'GET'}}]},
                 sort: [{time: order}]
             }).$)),
 
@@ -146,11 +144,7 @@ export class PwaDatabaseService<T> {
 
                 const cacheAllowedAge = new Date().getTime() - (k.cacheMaxAge * 1000);
 
-                return col.find({
-                    selector: {
-                        $and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]
-                    }
-                }).remove();
+                return col.find({selector: {$and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]}}).remove();
             })),
 
             switchMap(v => forkJoin(...v))

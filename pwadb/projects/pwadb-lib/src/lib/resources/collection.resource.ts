@@ -1,6 +1,6 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, tap, catchError, startWith, first, debounceTime, shareReplay, distinctUntilChanged} from 'rxjs/operators';
+import { switchMap, map, tap, catchError, startWith, first, debounceTime, shareReplay, distinctUntilChanged, filter} from 'rxjs/operators';
 import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -289,12 +289,15 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             startWith(null),
         );
 
+        let prev = null;
+
         return apiFetch.pipe(
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
 
-            // distinctUntilChanged((prev, cur) => prev?.method === cur?.method && prev?.time === cur?.time && prev?.error === cur?.error && JSON.stringify(prev.data) === JSON.stringify(cur.data)),
-
+            filter(cur => !(prev?.method === cur?.method && prev?.time === cur?.time && prev?.error === cur?.error && JSON.stringify(prev.data) === JSON.stringify(cur.data))),
+            
+            tap(cur => prev = {...cur}),
         );
 
     }
