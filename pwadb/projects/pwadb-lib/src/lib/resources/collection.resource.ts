@@ -298,7 +298,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
 
-            distinctUntilChanged((prev, cur) => prev?.time === cur?.time),
+            distinctUntilChanged(),
 
         );
 
@@ -310,7 +310,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
 
-            distinctUntilChanged((prev, cur) => prev?.time === cur?.time),
+            distinctUntilChanged(),
         );
     }
 
