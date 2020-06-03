@@ -31,6 +31,15 @@ export function parseDate(fieldValue: FieldDataType, inputValue: string): null |
     return isNaN(parsedFieldValue) && isNaN(parsedInputValue) ? null : {parsedFieldValue, parsedInputValue};
 }
 
+export function parseBoolean(fieldValue: FieldDataType, inputValue: string): null | {[key: string]: boolean} {
+
+    const parsedFieldValue = fieldValue.toString().toLowerCase() === 'true' ? true : fieldValue.toString().toLowerCase() === 'false' ? false : null;
+
+    const parsedInputValue = inputValue.toString().toLowerCase() === 'true' ? true : inputValue.toString().toLowerCase() === 'false' ? false : null;
+
+    return parsedFieldValue === null || parsedInputValue === null ? null : {parsedFieldValue, parsedInputValue};
+}
+
 ///////////////////////////////////////////////
 // Lookup Filters (num, date, string, boolean)
 ///////////////////////////////////////////////
@@ -44,6 +53,10 @@ export const eq: (v: PwaDocument<any>, field: string, inputValue: string) => boo
     const isNumber = parseNumber(v.data[field] as FieldDataType, inputValue);
 
     if (isNumber) return isNumber.parsedFieldValue === isNumber.parsedInputValue;
+
+    const isBoolean = parseBoolean(v.data[field] as FieldDataType, inputValue);
+
+    if (isBoolean) return isBoolean.parsedFieldValue === isBoolean.parsedInputValue;
 
     return v.data[field] === inputValue;
 }
