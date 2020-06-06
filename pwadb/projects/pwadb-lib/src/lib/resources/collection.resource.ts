@@ -5,7 +5,6 @@ import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
-import { fromWorker } from 'observable-webworker';
 
 export class RestAPI<T extends Datatype> {
 
@@ -119,26 +118,22 @@ export class CollectionAPI<T extends Datatype, Database> {
         results: PwaDocument<T>[];
     }> {
 
-        const input$ = of({docs$, params, validQueryKeys});
+        const start = parseInt(params?.get('offset') || '0');
 
-        return fromWorker(() => new Worker('./worker.resource', {type: 'module'}), input$);
+        const end = start + parseInt(params?.get('limit') || '100');
 
-        // const start = parseInt(params?.get('offset') || '0');
+        return docs$.pipe(
 
-        // const end = start + parseInt(params?.get('limit') || '100');
+            map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
 
-        // return docs$.pipe(
-
-        //     map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
-
-        //     map(allDocs => ({
-        //         getCount: allDocs.filter(v => v.method === 'GET').length,
-        //         postCount: allDocs.filter(v => v.method === 'POST').length,
-        //         putResults: allDocs.filter(v => v.method === 'PUT'),
-        //         delResults: allDocs.filter(v => v.method === 'DELETE'),
-        //         results: allDocs.slice(start, end)
-        //     })),
-        // );
+            map(allDocs => ({
+                getCount: allDocs.filter(v => v.method === 'GET').length,
+                postCount: allDocs.filter(v => v.method === 'POST').length,
+                putResults: allDocs.filter(v => v.method === 'PUT'),
+                delResults: allDocs.filter(v => v.method === 'DELETE'),
+                results: allDocs.slice(start, end)
+            })),
+        );
     }
 
     ////////////////
