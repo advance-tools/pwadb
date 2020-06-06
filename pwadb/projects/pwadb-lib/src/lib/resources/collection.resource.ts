@@ -295,11 +295,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
 
+            auditTime(1000 / 60), // emit results at a maximum of 60fps
+
             filter(cur => !(prev?.method === cur?.method && prev?.time === cur?.time && prev?.error === cur?.error && JSON.stringify(prev?.data) === JSON.stringify(cur?.data))),
             
             tap(cur => prev = {...cur}),
-
-            auditTime(1000 / 60), // emit results at a maximum of 60fps
         );
 
     }
