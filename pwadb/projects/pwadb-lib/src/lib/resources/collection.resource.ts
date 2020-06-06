@@ -1,6 +1,6 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, tap, catchError, startWith, first, debounceTime, shareReplay, distinctUntilChanged, filter} from 'rxjs/operators';
+import { switchMap, map, tap, catchError, startWith, first, debounceTime, shareReplay, filter, auditTime} from 'rxjs/operators';
 import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -295,9 +295,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
 
-            filter(cur => !(prev?.method === cur?.method && prev?.time === cur?.time && prev?.error === cur?.error && JSON.stringify(prev.data) === JSON.stringify(cur.data))),
+            filter(cur => !!prev && !!cur && !(prev?.method === cur?.method && prev?.time === cur?.time && prev?.error === cur?.error && JSON.stringify(prev.data) === JSON.stringify(cur.data))),
             
             tap(cur => prev = {...cur}),
+
+            auditTime(1000 / 60), // emit results at a maximum of 60fps
         );
 
     }
@@ -307,6 +309,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         return this.collectionAPI.get(tenant, url).pipe(
 
             switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
+
         );
     }
 
@@ -370,7 +373,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             map(res => ({
                 count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
                 results: res.results
-            }))
+            })),
+
+            auditTime(1000 / 60), // emit results at a maximum of 60fps
         );
 
     }
@@ -395,7 +400,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             map(res => ({
                 count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
                 results: res.results
-            }))
+            })),
+
         );
     }
 
