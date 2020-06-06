@@ -5,6 +5,7 @@ import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
+import { fromWorker } from 'observable-webworker';
 
 export class RestAPI<T extends Datatype> {
 
@@ -110,7 +111,7 @@ export class CollectionAPI<T extends Datatype, Database> {
         return this.documentCache.get(tenantUrl);
     }
 
-    filterList(allDocs: Observable<PwaDocument<T>[]>, params?: HttpParams, validQueryKeys = []): Observable<{
+    filterList(docs$: Observable<PwaDocument<T>[]>, params?: HttpParams, validQueryKeys = []): Observable<{
         getCount: number;
         postCount: number;
         putResults: PwaDocument<T>[];
@@ -118,22 +119,26 @@ export class CollectionAPI<T extends Datatype, Database> {
         results: PwaDocument<T>[];
     }> {
 
-        const start = parseInt(params?.get('offset') || '0');
+        const input$ = of({docs$, params, validQueryKeys});
 
-        const end = start + parseInt(params?.get('limit') || '100');
+        return fromWorker(() => new Worker('./worker.resource', {type: 'module'}), input$);
 
-        return allDocs.pipe(
+        // const start = parseInt(params?.get('offset') || '0');
 
-            map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
+        // const end = start + parseInt(params?.get('limit') || '100');
 
-            map(allDocs => ({
-                getCount: allDocs.filter(v => v.method === 'GET').length,
-                postCount: allDocs.filter(v => v.method === 'POST').length,
-                putResults: allDocs.filter(v => v.method === 'PUT'),
-                delResults: allDocs.filter(v => v.method === 'DELETE'),
-                results: allDocs.slice(start, end)
-            })),
-        );
+        // return docs$.pipe(
+
+        //     map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
+
+        //     map(allDocs => ({
+        //         getCount: allDocs.filter(v => v.method === 'GET').length,
+        //         postCount: allDocs.filter(v => v.method === 'POST').length,
+        //         putResults: allDocs.filter(v => v.method === 'PUT'),
+        //         delResults: allDocs.filter(v => v.method === 'DELETE'),
+        //         results: allDocs.slice(start, end)
+        //     })),
+        // );
     }
 
     ////////////////
