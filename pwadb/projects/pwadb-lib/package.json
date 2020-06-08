@@ -1,6 +1,6 @@
 {
   "name": "@impriyanshub/pwadb-lib",
-  "version": "0.0.2-43",
+  "version": "0.0.2-44",
   "peerDependencies": {
     "@angular/common": "^9.1.1",
     "@angular/core": "^9.1.1",
@@ -8,5 +8,6 @@
   },
   "repository": {
     "url": "git://github.com/impriyanshub/Books-PWA.git"
-  }
+  },
+  "dependencies": {}
 }
