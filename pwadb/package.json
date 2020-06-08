@@ -14,7 +14,6 @@
     "@angular/common": "~9.1.9",
     "@angular/compiler": "~9.1.9",
     "@angular/core": "~9.1.9",
-    "observable-webworker": "^3.2.4",
     "pouchdb-adapter-idb": "^7.2.1",
     "rxdb": "^9.0.0",
     "rxjs": "^6.5.5",
