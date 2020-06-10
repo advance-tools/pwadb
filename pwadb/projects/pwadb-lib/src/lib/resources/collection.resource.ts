@@ -118,8 +118,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return docs$.pipe(
 
-            debounceTime(1000 / 60),
-
             map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
 
             map(allDocs => ({
