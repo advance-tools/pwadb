@@ -81,8 +81,6 @@ export class CollectionAPI<T extends Datatype, Database> {
                     sort: [{time: 'desc'}] 
                 }).$),
 
-                auditTime(1000 / 120), // emit results at a maximum of 120fps
-
                 shareReplay(1),
 
             );
@@ -112,19 +110,15 @@ export class CollectionAPI<T extends Datatype, Database> {
         return this.documentCache.get(tenantUrl);
     }
 
-    filterList(docs$: Observable<PwaDocument<T>[]>, params?: HttpParams, validQueryKeys = []): Observable<{
-        getCount: number;
-        postCount: number;
-        putResults: PwaDocument<T>[];
-        delResults: PwaDocument<T>[];
-        results: PwaDocument<T>[];
-    }> {
+    filterList(docs$: Observable<PwaDocument<T>[]>, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
         const start = parseInt(params?.get('offset') || '0');
 
         const end = start + parseInt(params?.get('limit') || '100');
 
         return docs$.pipe(
+
+            debounceTime(1000 / 60),
 
             map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
 
