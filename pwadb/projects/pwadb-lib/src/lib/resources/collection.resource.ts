@@ -81,6 +81,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                     sort: [{time: 'desc'}] 
                 }).$),
 
+                auditTime(1000 / 120), // emit results at a maximum of 120fps
+
                 shareReplay(1),
 
             );
