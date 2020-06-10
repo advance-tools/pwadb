@@ -1,7 +1,7 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import idb from 'pouchdb-adapter-idb';
 import { from, Observable, combineLatest, BehaviorSubject, forkJoin, empty } from 'rxjs';
-import { map, switchMap, filter, catchError, startWith } from 'rxjs/operators';
+import { map, switchMap, filter, catchError, startWith, shareReplay, first } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { PwaCollection } from '../definitions/collection';
 import { PwaDocument } from '../definitions/document';
@@ -31,6 +31,10 @@ export class PwaDatabaseService<T> {
 
                 map(() => db),
             )),
+
+            shareReplay(1),
+
+            first(),
 
         );
 

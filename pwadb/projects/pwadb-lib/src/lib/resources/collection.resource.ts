@@ -58,6 +58,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             map(collections => collections[0]),
 
+            shareReplay(1),
+
             first()
         );
 
