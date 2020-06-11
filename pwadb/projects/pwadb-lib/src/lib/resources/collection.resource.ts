@@ -1,6 +1,6 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, tap, catchError, startWith, first, debounceTime, shareReplay, filter, auditTime} from 'rxjs/operators';
+import { switchMap, map, tap, catchError, startWith, first, debounceTime, shareReplay, filter } from 'rxjs/operators';
 import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -291,8 +291,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
 
-            auditTime(1000 / 60), // emit results at a maximum of 60fps
-
             filter(cur => !prev || !cur || !(prev.method === cur.method && prev.time === cur.time && prev.error === cur.error && JSON.stringify(prev.data) === JSON.stringify(cur.data))),
             
             tap(cur => prev = {...cur}),
@@ -370,8 +368,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
                 results: res.results
             })),
-
-            auditTime(1000 / 60), // emit results at a maximum of 60fps
         );
 
     }
