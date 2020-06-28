@@ -4,6 +4,8 @@ import { map, switchMap, filter, catchError, startWith, shareReplay, first } fro
 import { HttpClient } from '@angular/common/http';
 import { PwaCollection } from '../definitions/collection';
 import { PwaDocument } from '../definitions/document';
+import idb from 'pouchdb-adapter-idb';
+import memory from 'pouchdb-adapter-memory';
 
 export class PwaDatabaseService<T> {
 
@@ -20,18 +22,10 @@ export class PwaDatabaseService<T> {
         eventReduce: true, // <- queryChangeDetection (optional, default: false)
     }) {
 
-        if (window?.indexedDB || (window as any)?.mozIndexedDB || (window as any)?.webkitIndexedDB || (window as any)?.msIndexedDB) {
+        addRxPlugin(idb);
+        addRxPlugin(memory);
 
-            addRxPlugin(require('pouchdb-adapter-idb'));
-
-            dbCreator.adapter = 'idb';
-
-        } else {
-
-            addRxPlugin(require('pouchdb-adapter-memory'));
-
-            dbCreator.adapter = 'memory';
-        }
+        dbCreator.adapter = this.isIndexeddbAvailable() ? 'idb' : 'memory';
 
         this.db$ = from(createRxDatabase(dbCreator)).pipe(
     
@@ -49,6 +43,11 @@ export class PwaDatabaseService<T> {
         );
 
         this.retryChange = new BehaviorSubject(false);
+    }
+
+    isIndexeddbAvailable() {
+
+        return window?.indexedDB || (window as any)?.mozIndexedDB || (window as any)?.webkitIndexedDB || (window as any)?.msIndexedDB;
     }
 
     retry() {
