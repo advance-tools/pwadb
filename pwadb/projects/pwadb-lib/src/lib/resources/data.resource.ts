@@ -208,7 +208,7 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 // Tree
 ///////////////////////////
 
-export type TreeNode<T extends DatabaseDatatype> = {item: PwaDocument<T>, children: TreeNode<any>[]};
+export type TreeNode<T extends DatabaseDatatype> = {item: PwaDocument<T>, children: Observable<TreeNode<any>[]>};
 
 export interface DatabaseInformation<T extends DatabaseDatatype> {
 	getDatabase: (limit?: number) => Database<T> | ReactiveDatabase<T>;
@@ -222,8 +222,8 @@ export interface TreeInformation<T extends DatabaseDatatype> {
 
 export class TreeDatabase<T extends DatabaseDatatype> {
 
-	childTreeMap: Map<PwaDocument<T>, Observable<TreeNode<T>>>;
-	databaseMap: Map<PwaDocument<T>, Database<T> | ReactiveDatabase<T>>;
+	childTreeMap: Map<PwaDocument<any>, Observable<TreeNode<any>[]>>;
+	databaseMap: Map<PwaDocument<any>, Database<any> | ReactiveDatabase<any>>;
 	
 	dataChange: Observable<TreeNode<T>[]>;
 	
@@ -281,7 +281,7 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 
 			return db.dataChange.pipe(
 
-				switchMap(docs => {
+				map(docs => {
 
 					const obs = docs.map(doc => {
 
@@ -298,20 +298,18 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 
 							const childTree = this.buildTree(treeInfo[key].children, doc, childParams).pipe(
 
-								map(nodes => ({item: doc, children: nodes} as TreeNode<T>)),
-
 								shareReplay(1),
 
-							);
+							) as Observable<TreeNode<any>[]>;
 
 							this.childTreeMap.set(doc, childTree);
 						}
 
-						return this.childTreeMap.get(doc);
+						return {item: doc, children: this.childTreeMap.get(doc)} as TreeNode<any>;
 
 					});
 
-					return combineLatest(obs);
+					return obs;
 				}),
 
 			);
@@ -321,7 +319,7 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 
 			map(nodes => [].concat(...nodes)),
 
-			startWith([] as TreeNode<T>[])
+			// startWith([])
 
 		);
 	}

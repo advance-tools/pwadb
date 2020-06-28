@@ -1,5 +1,4 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
-import idb from 'pouchdb-adapter-idb';
 import { from, Observable, combineLatest, BehaviorSubject, forkJoin, empty } from 'rxjs';
 import { map, switchMap, filter, catchError, startWith, shareReplay, first } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
@@ -21,10 +20,21 @@ export class PwaDatabaseService<T> {
         eventReduce: true, // <- queryChangeDetection (optional, default: false)
     }) {
 
-        addRxPlugin(idb);
+        if (window?.indexedDB || (window as any)?.mozIndexedDB || (window as any)?.webkitIndexedDB || (window as any)?.msIndexedDB) {
+
+            addRxPlugin(require('pouchdb-adapter-idb'));
+
+            dbCreator.adapter = 'idb';
+
+        } else {
+
+            addRxPlugin(require('pouchdb-adapter-memory'));
+
+            dbCreator.adapter = 'memory';
+        }
 
         this.db$ = from(createRxDatabase(dbCreator)).pipe(
-
+    
             switchMap((db: any) => from(db.waitForLeadership()).pipe(
 
                 startWith(null),
