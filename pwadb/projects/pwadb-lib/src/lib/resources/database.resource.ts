@@ -5,7 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { PwaCollection } from '../definitions/collection';
 import { PwaDocument } from '../definitions/document';
 import idb from 'pouchdb-adapter-idb';
-import memory from 'pouchdb-adapter-memory';
+// import memory from 'pouchdb-adapter-memory';
 
 export class PwaDatabaseService<T> {
 
@@ -23,9 +23,9 @@ export class PwaDatabaseService<T> {
     }) {
 
         addRxPlugin(idb);
-        addRxPlugin(memory);
+        // addRxPlugin(memory);
 
-        dbCreator.adapter = this.isIndexeddbAvailable() ? 'idb' : 'memory';
+        // dbCreator.adapter = this.isIndexeddbAvailable() ? 'idb' : 'memory';
 
         this.db$ = from(createRxDatabase(dbCreator)).pipe(
     
