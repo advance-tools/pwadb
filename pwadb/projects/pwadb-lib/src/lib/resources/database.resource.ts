@@ -57,22 +57,17 @@ export class PwaDatabaseService<T> {
         this.retryChange.next(true);
     }
 
-    unsynchronised(tenant: string, collectionNames: string[], order: 'desc' | 'asc' = 'asc'): Observable<PwaDocument<any>[]> {
+    unsynchronised(tenant: string, collectionNames: string[], order: 'desc' | 'asc' = 'asc'): Observable<{collectionName: string, document: PwaDocument<any>}[]> {
 
         return this.db$.pipe(
 
-            map(db => collectionNames.map(k => db[k]) as PwaCollection<any>[]),
+            map(db => collectionNames.map(k => ({collectionName: k, documents$: (db[k] as PwaCollection<any>).find({selector: {$and: [{tenant: {$eq: tenant}}, {method: {$ne: 'GET'}}]}, sort: [{time: order}]}).$}))),
 
-            map(cols => cols.map(c => c.find({
-                selector: {$and: [{tenant: {$eq: tenant}}, {method: {$ne: 'GET'}}]},
-                sort: [{time: order}]
-            }).$)),
+            switchMap(v => combineLatest(v.map(x => x.documents$.pipe(map(docs => docs.map(d => ({collectionName: x.collectionName, document: d}))))))),
 
-            switchMap(cols => combineLatest(cols)),
+            map(sortedDocs => [].concat(...sortedDocs)),
 
-            map(sortedDocs => [].concat(...sortedDocs.filter(v => !!v))),
-
-            map(sortedDocs => sortedDocs.sort((a, b) => order === 'asc' ? a.time - b.time : b.time - a.time)),
+            map((sortedDocs: {collectionName: string, document: PwaDocument<any>}[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.document.time - b.document.time : b.document.time - a.document.time)),
         );
     }
 
@@ -82,7 +77,7 @@ export class PwaDatabaseService<T> {
 
             filter(sortedDocs => sortedDocs.length > 0),
 
-            map(sortedDocs => sortedDocs[0]),
+            map(sortedDocs => sortedDocs[0].document),
 
         );
 
