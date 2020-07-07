@@ -294,6 +294,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             filter(cur => !prev || !cur || !(prev.method === cur.method && prev.time === cur.time && prev.error === cur.error && JSON.stringify(prev.data) === JSON.stringify(cur.data))),
             
             tap(cur => prev = {...cur}),
+
+            shareReplay(1),
         );
 
     }
@@ -304,6 +306,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
 
+            shareReplay(1),
         );
     }
 

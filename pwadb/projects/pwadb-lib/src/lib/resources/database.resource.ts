@@ -1,6 +1,6 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import { from, Observable, combineLatest, BehaviorSubject, forkJoin, empty } from 'rxjs';
-import { map, switchMap, filter, catchError, startWith, shareReplay, first } from 'rxjs/operators';
+import { map, switchMap, filter, catchError, startWith, shareReplay, first, tap } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { PwaCollection } from '../definitions/collection';
 import { PwaDocument } from '../definitions/document';
@@ -61,7 +61,9 @@ export class PwaDatabaseService<T> {
 
         return this.db$.pipe(
 
-            map(db => collectionNames.map(k => ({collectionName: k, documents$: (db[k] as PwaCollection<any>).find({selector: {$and: [{tenant: {$eq: tenant}}, {method: {$ne: 'GET'}}]}, sort: [{time: order}]}).$}))),
+            tap(db => console.log(db, collectionNames)),
+
+            map(db => collectionNames.filter(k => k in db).map(k => ({collectionName: k, documents$: (db[k] as PwaCollection<any>).find({selector: {$and: [{tenant: {$eq: tenant}}, {method: {$ne: 'GET'}}]}, sort: [{time: order}]}).$}))),
 
             switchMap(v => combineLatest(v.map(x => x.documents$.pipe(map(docs => docs.map(d => ({collectionName: x.collectionName, document: d}))))))),
 
