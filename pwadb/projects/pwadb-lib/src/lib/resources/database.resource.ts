@@ -61,7 +61,7 @@ export class PwaDatabaseService<T> {
 
         return this.db$.pipe(
 
-            map(db => collectionNames.filter(k => k in db.collections).map(k => ({collectionName: k, documents$: (db.collections[k] as PwaCollection<any>).find({selector: {$and: [{tenant: {$eq: tenant}}, {method: {$ne: 'GET'}}]}, sort: [{time: order}]}).$}))),
+            map(db => collectionNames.filter(k => k in db.collections).map(k => ({collectionName: k, documents$: (db.collections[k] as PwaCollection<any>).find({selector: {$and: [{time: {$gte: 0}}, {tenant: {$eq: tenant}}, {method: {$ne: 'GET'}}]}, sort: [{time: order}]}).$}))),
 
             switchMap(v => combineLatest(v.map(x => x.documents$.pipe(map(docs => docs.map(d => ({collectionName: x.collectionName, document: d}))))))),
 
