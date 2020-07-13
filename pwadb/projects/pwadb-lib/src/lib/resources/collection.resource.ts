@@ -295,7 +295,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             
             tap(cur => prev = {...cur}),
 
-            shareReplay(1),
         );
 
     }
@@ -305,8 +304,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         return this.collectionAPI.get(tenant, url).pipe(
 
             switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
-
-            shareReplay(1),
         );
     }
 

@@ -28,7 +28,7 @@ export class PwaDatabaseService<T> {
         // dbCreator.adapter = this.isIndexeddbAvailable() ? 'idb' : 'memory';
 
         this.db$ = from(createRxDatabase(dbCreator)).pipe(
-    
+
             switchMap((db: any) => from(db.waitForLeadership()).pipe(
 
                 startWith(null),
@@ -57,18 +57,37 @@ export class PwaDatabaseService<T> {
         this.retryChange.next(true);
     }
 
+    // tslint:disable-next-line: max-line-length
     unsynchronised(tenant: string, collectionNames: string[], order: 'desc' | 'asc' = 'asc'): Observable<{collectionName: string, document: PwaDocument<any>}[]> {
-
-        // {matchUrl: {$regex: new RegExp(`^${tenant}.*`)}},
 
         return this.db$.pipe(
 
-            map(db => collectionNames.filter(k => k in db.collections).map(k => ({collectionName: k, documents$: (db.collections[k] as PwaCollection<any>).find({selector: {$and: [{time: {$gte: 0}}, {method: {$ne: 'GET'}}]}, sort: [{time: order}]}).$}))),
+            switchMap(db => db.$.pipe(
 
+                map(() => {
+
+                    const query = {
+                        selector: {$and: [{time: {$gte: 0}}, {matchUrl: {$regex: new RegExp(`^${tenant}.*`)}}, {method: {$ne: 'GET'}}]},
+                        sort: [{time: order}]
+                    };
+
+                    const collections = collectionNames
+                        .filter(k => k in db.collections)
+                        .map(k => ({collectionName: k, documents$: from((db.collections[k] as PwaCollection<any>).find(query).exec())}));
+
+                    return collections;
+                }),
+
+            )),
+
+            tap(v => console.log('unsynchronised', v)),
+
+            // tslint:disable-next-line: max-line-length
             switchMap(v => combineLatest(v.map(x => x.documents$.pipe(map(docs => docs.map(d => ({collectionName: x.collectionName, document: d}))))))),
 
             map(sortedDocs => [].concat(...sortedDocs)),
 
+            // tslint:disable-next-line: max-line-length
             map((sortedDocs: {collectionName: string, document: PwaDocument<any>}[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.document.time - b.document.time : b.document.time - a.document.time)),
         );
     }
@@ -106,7 +125,7 @@ export class PwaDatabaseService<T> {
                             }))),
 
                             catchError(err => doc.atomicSet('error', JSON.stringify(err))),
-                            
+
                         );
 
                     } else if (doc.method === 'PUT') {
@@ -149,7 +168,7 @@ export class PwaDatabaseService<T> {
         return this.db$.pipe(
 
             map(db => collectionInfo.map(k => {
-                
+
                 const col = db[k.name] as PwaCollection<any>;
 
                 const cacheAllowedAge = new Date().getTime() - (k.cacheMaxAge * 1000);
@@ -160,19 +179,19 @@ export class PwaDatabaseService<T> {
             switchMap(v => forkJoin(...v))
         );
     }
-    
+
     trim(collectionInfo: {name: string, retainCacheSize: number}[]): Observable<PwaDocument<any>[]> {
 
         return this.db$.pipe(
 
             map(db => collectionInfo.map(k => {
-                
+
                 const col = db[k.name] as PwaCollection<any>;
 
                 return col.find({
                     selector: {method: {$eq: 'GET'}},
                     sort: [{time: 'desc'}],
-                    skip: k.retainCacheSize 
+                    skip: k.retainCacheSize
                 }).remove();
             })),
 
