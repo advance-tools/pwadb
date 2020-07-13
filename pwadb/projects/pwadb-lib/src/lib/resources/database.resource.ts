@@ -64,6 +64,8 @@ export class PwaDatabaseService<T> {
 
             switchMap(db => db.$.pipe(
 
+                startWith(null),
+
                 map(() => {
 
                     const query = {
