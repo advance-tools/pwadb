@@ -297,7 +297,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     //////////////
 
     // tslint:disable-next-line: max-line-length
-    downloadList(docs: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams): Observable<{apiCount: number, docs: PwaDocument<T>[]}> {
+    downloadList(docs: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams): Observable<number> {
 
         // Exclude locally unsynced data in the api results
         let httpParams = params || new HttpParams();
@@ -312,10 +312,10 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(networkRes => this.collectionAPI.collection$.pipe(
 
-                switchMap(col => {
+                map(col => {
 
                     // map network data to doctype
-                    const obs = networkRes.results
+                    networkRes.results
                     .map(data => ({
                         tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${data.id}`,
                         matchUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${data.id}`,
@@ -324,14 +324,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                         error: null,
                         time: new Date().getTime(),
                     }))
-                    .map((d: PwaDocType<T>) => from(col.atomicUpsert(d)));
+                    .forEach((d: PwaDocType<T>) => col.atomicUpsert(d));
 
-                    return concat(...obs).pipe(
-
-                        bufferCount(obs.length),
-
-                        map(v => ({apiCount: networkRes.count, docs: v})),
-                    );
+                    return networkRes.count;
                 })
             )),
 
@@ -341,49 +336,47 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<PwaListResponse<T>> {
 
-        let apiCount = 0;
-
         const apiFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
             switchMap(idbRes => this.downloadList(idbRes, tenant, url, params)),
-
-            tap(v => apiCount = v.apiCount),
 
         );
 
         return apiFetch.pipe(
 
-            switchMap(() => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys)),
+            switchMap(apiCount => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
 
-            map(res => ({
-                count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
-                results: res.results
-            })),
+                map(res => ({
+                    count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
+                    results: res.results
+                })),
+
+            )),
+
         );
 
     }
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<PwaListResponse<T>> {
 
-        let apiCount = 0;
-
         const apiFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
             switchMap(idbRes => this.downloadList(idbRes, tenant, url, params)),
-
-            tap(v => apiCount = v.apiCount),
         );
 
         return apiFetch.pipe(
 
             // debounceTime(100), // adding delay
 
-            switchMap(() => this.collectionAPI.list(tenant, url, params, validQueryKeys)),
+            switchMap(apiCount => this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
-            map(res => ({
-                count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
-                results: res.results
-            })),
+                map(res => ({
+                    count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
+                    results: res.results
+                })),
+
+            )),
+
 
         );
     }

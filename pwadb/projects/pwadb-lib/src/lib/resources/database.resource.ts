@@ -72,11 +72,12 @@ export class PwaDatabaseService<T> {
                     sort: [{time: order}]
                 };
 
-                return collections.map(k => ({collectionName: k.name, documents$: from(k.find(query).$)}));
-            }),
+                return collections.map(k => from(k.find(query).$.pipe(
 
-            // tslint:disable-next-line: max-line-length
-            switchMap(v => combineLatest(v.map(x => x.documents$.pipe(map(docs => docs.map(d => ({collectionName: x.collectionName, document: d}))))))),
+                    map(docs => docs.map(d => ({collectionName: k.name, document: d}))),
+                )));
+
+            }),
 
             map(sortedDocs => [].concat(...sortedDocs)),
 
