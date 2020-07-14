@@ -1,9 +1,9 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import { from, Observable, combineLatest, BehaviorSubject, forkJoin, empty } from 'rxjs';
-import { map, switchMap, filter, catchError, startWith, shareReplay, first, tap } from 'rxjs/operators';
+import { map, switchMap, filter, catchError, startWith, shareReplay, first } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
-import { PwaCollection } from '../definitions/collection';
-import { PwaDocument } from '../definitions/document';
+import { PwaCollection, getCollectionCreator, pwaCollectionMethods } from '../definitions/collection';
+import { PwaDocument, pwaDocMethods } from '../definitions/document';
 import idb from 'pouchdb-adapter-idb';
 // import memory from 'pouchdb-adapter-memory';
 
@@ -62,27 +62,18 @@ export class PwaDatabaseService<T> {
 
         return this.db$.pipe(
 
-            switchMap(db => db.$.pipe(
+            // tslint:disable-next-line: max-line-length
+            switchMap(db => forkJoin(...collectionNames.map(v => db.collection(getCollectionCreator(v, pwaCollectionMethods, pwaDocMethods))))),
 
-                startWith(null),
+            map((collections: PwaCollection<any>[]) => {
 
-                map(() => {
+                const query = {
+                    selector: {$and: [{time: {$gte: 0}}, {matchUrl: {$regex: new RegExp(`^${tenant}.*`)}}, {method: {$ne: 'GET'}}]},
+                    sort: [{time: order}]
+                };
 
-                    const query = {
-                        selector: {$and: [{time: {$gte: 0}}, {matchUrl: {$regex: new RegExp(`^${tenant}.*`)}}, {method: {$ne: 'GET'}}]},
-                        sort: [{time: order}]
-                    };
-
-                    const collections = collectionNames
-                        .filter(k => k in db.collections)
-                        .map(k => ({collectionName: k, documents$: from((db.collections[k] as PwaCollection<any>).find(query).exec())}));
-
-                    return collections;
-                }),
-
-            )),
-
-            tap(v => console.log('unsynchronised', v)),
+                return collections.map(k => ({collectionName: k.name, documents$: from(k.find(query).$)}));
+            }),
 
             // tslint:disable-next-line: max-line-length
             switchMap(v => combineLatest(v.map(x => x.documents$.pipe(map(docs => docs.map(d => ({collectionName: x.collectionName, document: d}))))))),
@@ -165,37 +156,42 @@ export class PwaDatabaseService<T> {
 
     }
 
-    evict(collectionInfo: {name: string, cacheMaxAge: number}[]): Observable<PwaDocument<any>[]> {
+    evict(collectionInfo: {[name: string]: number}): Observable<PwaDocument<any>[]> {
 
         return this.db$.pipe(
 
-            map(db => collectionInfo.map(k => {
+            // tslint:disable-next-line: max-line-length
+            switchMap(db => forkJoin(...Object.keys(collectionInfo).map(k => db.collection(getCollectionCreator(k, pwaCollectionMethods, pwaDocMethods))))),
 
-                const col = db[k.name] as PwaCollection<any>;
+            map((collections: PwaCollection<any>[]) => {
 
-                const cacheAllowedAge = new Date().getTime() - (k.cacheMaxAge * 1000);
+                return collections.map(c => {
 
-                return col.find({selector: {$and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]}}).remove();
-            })),
+                    const cacheAllowedAge = new Date().getTime() - (collectionInfo[c.name] * 1000);
+
+                    return c.find({selector: {$and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]}}).remove();
+                });
+            }),
 
             switchMap(v => forkJoin(...v))
         );
     }
 
-    trim(collectionInfo: {name: string, retainCacheSize: number}[]): Observable<PwaDocument<any>[]> {
+    trim(collectionInfo: {[name: string]: number}): Observable<PwaDocument<any>[]> {
 
         return this.db$.pipe(
 
-            map(db => collectionInfo.map(k => {
+            // tslint:disable-next-line: max-line-length
+            switchMap(db => forkJoin(...Object.keys(collectionInfo).map(k => db.collection(getCollectionCreator(k, pwaCollectionMethods, pwaDocMethods))))),
 
-                const col = db[k.name] as PwaCollection<any>;
+            map((collections: PwaCollection<any>[]) => {
 
-                return col.find({
+                return collections.map(c => c.find({
                     selector: {method: {$eq: 'GET'}},
                     sort: [{time: 'desc'}],
-                    skip: k.retainCacheSize
-                }).remove();
-            })),
+                    skip: collectionInfo[c.name]
+                }).remove());
+            }),
 
             switchMap(v => forkJoin(...v))
         );

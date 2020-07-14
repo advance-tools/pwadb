@@ -1,4 +1,4 @@
-import { RxJsonSchema, RxDocument } from "rxdb";
+import { RxJsonSchema, RxDocument } from 'rxdb';
 
 export type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 

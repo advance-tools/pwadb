@@ -9,73 +9,75 @@ import { switchMap, tap, shareReplay, map, startWith, filter } from 'rxjs/operat
 /////////////////////
 
 export interface DatabaseDatatype {
-	id: string;
-	updated_at: string;
+    id: string;
+    updated_at: string;
 }
 
 export interface DatabaseService<T extends DatabaseDatatype> {
 
-	fetch: (params?: HttpParams) => Observable<PwaListResponse<T>>;
+    fetch: (params?: HttpParams) => Observable<PwaListResponse<T>>;
 
-	fetchReactive: (params?: HttpParams) => Observable<PwaListResponse<T>>;
+    fetchReactive: (params?: HttpParams) => Observable<PwaListResponse<T>>;
 
-	getDatabase?: (limit?: number) => Database<T>;
+    getDatabase?: (limit?: number) => Database<T>;
 
-	getReactiveDatabase?: (limit?: number) => ReactiveDatabase<T>;
+    getReactiveDatabase?: (limit?: number) => ReactiveDatabase<T>;
 }
 
 export interface IBaseDatabase {
-	reset: () => void;
-	loadMore: () => void;
+    reset: () => void;
+    loadMore: () => void;
 }
 
 export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 
-	_dataChange: BehaviorSubject<PwaDocument<T>[]>;
-	isLoadingChange: BehaviorSubject<boolean>;
-	totalCount = 0;
+    // tslint:disable-next-line: variable-name
+    _dataChange: BehaviorSubject<PwaDocument<T>[]>;
+    isLoadingChange: BehaviorSubject<boolean>;
+    totalCount = 0;
 
-	private _httpParams: HttpParams;
+    // tslint:disable-next-line: variable-name
+    private _httpParams: HttpParams;
 
-	get data() { return this._dataChange.value; }
-	set data(v: PwaDocument<T>[]) { this._dataChange.next(v); }
+    get data() { return this._dataChange.value; }
+    set data(v: PwaDocument<T>[]) { this._dataChange.next(v); }
 
-	get httpParams() { return this._httpParams; }
-	set httpParams(v: HttpParams) {
+    get httpParams() { return this._httpParams; }
+    set httpParams(v: HttpParams) {
 
-		this._httpParams = v;
+        this._httpParams = v;
 
-		this.reset();
-	}
+        this.reset();
+    }
 
-	get isLoading() { return this.isLoadingChange.value; }
-	get offset() { return this.data.length; }
-	get isLoadable(): boolean { return this.offset < this.totalCount; }
-	get limit() { return this.__limit; }
+    get isLoading() { return this.isLoadingChange.value; }
+    get offset() { return this.data.length; }
+    get isLoadable(): boolean { return this.offset < this.totalCount; }
+    get limit() { return this.__limit; }
 
-	constructor(private __limit: number) {
+    constructor(private __limit: number) {
 
-		this._dataChange 		= new BehaviorSubject([]);
-		this.isLoadingChange 	= new BehaviorSubject(false);
+        this._dataChange 		= new BehaviorSubject([]);
+        this.isLoadingChange 	= new BehaviorSubject(false);
 
-		this._httpParams = new HttpParams();
-	}
+        this._httpParams = new HttpParams();
+    }
 
-	reset() {
+    reset() {
 
-		this._httpParams = this.httpParams.set('offset', '0');
-		this._httpParams = this.httpParams.set('limit', this.limit.toString());
+        this._httpParams = this.httpParams.set('offset', '0');
+        this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
-		if (!this.httpParams.has('order_by')) this._httpParams = this.httpParams.set('order_by', '-updated_at');
-	}
+        if (!this.httpParams.has('order_by')) { this._httpParams = this.httpParams.set('order_by', '-updated_at'); }
+    }
 
-	loadMore() {
+    loadMore() {
 
-		this._httpParams = this.httpParams.set('offset', this.offset.toString());
-		this._httpParams = this.httpParams.set('limit', this.limit.toString());
+        this._httpParams = this.httpParams.set('offset', this.offset.toString());
+        this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
-		if (!this.httpParams.has('order_by')) this._httpParams = this.httpParams.set('order_by', '-updated_at');
-	}
+        if (!this.httpParams.has('order_by')) { this._httpParams = this.httpParams.set('order_by', '-updated_at'); }
+    }
 
 }
 
@@ -85,122 +87,122 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 
 export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
-	private queueChange: BehaviorSubject<HttpParams>;
+    private queueChange: BehaviorSubject<HttpParams>;
 
-	dataChange: Observable<PwaDocument<T>[]>;
+    dataChange: Observable<PwaDocument<T>[]>;
 
-	constructor(private apiService: DatabaseService<T>, private _limit = 20) {
+    constructor(private apiService: DatabaseService<T>, private _limit = 20) {
 
-		super(_limit);
+        super(_limit);
 
-		this.queueChange = new BehaviorSubject(null);
+        this.queueChange = new BehaviorSubject(null);
 
-		this.dataChange = this.queueChange.asObservable().pipe(
+        this.dataChange = this.queueChange.asObservable().pipe(
 
-			filter(v => !!v),
+            filter(v => !!v),
 
-			startWith(this.httpParams),
+            startWith(this.httpParams),
 
-			tap(() => this.isLoadingChange.next(true)),
+            tap(() => this.isLoadingChange.next(true)),
 
-			switchMap(httpParams => this.apiService.fetch(httpParams)),
+            switchMap(httpParams => this.apiService.fetch(httpParams)),
 
-			tap(res => this.totalCount = res.count),
-			
-			tap(res => this.data = this.data.concat(res.results)),
-			
-			tap(() => this.isLoadingChange.next(false)),
-			
-			map(() => this.data),
+            tap(res => this.totalCount = res.count),
 
-		);
-	}
+            tap(res => this.data = this.data.concat(res.results)),
 
-	reset() {
+            tap(() => this.isLoadingChange.next(false)),
 
-		super.reset();
+            map(() => this.data),
 
-		this.data = [];
+        );
+    }
 
-		this.queueChange.next(this.httpParams);
-	}
+    reset() {
 
-	loadMore() {
+        super.reset();
 
-		if (this.isLoading) return;
+        this.data = [];
 
-		super.loadMore();
+        this.queueChange.next(this.httpParams);
+    }
 
-		this.queueChange.next(this.httpParams);
-	}
+    loadMore() {
+
+        if (this.isLoading) { return; }
+
+        super.loadMore();
+
+        this.queueChange.next(this.httpParams);
+    }
 
 }
 
 
 export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
-	private queueChange: BehaviorSubject<Observable<PwaListResponse<T>>[]>;
+    private queueChange: BehaviorSubject<Observable<PwaListResponse<T>>[]>;
 
-	dataChange: Observable<PwaDocument<T>[]>
+    dataChange: Observable<PwaDocument<T>[]>
 
-	constructor(private apiService: DatabaseService<T>, private _limit = 20) {
+    constructor(private apiService: DatabaseService<T>, private _limit = 20) {
 
-		super(_limit);
+        super(_limit);
 
-		this.queueChange = new BehaviorSubject([]);
+        this.queueChange = new BehaviorSubject([]);
 
-		this.dataChange = this.queueChange.asObservable().pipe(
+        this.dataChange = this.queueChange.asObservable().pipe(
 
-			tap(v => {if(!v.length) this.reset(); }),
-  
-			filter(v => !!v.length),
+            tap(v => { if (!v.length) { this.reset(); } }),
 
-			tap(() => this.isLoadingChange.next(true)),
+            filter(v => !!v.length),
 
-			switchMap(v => combineLatest(v)),
+            tap(() => this.isLoadingChange.next(true)),
 
-			tap(res => this.totalCount = res.length > 0 ? res[res.length - 1].count : 0),
+            switchMap(v => combineLatest(v)),
 
-			tap(res => this.data = [].concat(...res.map(v => v.results))),
+            tap(res => this.totalCount = res.length > 0 ? res[res.length - 1].count : 0),
 
-			tap(() => this.isLoadingChange.next(false)),
-			
-			map(() => this.data),
+            tap(res => this.data = [].concat(...res.map(v => v.results))),
 
-		);
-	}
+            tap(() => this.isLoadingChange.next(false)),
 
-	getView(httpParams: HttpParams) {
+            map(() => this.data),
 
-		return this.apiService.fetchReactive(httpParams).pipe(
+        );
+    }
 
-			shareReplay(1)
-		);
-	}
+    getView(httpParams: HttpParams) {
 
-	reset() {
+        return this.apiService.fetchReactive(httpParams).pipe(
 
-		super.reset();
-		
-		// make view
-		const view = this.getView(this.httpParams);
-		
-		// push to queue
-		this.queueChange.next([view]);
-	}
+            shareReplay(1)
+        );
+    }
 
-	loadMore() {
+    reset() {
 
-		if (this.isLoading) return;
+        super.reset();
 
-		super.loadMore();
+        // make view
+        const view = this.getView(this.httpParams);
 
-		// make view
-		const view = this.getView(this.httpParams);
+        // push to queue
+        this.queueChange.next([view]);
+    }
 
-		// push to queue
-		this.queueChange.next([].concat(this.queueChange.value, [view]));
-	}
+    loadMore() {
+
+        if (this.isLoading) { return; }
+
+        super.loadMore();
+
+        // make view
+        const view = this.getView(this.httpParams);
+
+        // push to queue
+        this.queueChange.next([].concat(this.queueChange.value, [view]));
+    }
 
 }
 
@@ -211,126 +213,128 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 export type TreeNode<T extends DatabaseDatatype> = {item: PwaDocument<T>, children: Observable<TreeNode<any>[]>};
 
 export interface DatabaseInformation<T extends DatabaseDatatype> {
-	getDatabase: (limit?: number) => Database<T> | ReactiveDatabase<T>;
-	onCreationSetup?: (parentDoc: PwaDocument<T> | null, db: Database<T> | ReactiveDatabase<T>, params: HttpParams) => void;
-	children: TreeInformation<T>;
+    getDatabase: (limit?: number) => Database<T> | ReactiveDatabase<T>;
+    onCreationSetup?: (parentDoc: PwaDocument<T> | null, db: Database<T> | ReactiveDatabase<T>, params: HttpParams) => void;
+    children: TreeInformation<T>;
 }
 
 export interface TreeInformation<T extends DatabaseDatatype> {
-	[key: string]: DatabaseInformation<T>;
+    [key: string]: DatabaseInformation<T>;
 }
 
 export class TreeDatabase<T extends DatabaseDatatype> {
 
-	childTreeMap: Map<PwaDocument<any>, Observable<TreeNode<any>[]>>;
-	databaseMap: Map<PwaDocument<any>, Database<any> | ReactiveDatabase<any>>;
-	
-	dataChange: Observable<TreeNode<T>[]>;
-	
-	private queueChange: BehaviorSubject<any>;
-	private _dataChange: BehaviorSubject<TreeNode<T>[]>;
-	private _httpParams: HttpParams;
+    childTreeMap: Map<PwaDocument<any>, Observable<TreeNode<any>[]>>;
+    databaseMap: Map<PwaDocument<any>, Database<any> | ReactiveDatabase<any>>;
+
+    dataChange: Observable<TreeNode<T>[]>;
+
+    private queueChange: BehaviorSubject<any>;
+    // tslint:disable-next-line: variable-name
+    private _dataChange: BehaviorSubject<TreeNode<T>[]>;
+    // tslint:disable-next-line: variable-name
+    private _httpParams: HttpParams;
 
     get data() { return this._dataChange.value; }
-	set data(v: TreeNode<T>[]) { this._dataChange.next(v); }
+    set data(v: TreeNode<T>[]) { this._dataChange.next(v); }
 
-	get httpParams() { return this._httpParams; }
-	set httpParams(v: HttpParams) {
+    get httpParams() { return this._httpParams; }
+    set httpParams(v: HttpParams) {
 
-		this._httpParams = v;
+        this._httpParams = v;
 
-		this.reset();
-	}
+        this.reset();
+    }
 
     constructor(private treeInfo: TreeInformation<T>) {
 
-		this.databaseMap  = new Map();
-		this.childTreeMap = new Map();
-		this._httpParams  = new HttpParams();
-		this._dataChange  = new BehaviorSubject([]);
-		this.queueChange  = new BehaviorSubject(true);
+        this.databaseMap  = new Map();
+        this.childTreeMap = new Map();
+        this._httpParams  = new HttpParams();
+        this._dataChange  = new BehaviorSubject([]);
+        this.queueChange  = new BehaviorSubject(true);
 
-		this.dataChange = this.queueChange.asObservable().pipe(
+        this.dataChange = this.queueChange.asObservable().pipe(
 
-			switchMap(() => this.buildTree(this.treeInfo, null, this.httpParams)),
+            switchMap(() => this.buildTree(this.treeInfo, null, this.httpParams)),
 
-			tap(v => this.data = v),
+            tap(v => this.data = v),
 
-			map(() => this.data),
+            map(() => this.data),
 
-		);
-	}
+        );
+    }
 
-	buildTree(treeInfo: TreeInformation<T>, parentDoc: PwaDocument<T> = null, params = new HttpParams()): Observable<TreeNode<T>[]> {
+    buildTree(treeInfo: TreeInformation<T>, parentDoc: PwaDocument<T> = null, params = new HttpParams()): Observable<TreeNode<T>[]> {
 
-		const treeNodes = Object.keys(treeInfo).map(key => {
+        const treeNodes = Object.keys(treeInfo).map(key => {
 
-			const db = treeInfo[key].getDatabase();
+            const db = treeInfo[key].getDatabase();
 
-			// extract http params
-			const keys = params.keys().filter(pk => pk && pk.includes(`${key}--`));
+            // extract http params
+            const keys = params.keys().filter(pk => pk && pk.includes(`${key}--`));
 
-			// create new params associated to this database
-			let childParams = new HttpParams();
+            // create new params associated to this database
+            let childParams = new HttpParams();
 
-			// set params
-			keys.forEach(pk => childParams = childParams.set(pk.split(`${key}--`)[1], params.getAll(pk).join(',')));
+            // set params
+            keys.forEach(pk => childParams = childParams.set(pk.split(`${key}--`)[1], params.getAll(pk).join(',')));
 
-			// run callback
-			treeInfo[key].onCreationSetup ? treeInfo[key].onCreationSetup(parentDoc, db, childParams) : db.httpParams = childParams;
+            // run callback
+            treeInfo[key].onCreationSetup ? treeInfo[key].onCreationSetup(parentDoc, db, childParams) : db.httpParams = childParams;
 
-			return db.dataChange.pipe(
+            return db.dataChange.pipe(
 
-				map(docs => {
+                map(docs => {
 
-					const obs = docs.map(doc => {
+                    const obs = docs.map(doc => {
 
-						///////////////////
-						// Database Map
-						///////////////////
-						if (!this.databaseMap.has(doc)) this.databaseMap.set(doc, db);
+                        ///////////////////
+                        // Database Map
+                        ///////////////////
+                        if (!this.databaseMap.has(doc)) { this.databaseMap.set(doc, db); }
 
-						///////////////////
-						// Child Tree
-						///////////////////
+                        ///////////////////
+                        // Child Tree
+                        ///////////////////
 
-						if (!this.childTreeMap.has(doc)) {
+                        if (!this.childTreeMap.has(doc)) {
 
-							const childTree = this.buildTree(treeInfo[key].children, doc, childParams).pipe(
+                            const childTree = this.buildTree(treeInfo[key].children, doc, childParams).pipe(
 
-								shareReplay(1),
+                                shareReplay(1),
 
-							) as Observable<TreeNode<any>[]>;
+                            ) as Observable<TreeNode<any>[]>;
 
-							this.childTreeMap.set(doc, childTree);
-						}
+                            this.childTreeMap.set(doc, childTree);
+                        }
 
-						return {item: doc, children: this.childTreeMap.get(doc)} as TreeNode<any>;
+                        return {item: doc, children: this.childTreeMap.get(doc)} as TreeNode<any>;
 
-					});
+                    });
 
-					return obs;
-				}),
+                    return obs;
+                }),
 
-			);
-		});
+            );
+        });
 
-		return combineLatest(treeNodes).pipe(
+        return combineLatest(treeNodes).pipe(
 
-			map(nodes => [].concat(...nodes)),
+            map(nodes => [].concat(...nodes)),
 
-			// startWith([])
+            // startWith([])
 
-		);
-	}
+        );
+    }
 
-	reset() {
+    reset() {
 
-		this.databaseMap  = new Map();
-		this.childTreeMap = new Map();
+        this.databaseMap  = new Map();
+        this.childTreeMap = new Map();
 
-		this.queueChange.next(true);
-	}
+        this.queueChange.next(true);
+    }
 
 }
 
@@ -343,6 +347,6 @@ export class DynamicFlatNode<T extends DatabaseDatatype> {
     constructor(
         public item: PwaDocument<T> | string,
         public level = 1,
-		public expandable = false,
+        public expandable = false,
     ) {}
 }

@@ -1,7 +1,7 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, tap, catchError, startWith, first, debounceTime, shareReplay, filter } from 'rxjs/operators';
-import { Observable, forkJoin, of, combineLatest, from } from 'rxjs';
+import { switchMap, map, tap, catchError, startWith, first, debounceTime, shareReplay, filter, bufferCount } from 'rxjs/operators';
+import { Observable, forkJoin, of, combineLatest, from, concat } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
@@ -54,6 +54,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         this.collection$ = this.db$.pipe(
 
+            // tslint:disable-next-line: max-line-length
             switchMap(db => name in db ? of([db[name]]) : forkJoin(db.collection(getCollectionCreator(this.name, pwaCollectionMethods, pwaDocMethods)))),
 
             map(collections => collections[0]),
@@ -80,7 +81,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 switchMap(col => col.find({
                     selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}},
-                    sort: [{time: 'desc'}] 
+                    sort: [{time: 'desc'}]
                 }).$),
 
                 shareReplay(1),
@@ -150,7 +151,7 @@ export class CollectionAPI<T extends Datatype, Database> {
     }
 
     listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
-   
+
         return this.filterList(this.getDocumentsFromCache(tenant, url), params, validQueryKeys);
     }
 
@@ -203,7 +204,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                         error: null,
                         time: new Date().getTime(),
                     };
-    
+
                     return col.atomicUpsert(docData);
                 }
 
@@ -242,8 +243,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     restAPI: RestAPI<T>;
 
-    retrieveCacheAge = 10 // in seconds
-
     constructor(private name: string, private db$: Observable<RxDatabase<Database>>, private httpClient: HttpClient) {
 
         this.collectionAPI = new CollectionAPI<T, Database>(name, db$);
@@ -257,9 +256,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     downloadRetrieve(idbRes: PwaDocument<T>, tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T> | null> {
 
-        const cacheAllowedAge = new Date().getTime() - (this.retrieveCacheAge * 1000);
-
-        if (idbRes?.method !== 'GET' || (idbRes?.time || 0) > cacheAllowedAge) return of(idbRes);
+        if (idbRes?.method !== 'GET') { return of(idbRes); }
 
         return combineLatest([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
 
@@ -272,31 +269,19 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 time: new Date().getTime(),
             })),
 
-            catchError(() => of(null)),
+            catchError(() => of(idbRes)),
         );
     }
 
     getReactive(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
-        const apiFetch = this.collectionAPI.get(tenant, url).pipe(
+        return this.collectionAPI.get(tenant, url).pipe(
 
-            switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
+            switchMap(doc => this.downloadRetrieve(doc, tenant, url, params)),
 
-            startWith(null),
-        );
-
-        let prev = null;
-
-        return apiFetch.pipe(
-
-            switchMap(() => this.collectionAPI.getReactive(tenant, url)),
-
-            filter(cur => !prev || !cur || !(prev.method === cur.method && prev.time === cur.time && prev.error === cur.error && JSON.stringify(prev.data) === JSON.stringify(cur.data))),
-            
-            tap(cur => prev = {...cur}),
+            switchMap(doc => doc.$),
 
         );
-
     }
 
     get(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
@@ -311,38 +296,45 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     // List
     //////////////
 
-    downloadList(idbRes: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams): Observable<{apiCount: number, success: PwaDocument<T>[], error: any[]}> {
+    // tslint:disable-next-line: max-line-length
+    downloadList(docs: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams): Observable<{apiCount: number, docs: PwaDocument<T>[]}> {
 
         // Exclude locally unsynced data in the api results
         let httpParams = params || new HttpParams();
 
-        const ids = idbRes.putResults.concat(idbRes.delResults).map(v => v.data.id);
+        const ids = docs.putResults.concat(docs.delResults).map(v => v.data.id);
 
-        if (ids.length > 0) httpParams = httpParams.set('exclude:id', ids.join(','));
+        if (ids.length > 0) { httpParams = httpParams.set('exclude:id', ids.join(',')); }
 
         return this.restAPI.list(url, httpParams).pipe(
 
             catchError(() => of({count: 0, results: []} as ListResponse<T>)),
 
-            switchMap(networkRes => combineLatest([of(networkRes), this.collectionAPI.collection$])),
+            switchMap(networkRes => this.collectionAPI.collection$.pipe(
 
-            switchMap(([networkRes, col]) => {
+                switchMap(col => {
 
-                // map network data to doctype
-                const docs: PwaDocType<T>[] = networkRes.results.map(data => ({
-                    tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${data.id}`,
-                    matchUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${data.id}`,
-                    data,
-                    method: 'GET',
-                    error: null,
-                    time: new Date().getTime(),
-                }));
+                    // map network data to doctype
+                    const obs = networkRes.results
+                    .map(data => ({
+                        tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${data.id}`,
+                        matchUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${data.id}`,
+                        data,
+                        method: 'GET',
+                        error: null,
+                        time: new Date().getTime(),
+                    }))
+                    .map((d: PwaDocType<T>) => from(col.atomicUpsert(d)));
 
-                return from(col.bulkInsert(docs)).pipe(
+                    return concat(...obs).pipe(
 
-                    map(v => ({apiCount: networkRes.count, success: v.success, error: v.error})),
-                );
-            }),
+                        bufferCount(obs.length),
+
+                        map(v => ({apiCount: networkRes.count, docs: v})),
+                    );
+                })
+            )),
+
         );
 
     }
@@ -357,7 +349,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             tap(v => apiCount = v.apiCount),
 
-            startWith(null),
         );
 
         return apiFetch.pipe(
@@ -385,7 +376,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return apiFetch.pipe(
 
-            debounceTime(100), // adding delay
+            // debounceTime(100), // adding delay
 
             switchMap(() => this.collectionAPI.list(tenant, url, params, validQueryKeys)),
 
