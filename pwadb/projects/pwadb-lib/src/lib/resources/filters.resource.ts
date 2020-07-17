@@ -47,9 +47,9 @@ export function parseBoolean(fieldValue: FieldDataType, inputValue: string): nul
 export const eq: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
-    
+
     if (isDate) return isDate.parsedFieldValue === isDate.parsedInputValue;
-    
+
     const isNumber = parseNumber(v.data[field] as FieldDataType, inputValue);
 
     if (isNumber) return isNumber.parsedFieldValue === isNumber.parsedInputValue;
@@ -66,9 +66,9 @@ export const eq: (v: PwaDocument<any>, field: string, inputValue: string) => boo
 ///////////////////////////////////////////////
 
 export const gte: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
-    
+
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
-    
+
     if (isDate) return isDate.parsedFieldValue >= isDate.parsedInputValue;
 
     const isNumber = parseNumber(v.data[field] as FieldDataType, inputValue);
@@ -81,9 +81,9 @@ export const gte: (v: PwaDocument<any>, field: string, inputValue: string) => bo
 export const lte: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
-    
+
     if (isDate) return isDate.parsedFieldValue <= isDate.parsedInputValue;
-    
+
     const isNumber = parseNumber(v.data[field] as FieldDataType, inputValue);
 
     if (isNumber) return isNumber.parsedFieldValue <= isNumber.parsedInputValue;
@@ -94,9 +94,9 @@ export const lte: (v: PwaDocument<any>, field: string, inputValue: string) => bo
 export const gt: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
-    
+
     if (isDate) return isDate.parsedFieldValue > isDate.parsedInputValue;
-    
+
     const isNumber = parseNumber(v.data[field] as FieldDataType, inputValue);
 
     if (isNumber) return isNumber.parsedFieldValue > isNumber.parsedInputValue;
@@ -107,9 +107,9 @@ export const gt: (v: PwaDocument<any>, field: string, inputValue: string) => boo
 export const lt: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
-    
+
     if (isDate) return isDate.parsedFieldValue < isDate.parsedInputValue;
-    
+
     const isNumber = parseNumber(v.data[field] as FieldDataType, inputValue);
 
     if (isNumber) return isNumber.parsedFieldValue < isNumber.parsedInputValue;
@@ -122,11 +122,11 @@ export const range: (v: PwaDocument<any>, field: string, inputValue: string) => 
     const values = inputValue.toString().split(',');
 
     const isDate1 = parseDate(v.data[field] as FieldDataType, values[0]);
-    
+
     const isDate2 = parseDate(v.data[field] as FieldDataType, values[1]);
-    
+
     if (isDate1 && isDate2) return isDate1.parsedFieldValue >= isDate1.parsedInputValue && isDate2.parsedFieldValue < isDate2.parsedInputValue;
-    
+
     const isNumber1 = parseNumber(v.data[field] as FieldDataType, values[0]);
 
     const isNumber2 = parseNumber(v.data[field] as FieldDataType, values[1]);
@@ -205,13 +205,13 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
         // Filters (1)
         //////////////
         keys.forEach(k => {
-            
+
             if (validQueryKeys.indexOf(k) > -1) {
 
                 const query = getQuery(k, params.getAll(k).join(','));
-           
-                if (query.queryType === 'filter') docs = filter(query.fields[0], query.inputValue, docs, query.lookup); 
-            } 
+
+                if (query.queryType === 'filter') docs = filter(query.fields[0], query.inputValue, docs, query.lookup);
+            }
         });
 
         ///////////////
@@ -219,13 +219,13 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
         ///////////////
 
         keys.forEach(k => {
-            
+
             if (validQueryKeys.indexOf(k) > -1) {
 
                 const query = getQuery(k, params.getAll(k).join(','));
-           
-                if (query.queryType === 'exclude') docs = exclude(query.fields[0], query.inputValue, docs, query.lookup); 
-            } 
+
+                if (query.queryType === 'exclude') docs = exclude(query.fields[0], query.inputValue, docs, query.lookup);
+            }
         });
 
         ////////////////
@@ -233,13 +233,13 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
         ////////////////
 
         keys.forEach(k => {
-            
+
             if (validQueryKeys.indexOf(k) > -1) {
 
                 const query = getQuery(k, params.getAll(k).join(','));
-           
-                if (query.queryType === 'order_by') docs = orderBy(query.fields, docs); 
-            } 
+
+                if (query.queryType === 'order_by') docs = orderBy(query.fields, docs);
+            }
         });
 
         ////////////////
@@ -247,13 +247,13 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
         ////////////////
 
         keys.forEach(k => {
-            
+
             if (validQueryKeys.indexOf(k) > -1) {
 
                 const query = getQuery(k, params.getAll(k).join(','));
-           
-                if (query.queryType === 'distinct') docs = distinct(query.fields, docs); 
-            } 
+
+                if (query.queryType === 'distinct') docs = distinct(query.fields, docs);
+            }
         });
 
     }
@@ -330,13 +330,13 @@ export function orderBy(fields: string[], docs: PwaDocument<any>[]): PwaDocument
             const order = fields[i].indexOf('-') === 0 ? 'desc' : 'asc';
 
             const parseFieldName = order === 'desc' ? fields[i].split('-')[1] : fields[i]
-            
+
             const isDate = parseDate(a.data[parseFieldName], b.data[parseFieldName]);
-            
+
             if (isDate && order === 'asc' && isDate.parsedFieldValue !== isDate.parsedInputValue) return isDate.parsedFieldValue - isDate.parsedInputValue;
-            
+
             if (isDate && order === 'desc' && isDate.parsedInputValue !== isDate.parsedFieldValue) return isDate.parsedInputValue - isDate.parsedFieldValue;
-            
+
             const isNumber = parseNumber(a.data[parseFieldName], b.data[parseFieldName]);
 
             if (isNumber && order === 'asc' && isNumber.parsedFieldValue !== isNumber.parsedInputValue) return isNumber.parsedFieldValue - isNumber.parsedInputValue;

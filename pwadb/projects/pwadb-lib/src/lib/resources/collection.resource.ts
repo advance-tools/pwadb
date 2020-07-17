@@ -297,7 +297,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     //////////////
 
     // tslint:disable-next-line: max-line-length
-    downloadList(docs: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams): Observable<number> {
+    downloadList(docs: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, collectionSuffixUrl?: string): Observable<number> {
 
         // Exclude locally unsynced data in the api results
         let httpParams = params || new HttpParams();
@@ -317,8 +317,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                     // map network data to doctype
                     networkRes.results
                     .map(data => ({
-                        tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${data.id}`,
-                        matchUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}/${data.id}`,
+                        tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}${collectionSuffixUrl}/${data.id}`,
+                        matchUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}${collectionSuffixUrl}/${data.id}`,
                         data,
                         method: 'GET',
                         error: null,
@@ -334,11 +334,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     }
 
-    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<PwaListResponse<T>> {
+    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], collectionSuffixUrl?: string): Observable<PwaListResponse<T>> {
 
         const apiFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
-            switchMap(idbRes => this.downloadList(idbRes, tenant, url, params)),
+            switchMap(idbRes => this.downloadList(idbRes, tenant, url, params, collectionSuffixUrl)),
 
         );
 
@@ -357,11 +357,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     }
 
-    list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<PwaListResponse<T>> {
+    list(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], collectionSuffixUrl?: string): Observable<PwaListResponse<T>> {
 
         const apiFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
-            switchMap(idbRes => this.downloadList(idbRes, tenant, url, params)),
+            switchMap(idbRes => this.downloadList(idbRes, tenant, url, params, collectionSuffixUrl)),
         );
 
         return apiFetch.pipe(
@@ -376,7 +376,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 })),
 
             )),
-
 
         );
     }
