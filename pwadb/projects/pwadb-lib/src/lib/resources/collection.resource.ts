@@ -326,7 +326,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     //////////////
 
     // tslint:disable-next-line: max-line-length
-    downloadList(res: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, collectionSuffixUrl?: string): Observable<number> {
+    downloadList(res: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, collectionSuffixUrl = ''): Observable<number> {
 
         // Exclude locally unsynced data in the api results
         let httpParams = params || new HttpParams();
