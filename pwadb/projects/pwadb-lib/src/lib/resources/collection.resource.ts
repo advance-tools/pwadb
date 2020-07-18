@@ -298,9 +298,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     get(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
-        return this.collectionAPI.get(tenant, url).pipe(
+        return this.getReactive(tenant, url, params).pipe(
 
-            switchMap(idbRes => this.downloadRetrieve(idbRes, tenant, url, params)),
+            first()
         );
     }
 
