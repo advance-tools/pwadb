@@ -97,21 +97,11 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     getReactive(tenant: string, url: string): Observable<PwaDocument<T>> {
 
-        const tenantUrl = this.makeTenantUrl(tenant, url);
+        return this.collection$.pipe(
 
-        if (!this.getCache.has(tenantUrl)) {
+            switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
-            const doc = this.collection$.pipe(
-
-                switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
-
-                shareReplay(1),
-            );
-
-            this.getCache.set(tenantUrl, doc);
-        }
-
-        return this.getCache.get(tenantUrl);
+        );
     }
 
     get(tenant: string, url: string): Observable<PwaDocument<T>> {
@@ -124,26 +114,15 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
-        const tenantUrl = this.makeTenantUrl(tenant, url);
+        const docs = this.collection$.pipe(
 
-        if (!this.listCache.has(tenantUrl)) {
+            switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
 
-            const docs = this.collection$.pipe(
+            map(v => v.sort((a, b) => b.time - a.time)),
 
-                switchMap(col => col.find({
-                    selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}},
-                }).$),
+        );
 
-                map(v => v.sort((a, b) => b.time - a.time)),
-
-                shareReplay(1),
-
-            );
-
-            this.listCache.set(tenantUrl, docs);
-        }
-
-        return this.filterList(this.listCache.get(tenantUrl), params, validQueryKeys);
+        return this.filterList(docs, params, validQueryKeys);
     }
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
@@ -358,7 +337,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
                     if (atomicWrite.length > 0) {
 
-                        return combineLatest(atomicWrite).pipe(
+                        return forkJoin(...atomicWrite).pipe(
 
                             map(() => networkRes.count)
                         );
@@ -372,7 +351,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     }
 
-    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], collectionSuffixUrl?: string): Observable<PwaListResponse<T>> {
+    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], collectionSuffixUrl = ''): Observable<PwaListResponse<T>> {
 
         const apiFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
@@ -395,26 +374,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     }
 
-    list(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], collectionSuffixUrl?: string): Observable<PwaListResponse<T>> {
+    list(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], collectionSuffixUrl = ''): Observable<PwaListResponse<T>> {
 
-        const apiFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
+        return this.listReactive(tenant, url, params, validQueryKeys, collectionSuffixUrl).pipe(
 
-            switchMap(idbRes => this.downloadList(idbRes, tenant, url, params, collectionSuffixUrl)),
-        );
-
-        return apiFetch.pipe(
-
-            // debounceTime(100), // adding delay
-
-            switchMap(apiCount => this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
-
-                map(res => ({
-                    count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
-                    results: res.results
-                })),
-
-            )),
-
+            first(),
         );
     }
 
