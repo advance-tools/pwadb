@@ -62,7 +62,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     makeTenantUrl(tenant: string, url: string): string {
 
-        return `${tenant}----${url}`;
+        return `${tenant}____${url}`;
     }
 
     filterList(docs$: Observable<PwaDocument<T>[]>, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {

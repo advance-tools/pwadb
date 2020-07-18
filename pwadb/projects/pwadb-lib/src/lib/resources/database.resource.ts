@@ -133,7 +133,7 @@ export class PwaDatabaseService<T> {
 
                         if (doc.method === 'POST') {
 
-                            return this.httpClient.post(doc.tenantUrl.split('----')[1], doc.data).pipe(
+                            return this.httpClient.post(doc.tenantUrl.split('____')[1], doc.data).pipe(
 
                                 switchMap(res => doc.atomicUpdate(oldData => ({
                                     ...oldData,
@@ -155,7 +155,7 @@ export class PwaDatabaseService<T> {
 
                         } else if (doc.method === 'PUT') {
 
-                            return this.httpClient.put(doc.tenantUrl.split('----')[1], doc.data).pipe(
+                            return this.httpClient.put(doc.tenantUrl.split('____')[1], doc.data).pipe(
 
                                 switchMap(res => doc.atomicUpdate(oldData => ({
                                     ...oldData,
@@ -177,7 +177,7 @@ export class PwaDatabaseService<T> {
 
                         } else if (doc.method === 'DELETE') {
 
-                            return this.httpClient.delete(doc.tenantUrl.split('----')[1]).pipe(
+                            return this.httpClient.delete(doc.tenantUrl.split('____')[1]).pipe(
 
                                 switchMap(() => doc.remove()),
 
