@@ -293,6 +293,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(() =>  this.collectionAPI.getReactive(tenant, url)),
 
+            distinctUntilChanged()
+
         );
     }
 
@@ -373,6 +375,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             )),
 
+            distinctUntilChanged()
         );
 
     }
