@@ -104,13 +104,12 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
             tap(res => this.totalCount = res.length > 0 ? res[res.length - 1].count : 0),
 
-            tap(res => this.data = [].concat(...res.map(v => v.results))),
+            map(res => [].concat(...res.map(v => v.results))),
+
+            tap(v => this.data = v),
 
             tap(() => this.isLoadingChange.next(false)),
 
-            map(() => this.data),
-
-            shareReplay(1),
         );
     }
 
@@ -169,13 +168,11 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
             tap(res => this.totalCount = res.length > 0 ? res[res.length - 1].count : 0),
 
-            tap(res => this.data = [].concat(...res.map(v => v.results))),
+            map(res => [].concat(...res.map(v => v.results))),
+
+            tap(v => this.data = v),
 
             tap(() => this.isLoadingChange.next(false)),
-
-            map(() => this.data),
-
-            shareReplay(1),
         );
     }
 
@@ -237,12 +234,7 @@ export class TreeDatabase<T extends DatabaseDatatype> {
 
     private queueChange: BehaviorSubject<any>;
     // tslint:disable-next-line: variable-name
-    private _dataChange: BehaviorSubject<TreeNode<T>[]>;
-    // tslint:disable-next-line: variable-name
     private _httpParams: HttpParams;
-
-    get data() { return this._dataChange.value; }
-    set data(v: TreeNode<T>[]) { this._dataChange.next(v); }
 
     get httpParams() { return this._httpParams; }
     set httpParams(v: HttpParams) {
@@ -257,18 +249,11 @@ export class TreeDatabase<T extends DatabaseDatatype> {
         this.databaseMap  = new Map();
         this.childTreeMap = new Map();
         this._httpParams  = new HttpParams();
-        this._dataChange  = new BehaviorSubject([]);
         this.queueChange  = new BehaviorSubject(true);
 
         this.dataChange = this.queueChange.asObservable().pipe(
 
             switchMap(() => this.buildTree(this.treeInfo, null, this.httpParams)),
-
-            tap(v => this.data = v),
-
-            map(() => this.data),
-
-            shareReplay(1),
 
         );
     }
