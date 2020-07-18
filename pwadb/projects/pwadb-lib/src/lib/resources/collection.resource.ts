@@ -1,7 +1,7 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
 import { switchMap, map, catchError, first, shareReplay, distinctUntilChanged } from 'rxjs/operators';
-import { Observable, forkJoin, of, combineLatest, from, throwError } from 'rxjs';
+import { Observable, forkJoin, of, from, throwError } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
@@ -42,15 +42,9 @@ export class RestAPI<T extends Datatype> {
 
 export class CollectionAPI<T extends Datatype, Database> {
 
-    private listCache: Map<string, Observable<PwaDocument<T>[]>>;
-    private getCache: Map<string, Observable<PwaDocument<T>>>;
-
     collection$: Observable<PwaCollection<T>>;
 
     constructor(private name: string, private db$: Observable<RxDatabase<Database>>) {
-
-        this.listCache  = new Map();
-        this.getCache   = new Map();
 
         this.collection$ = this.db$.pipe(
 
@@ -157,7 +151,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     put(tenant: string, url: string, data: T): Observable<PwaDocument<T>> {
 
-        return combineLatest([this.get(tenant, url), this.collection$]).pipe(
+        return forkJoin(this.get(tenant, url), this.collection$).pipe(
 
             switchMap(([doc, col]) => {
 
@@ -270,7 +264,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         if (doc?.method !== 'GET') { return of(doc); }
 
-        return combineLatest([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
+        return forkJoin(this.restAPI.get(url, params), this.collectionAPI.collection$).pipe(
 
             switchMap(([res, col]) => col.atomicUpsert({
                 tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url),
