@@ -1,6 +1,6 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
-import { from, Observable, combineLatest, BehaviorSubject, forkJoin, empty, of } from 'rxjs';
-import { map, switchMap, filter, catchError, startWith, shareReplay, first, tap, finalize } from 'rxjs/operators';
+import { from, Observable, combineLatest, BehaviorSubject, forkJoin, empty, of, throwError } from 'rxjs';
+import { map, switchMap, filter, catchError, startWith, shareReplay, first, finalize } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { PwaCollection, getCollectionCreator, pwaCollectionMethods } from '../definitions/collection';
 import { PwaDocument, pwaDocMethods } from '../definitions/document';
@@ -83,8 +83,10 @@ export class PwaDatabaseService<T> {
             switchMap(collections => {
 
                 const query = {
-                    selector: {$and: [{time: {$gte: 0}}, {matchUrl: {$regex: new RegExp(`^${tenant}.*`)}}, {method: {$ne: 'GET'}}]},
-                    sort: [{time: order}]
+                    selector: {
+                        matchUrl: {$regex: new RegExp(`^${tenant}.*`)},
+                        method: {$ne: 'GET'}
+                    },
                 };
 
                 const sortedDocs$ = collections.map(k => {
@@ -106,6 +108,9 @@ export class PwaDatabaseService<T> {
         );
     }
 
+    //////////////////
+    // Actions
+    //////////////////
     synchronise(tenant: string, collectionNames: string[]): Observable<PwaDocument<any> | boolean> {
 
         const pop: Observable<PwaDocument<any>> = this.unsynchronised(tenant, collectionNames, 'asc').pipe(
@@ -185,7 +190,7 @@ export class PwaDatabaseService<T> {
                             );
                         }
 
-                        return empty();
+                        return throwError(`Document doesn\'t have valid method. Document: ${JSON.stringify(doc?.toJSON())}`);
                     }),
 
                 );
@@ -232,6 +237,30 @@ export class PwaDatabaseService<T> {
 
             switchMap(v => forkJoin(...v))
         );
+    }
+
+    ///////////////////
+    // Conflict Actions
+    ///////////////////
+
+    createNew(doc: PwaDocument<any>): Observable<PwaDocument<any>> {
+
+        if (doc?.method !== 'GET' && doc?.method !== 'POST') {
+
+            return from(doc.atomicSet('method', 'POST'));
+        }
+
+        return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON())}`);
+    }
+
+    deleteConflict(doc: PwaDocument<any>): Observable<boolean> {
+
+        if (doc?.method !== 'GET') {
+
+            return from(doc.remove());
+        }
+
+        return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON())}`);
     }
 
 }
