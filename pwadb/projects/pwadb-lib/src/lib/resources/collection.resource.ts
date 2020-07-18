@@ -312,10 +312,10 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(networkRes => this.collectionAPI.collection$.pipe(
 
-                map(col => {
+                switchMap(col => {
 
                     // map network data to doctype
-                    networkRes.results
+                    const res = networkRes.results
                     .map(data => ({
                         tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}${collectionSuffixUrl}/${data.id}`,
                         matchUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}${collectionSuffixUrl}/${data.id}`,
@@ -324,9 +324,12 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                         error: null,
                         time: new Date().getTime(),
                     }))
-                    .forEach((d: PwaDocType<T>) => col.atomicUpsert(d));
+                    .map((d: PwaDocType<T>) => from(col.atomicUpsert(d)));
 
-                    return networkRes.count;
+                    return combineLatest(res).pipe(
+
+                        map(() => networkRes.count)
+                    );
                 })
             )),
 
