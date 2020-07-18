@@ -2,7 +2,7 @@ import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { PwaDocument } from '../definitions/document';
 import { HttpParams } from '@angular/common/http';
 import { PwaListResponse } from '../definitions/collection';
-import { switchMap, tap, shareReplay, map, startWith, filter } from 'rxjs/operators';
+import { switchMap, tap, shareReplay, map, filter } from 'rxjs/operators';
 
 /////////////////////
 // Interfaces
@@ -31,16 +31,14 @@ export interface IBaseDatabase {
 
 export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 
-    // tslint:disable-next-line: variable-name
-    _dataChange: BehaviorSubject<PwaDocument<T>[]>;
+    queueChange: BehaviorSubject<Observable<PwaListResponse<T>>[]>;
+    data: PwaDocument<T>[];
+
     isLoadingChange: BehaviorSubject<boolean>;
     totalCount = 0;
 
     // tslint:disable-next-line: variable-name
     private _httpParams: HttpParams;
-
-    get data() { return this._dataChange.value; }
-    set data(v: PwaDocument<T>[]) { this._dataChange.next(v); }
 
     get httpParams() { return this._httpParams; }
     set httpParams(v: HttpParams) {
@@ -57,10 +55,11 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 
     constructor(private __limit: number) {
 
-        this._dataChange 		= new BehaviorSubject([]);
+        this.data               = [];
+        this.queueChange        = new BehaviorSubject([]);
         this.isLoadingChange 	= new BehaviorSubject(false);
 
-        this._httpParams = new HttpParams();
+        this._httpParams        = new HttpParams();
     }
 
     reset() {
@@ -87,71 +86,11 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 
 export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
-    private queueChange: BehaviorSubject<HttpParams>;
-
     dataChange: Observable<PwaDocument<T>[]>;
 
     constructor(private apiService: DatabaseService<T>, private _limit = 20) {
 
         super(_limit);
-
-        this.queueChange = new BehaviorSubject(null);
-
-        this.dataChange = this.queueChange.asObservable().pipe(
-
-            filter(v => !!v),
-
-            startWith(this.httpParams),
-
-            tap(() => this.isLoadingChange.next(true)),
-
-            switchMap(httpParams => this.apiService.fetch(httpParams)),
-
-            tap(res => this.totalCount = res.count),
-
-            tap(res => this.data = this.data.concat(res.results)),
-
-            tap(() => this.isLoadingChange.next(false)),
-
-            map(() => this.data),
-
-            shareReplay(1),
-
-        );
-    }
-
-    reset() {
-
-        super.reset();
-
-        this.data = [];
-
-        this.queueChange.next(this.httpParams);
-    }
-
-    loadMore() {
-
-        if (this.isLoading) { return; }
-
-        super.loadMore();
-
-        this.queueChange.next(this.httpParams);
-    }
-
-}
-
-
-export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T> {
-
-    private queueChange: BehaviorSubject<Observable<PwaListResponse<T>>[]>;
-
-    dataChange: Observable<PwaDocument<T>[]>
-
-    constructor(private apiService: DatabaseService<T>, private _limit = 20) {
-
-        super(_limit);
-
-        this.queueChange = new BehaviorSubject([]);
 
         this.dataChange = this.queueChange.asObservable().pipe(
 
@@ -175,9 +114,9 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
         );
     }
 
-    getView(httpParams: HttpParams) {
+    getView(httpParams: HttpParams): Observable<PwaListResponse<T>> {
 
-        return this.apiService.fetchReactive(httpParams).pipe(
+        return this.apiService.fetch(httpParams).pipe(
 
             shareReplay(1)
         );
@@ -207,6 +146,70 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
         this.queueChange.next([].concat(this.queueChange.value, [view]));
     }
 
+}
+
+
+export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T> {
+
+    dataChange: Observable<PwaDocument<T>[]>;
+
+    constructor(private apiService: DatabaseService<T>, private _limit = 20) {
+
+        super(_limit);
+
+        this.dataChange = this.queueChange.asObservable().pipe(
+
+            tap(v => { if (!v.length) { this.reset(); } }),
+
+            filter(v => !!v.length),
+
+            tap(() => this.isLoadingChange.next(true)),
+
+            switchMap(v => combineLatest(v)),
+
+            tap(res => this.totalCount = res.length > 0 ? res[res.length - 1].count : 0),
+
+            tap(res => this.data = [].concat(...res.map(v => v.results))),
+
+            tap(() => this.isLoadingChange.next(false)),
+
+            map(() => this.data),
+
+            shareReplay(1),
+        );
+    }
+
+    getView(httpParams: HttpParams): Observable<PwaListResponse<T>> {
+
+        return this.apiService.fetch(httpParams).pipe(
+
+            shareReplay(1)
+        );
+    }
+
+    reset() {
+
+        super.reset();
+
+        // make view
+        const view = this.getView(this.httpParams);
+
+        // push to queue
+        this.queueChange.next([view]);
+    }
+
+    loadMore() {
+
+        if (this.isLoading) { return; }
+
+        super.loadMore();
+
+        // make view
+        const view = this.getView(this.httpParams);
+
+        // push to queue
+        this.queueChange.next([].concat(this.queueChange.value, [view]));
+    }
 }
 
 ///////////////////////////
