@@ -132,8 +132,9 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 switchMap(col => col.find({
                     selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}},
-                    sort: [{time: 'desc'}]
                 }).$),
+
+                map(v => v.sort((a, b) => b.time - a.time)),
 
                 shareReplay(1),
 
