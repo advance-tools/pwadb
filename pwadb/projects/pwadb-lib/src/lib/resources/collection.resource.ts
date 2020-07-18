@@ -355,10 +355,15 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                         }))
                         .map((d: PwaDocType<T>) => from(col.atomicUpsert(d)));
 
-                    return combineLatest(atomicWrite).pipe(
+                    if (atomicWrite.length > 0) {
 
-                        map(() => networkRes.count)
-                    );
+                        return combineLatest(atomicWrite).pipe(
+
+                            map(() => networkRes.count)
+                        );
+                    }
+
+                    return of(networkRes.count);
                 })
             )),
 
