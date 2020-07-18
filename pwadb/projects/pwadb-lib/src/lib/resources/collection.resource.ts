@@ -1,6 +1,6 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, catchError, first, shareReplay } from 'rxjs/operators';
+import { switchMap, map, catchError, first, shareReplay, distinctUntilChanged } from 'rxjs/operators';
 import { Observable, forkJoin, of, combineLatest, from, throwError } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -101,6 +101,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
+            distinctUntilChanged(),
         );
     }
 
@@ -117,6 +118,8 @@ export class CollectionAPI<T extends Datatype, Database> {
         const docs = this.collection$.pipe(
 
             switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
+
+            distinctUntilChanged(),
 
             map(v => v.sort((a, b) => b.time - a.time)),
 

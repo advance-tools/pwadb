@@ -1,6 +1,6 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import { from, Observable, combineLatest, BehaviorSubject, forkJoin, empty, of, throwError } from 'rxjs';
-import { map, switchMap, filter, catchError, startWith, shareReplay, first, finalize } from 'rxjs/operators';
+import { map, switchMap, filter, catchError, startWith, shareReplay, first, finalize, distinctUntilChanged } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { PwaCollection, getCollectionCreator, pwaCollectionMethods } from '../definitions/collection';
 import { PwaDocument, pwaDocMethods } from '../definitions/document';
@@ -92,6 +92,8 @@ export class PwaDatabaseService<T> {
                 const sortedDocs$ = collections.map(k => {
 
                     return from(k.find(query).$.pipe(
+
+                        distinctUntilChanged(),
 
                         map(docs => docs.map(d => ({collectionName: k.name, document: d}))),
                     ));
