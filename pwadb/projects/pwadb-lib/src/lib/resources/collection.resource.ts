@@ -1,7 +1,7 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, tap, catchError, startWith, first, debounceTime, shareReplay, filter, bufferCount } from 'rxjs/operators';
-import { Observable, forkJoin, of, combineLatest, from, concat } from 'rxjs';
+import { switchMap, map, catchError, first, shareReplay } from 'rxjs/operators';
+import { Observable, forkJoin, of, combineLatest, from, throwError } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
@@ -42,15 +42,15 @@ export class RestAPI<T extends Datatype> {
 
 export class CollectionAPI<T extends Datatype, Database> {
 
-    documentsCache: Map<string, Observable<PwaDocument<T>[]>>;
-    documentCache: Map<string, Observable<PwaDocument<T>>>;
+    private listCache: Map<string, Observable<PwaDocument<T>[]>>;
+    private getCache: Map<string, Observable<PwaDocument<T>>>;
 
     collection$: Observable<PwaCollection<T>>;
 
     constructor(private name: string, private db$: Observable<RxDatabase<Database>>) {
 
-        this.documentsCache = new Map();
-        this.documentCache = new Map();
+        this.listCache  = new Map();
+        this.getCache   = new Map();
 
         this.collection$ = this.db$.pipe(
 
@@ -69,48 +69,6 @@ export class CollectionAPI<T extends Datatype, Database> {
     makeTenantUrl(tenant: string, url: string): string {
 
         return `${tenant}-${url}`;
-    }
-
-    getDocumentsFromCache(tenant: string, url: string): Observable<PwaDocument<T>[]> {
-
-        const tenantUrl = this.makeTenantUrl(tenant, url);
-
-        if (!this.documentsCache.has(tenantUrl)) {
-
-            const docs = this.collection$.pipe(
-
-                switchMap(col => col.find({
-                    selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}},
-                    sort: [{time: 'desc'}]
-                }).$),
-
-                shareReplay(1),
-
-            );
-
-            this.documentsCache.set(tenantUrl, docs);
-        }
-
-        return this.documentsCache.get(tenantUrl);
-    }
-
-    getDocumentFromCache(tenant: string, url: string): Observable<PwaDocument<T>> {
-
-        const tenantUrl = this.makeTenantUrl(tenant, url);
-
-        if (!this.documentCache.has(tenantUrl)) {
-
-            const doc = this.collection$.pipe(
-
-                switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
-
-                shareReplay(1),
-            );
-
-            this.documentCache.set(tenantUrl, doc);
-        }
-
-        return this.documentCache.get(tenantUrl);
     }
 
     filterList(docs$: Observable<PwaDocument<T>[]>, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
@@ -139,7 +97,21 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     getReactive(tenant: string, url: string): Observable<PwaDocument<T>> {
 
-        return this.getDocumentFromCache(tenant, url);
+        const tenantUrl = this.makeTenantUrl(tenant, url);
+
+        if (!this.getCache.has(tenantUrl)) {
+
+            const doc = this.collection$.pipe(
+
+                switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
+
+                shareReplay(1),
+            );
+
+            this.getCache.set(tenantUrl, doc);
+        }
+
+        return this.getCache.get(tenantUrl);
     }
 
     get(tenant: string, url: string): Observable<PwaDocument<T>> {
@@ -152,7 +124,25 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
-        return this.filterList(this.getDocumentsFromCache(tenant, url), params, validQueryKeys);
+        const tenantUrl = this.makeTenantUrl(tenant, url);
+
+        if (!this.listCache.has(tenantUrl)) {
+
+            const docs = this.collection$.pipe(
+
+                switchMap(col => col.find({
+                    selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}},
+                    sort: [{time: 'desc'}]
+                }).$),
+
+                shareReplay(1),
+
+            );
+
+            this.listCache.set(tenantUrl, docs);
+        }
+
+        return this.filterList(this.listCache.get(tenantUrl), params, validQueryKeys);
     }
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
@@ -162,6 +152,10 @@ export class CollectionAPI<T extends Datatype, Database> {
             first()
         );
     }
+
+    /////////////
+    // Actions
+    /////////////
 
     post(tenant: string, url: string, data: T): Observable<PwaDocument<T>> {
 
@@ -220,21 +214,56 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 if (doc?.method === 'POST') {
 
-                    return doc.remove();
+                    return from(doc.remove());
 
                 } else if (doc?.method === 'PUT' || doc?.method === 'DELETE') {
 
-                    return doc.atomicUpdate((oldData) => ({...oldData, method: 'DELETE', error: null}));
+                    return from(doc.atomicUpdate((oldData) => ({...oldData, method: 'DELETE', error: null})));
 
                 }  else {
 
-                    return doc.atomicUpdate((oldData) => ({...oldData, method: 'DELETE', error: null, time: new Date().getTime()}));
+                    return from(doc.atomicUpdate((oldData) => ({...oldData, method: 'DELETE', error: null, time: new Date().getTime()})));
                 }
 
             })
         );
     }
 
+    ///////////////////
+    // Conflict Actions
+    ///////////////////
+
+    createNew(tenant: string, url: string): Observable<PwaDocument<T>> {
+
+        return this.get(tenant, url).pipe(
+
+            switchMap(doc => {
+
+                if (doc?.method !== 'GET') {
+
+                    return from(doc.atomicSet('method', 'POST'));
+                }
+
+                return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON())}`);
+            })
+        );
+    }
+
+    deleteConflict(tenant: string, url: string): Observable<boolean> {
+
+        return this.get(tenant, url).pipe(
+
+            switchMap(doc => {
+
+                if (doc?.method !== 'GET') {
+
+                    return from(doc.remove());
+                }
+
+                return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON())}`);
+            })
+        );
+    }
 }
 
 export class PwaCollectionAPI<T extends Datatype, Database> {
@@ -254,9 +283,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     // Retrieve
     //////////////
 
-    downloadRetrieve(idbRes: PwaDocument<T>, tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T> | null> {
+    downloadRetrieve(doc: PwaDocument<T> | null, tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T> | null> {
 
-        if (idbRes?.method !== 'GET') { return of(idbRes); }
+        if (doc?.method !== 'GET') { return of(doc); }
 
         return combineLatest([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
 
@@ -269,7 +298,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 time: new Date().getTime(),
             })),
 
-            catchError(() => of(idbRes)),
+            catchError(() => of(doc)),
         );
     }
 
@@ -297,12 +326,12 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     //////////////
 
     // tslint:disable-next-line: max-line-length
-    downloadList(docs: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, collectionSuffixUrl?: string): Observable<number> {
+    downloadList(res: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, collectionSuffixUrl?: string): Observable<number> {
 
         // Exclude locally unsynced data in the api results
         let httpParams = params || new HttpParams();
 
-        const ids = docs.putResults.concat(docs.delResults).map(v => v.data.id);
+        const ids = res.putResults.concat(res.delResults).map(v => v.data.id);
 
         if (ids.length > 0) { httpParams = httpParams.set('exclude:id', ids.join(',')); }
 
@@ -315,18 +344,18 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 switchMap(col => {
 
                     // map network data to doctype
-                    const res = networkRes.results
-                    .map(data => ({
-                        tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}${collectionSuffixUrl}/${data.id}`,
-                        matchUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}${collectionSuffixUrl}/${data.id}`,
-                        data,
-                        method: 'GET',
-                        error: null,
-                        time: new Date().getTime(),
-                    }))
-                    .map((d: PwaDocType<T>) => from(col.atomicUpsert(d)));
+                    const atomicWrite = networkRes.results
+                        .map(data => ({
+                            tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}${collectionSuffixUrl}/${data.id}`,
+                            matchUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}${collectionSuffixUrl}/${data.id}`,
+                            data,
+                            method: 'GET',
+                            error: null,
+                            time: new Date().getTime(),
+                        }))
+                        .map((d: PwaDocType<T>) => from(col.atomicUpsert(d)));
 
-                    return combineLatest(res).pipe(
+                    return combineLatest(atomicWrite).pipe(
 
                         map(() => networkRes.count)
                     );

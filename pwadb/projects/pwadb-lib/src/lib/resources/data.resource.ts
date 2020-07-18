@@ -115,6 +115,8 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
             map(() => this.data),
 
+            shareReplay(1),
+
         );
     }
 
@@ -169,6 +171,7 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
             map(() => this.data),
 
+            shareReplay(1),
         );
     }
 
@@ -261,6 +264,8 @@ export class TreeDatabase<T extends DatabaseDatatype> {
             tap(v => this.data = v),
 
             map(() => this.data),
+
+            shareReplay(1),
 
         );
     }
