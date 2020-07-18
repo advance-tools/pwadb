@@ -41,7 +41,7 @@ export class PwaDatabaseService<T> {
 
         );
 
-        this.retryChange = new BehaviorSubject(false);
+        this.retryChange = new BehaviorSubject(true);
     }
 
     isIndexeddbAvailable() {
