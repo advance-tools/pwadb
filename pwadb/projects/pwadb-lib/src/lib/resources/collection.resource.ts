@@ -279,7 +279,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(doc => this.downloadRetrieve(doc, tenant, url, params)),
 
-            switchMap(doc => doc.$),
+            switchMap(() =>  this.collectionAPI.getReactive(tenant, url)),
 
         );
     }
