@@ -80,17 +80,22 @@ export class PwaDatabaseService<T> {
 
         return this.getCollections(collectionNames).pipe(
 
-            map(collections => {
+            switchMap(collections => {
 
                 const query = {
                     selector: {$and: [{time: {$gte: 0}}, {matchUrl: {$regex: new RegExp(`^${tenant}.*`)}}, {method: {$ne: 'GET'}}]},
                     sort: [{time: order}]
                 };
 
-                return collections.map(k => from(k.find(query).$.pipe(
+                const sortedDocs$ = collections.map(k => {
 
-                    map(docs => docs.map(d => ({collectionName: k.name, document: d}))),
-                )));
+                    return from(k.find(query).$.pipe(
+
+                        map(docs => docs.map(d => ({collectionName: k.name, document: d}))),
+                    ));
+                });
+
+                return combineLatest(sortedDocs$);
 
             }),
 
