@@ -51,8 +51,8 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
         'data'
     ],
     indexes: [
-        'time'
+        ['time', 'matchUrl', 'method']
     ]
 });
 
-export const pwaDocMethods: PwaDocMethods = {}
+export const pwaDocMethods: PwaDocMethods = {};

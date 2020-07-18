@@ -239,7 +239,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             switchMap(doc => {
 
-                if (doc?.method !== 'GET') {
+                if (doc?.method !== 'GET' && doc?.method !== 'POST') {
 
                     return from(doc.atomicSet('method', 'POST'));
                 }
