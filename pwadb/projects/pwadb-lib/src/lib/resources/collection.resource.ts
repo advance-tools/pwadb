@@ -262,6 +262,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     downloadRetrieve(doc: PwaDocument<T> | null, tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T> | null> {
 
+        console.log('download retrieve', doc, url);
+
         if (doc?.method !== 'GET') { return of(doc); }
 
         return forkJoin(this.restAPI.get(url, params), this.collectionAPI.collection$).pipe(
