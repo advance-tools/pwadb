@@ -305,7 +305,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     //////////////
 
     // tslint:disable-next-line: max-line-length
-    downloadList(res: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, collectionSuffixUrl = ''): Observable<number> {
+    downloadList(res: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<number> {
 
         // Exclude locally unsynced data in the api results
         let httpParams = params || new HttpParams();
@@ -325,8 +325,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                     // map network data to doctype
                     const atomicWrite = networkRes.results
                         .map(data => ({
-                            tenantUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}${collectionSuffixUrl}/${data.id}`,
-                            matchUrl: `${this.collectionAPI.makeTenantUrl(tenant, url)}${collectionSuffixUrl}/${data.id}`,
+                            tenantUrl: indexedbUrl(data, this.collectionAPI.makeTenantUrl(tenant, url)),
+                            matchUrl: indexedbUrl(data, this.collectionAPI.makeTenantUrl(tenant, url)),
                             data,
                             method: 'GET',
                             error: null,
@@ -350,11 +350,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     }
 
-    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], collectionSuffixUrl = ''): Observable<PwaListResponse<T>> {
+    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<PwaListResponse<T>> {
 
         const apiFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
-            switchMap(idbRes => this.downloadList(idbRes, tenant, url, params, collectionSuffixUrl)),
+            switchMap(idbRes => this.downloadList(idbRes, tenant, url, params, indexedbUrl)),
 
         );
 
@@ -374,9 +374,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     }
 
-    list(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], collectionSuffixUrl = ''): Observable<PwaListResponse<T>> {
+    list(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<PwaListResponse<T>> {
 
-        return this.listReactive(tenant, url, params, validQueryKeys, collectionSuffixUrl).pipe(
+        return this.listReactive(tenant, url, params, validQueryKeys, indexedbUrl).pipe(
 
             first(),
         );
