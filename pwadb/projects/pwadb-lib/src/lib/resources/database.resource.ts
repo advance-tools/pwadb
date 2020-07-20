@@ -133,7 +133,11 @@ export class PwaDatabaseService<T> {
 
                         if (doc.method === 'POST') {
 
-                            return this.httpClient.post(doc.tenantUrl.split('____')[1], doc.data).pipe(
+                            const url = doc.tenantUrl.split('____')[1].split('/');
+
+                            url.splice(url.length - 1, 1);
+
+                            return this.httpClient.post(url.join('/'), doc.data).pipe(
 
                                 switchMap(res => doc.atomicUpdate(oldData => ({
                                     ...oldData,
