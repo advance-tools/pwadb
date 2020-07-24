@@ -1,6 +1,6 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import { from, Observable, combineLatest, BehaviorSubject, forkJoin, empty, of, throwError } from 'rxjs';
-import { map, switchMap, filter, catchError, startWith, shareReplay, first, finalize, distinctUntilChanged, concatMap } from 'rxjs/operators';
+import { map, switchMap, filter, catchError, startWith, shareReplay, first, finalize, concatMap, distinctUntilChanged } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { PwaCollection, getCollectionCreator, pwaCollectionMethods } from '../definitions/collection';
 import { PwaDocument, pwaDocMethods } from '../definitions/document';
@@ -49,9 +49,14 @@ export class PwaDatabaseService<T> {
         return window?.indexedDB || (window as any)?.mozIndexedDB || (window as any)?.webkitIndexedDB || (window as any)?.msIndexedDB;
     }
 
-    retry() {
+    retrySync() {
 
         this.retryChange.next(true);
+    }
+
+    stopSync() {
+
+        this.retryChange.next(false);
     }
 
     getCollections(collectionNames: string[]): Observable<PwaCollection<any>[]> {
@@ -93,7 +98,7 @@ export class PwaDatabaseService<T> {
 
                     return from(k.find(query).$.pipe(
 
-                        map(docs => docs.filter(d => d.method !== 'GET').map(d => ({collectionName: k.name, document: d}))),
+                        map(docs => docs.map(d => ({collectionName: k.name, document: d}))),
 
                     ));
                 });
@@ -122,86 +127,87 @@ export class PwaDatabaseService<T> {
 
         );
 
+        const hit = pop.pipe(
+
+            distinctUntilChanged((prev, cur) => JSON.stringify(prev) === JSON.stringify(cur)),
+
+            concatMap(doc => {
+
+                console.log('popped document: ', doc.toJSON());
+
+                if (doc.method === 'POST') {
+
+                    const url = doc.tenantUrl.split('____')[1].split('/');
+
+                    url.splice(url.length - 1, 1);
+
+                    return this.httpClient.post(url.join('/'), doc.data).pipe(
+
+                        switchMap(res => doc.atomicUpdate(oldData => ({
+                            ...oldData,
+                            method: 'GET',
+                            data: res,
+                            error: null,
+                            time: new Date().getTime()
+                        }))),
+
+                        catchError(err => {
+
+                            return from(doc.atomicSet('error', JSON.stringify(err))).pipe(
+
+                                finalize(() => this.retryChange.next(false)),
+                            );
+                        }),
+
+                    );
+
+                } else if (doc.method === 'PUT') {
+
+                    return this.httpClient.put(doc.tenantUrl.split('____')[1], doc.data).pipe(
+
+                        switchMap(res => doc.atomicUpdate(oldData => ({
+                            ...oldData,
+                            method: 'GET',
+                            data: res,
+                            error: null,
+                            time: new Date().getTime()
+                        }))),
+
+                        catchError(err => {
+
+                            return from(doc.atomicSet('error', JSON.stringify(err))).pipe(
+
+                                finalize(() => this.retryChange.next(false)),
+                            );
+                        }),
+
+                    );
+
+                } else if (doc.method === 'DELETE') {
+
+                    return this.httpClient.delete(doc.tenantUrl.split('____')[1]).pipe(
+
+                        switchMap(() => doc.remove()),
+
+                        catchError(err => {
+
+                            return from(doc.atomicSet('error', JSON.stringify(err))).pipe(
+
+                                finalize(() => this.retryChange.next(false)),
+                            );
+                        }),
+
+                    );
+                }
+
+                return throwError(`Document doesn\'t have valid method. Document: ${JSON.stringify(doc?.toJSON())}`);
+            }),
+
+        );
+
         return this.retryChange.asObservable().pipe(
 
-            switchMap(trigger => {
-
-                const hit = pop.pipe(
-
-                    concatMap(doc => {
-
-                        if (doc.method === 'POST') {
-
-                            const url = doc.tenantUrl.split('____')[1].split('/');
-
-                            url.splice(url.length - 1, 1);
-
-                            return this.httpClient.post(url.join('/'), doc.data).pipe(
-
-                                switchMap(res => doc.atomicUpdate(oldData => ({
-                                    ...oldData,
-                                    method: 'GET',
-                                    data: res,
-                                    error: null,
-                                    time: new Date().getTime()
-                                }))),
-
-                                catchError(err => {
-
-                                    return from(doc.atomicSet('error', JSON.stringify(err))).pipe(
-
-                                        finalize(() => this.retryChange.next(false)),
-                                    );
-                                }),
-
-                            );
-
-                        } else if (doc.method === 'PUT') {
-
-                            return this.httpClient.put(doc.tenantUrl.split('____')[1], doc.data).pipe(
-
-                                switchMap(res => doc.atomicUpdate(oldData => ({
-                                    ...oldData,
-                                    method: 'GET',
-                                    data: res,
-                                    error: null,
-                                    time: new Date().getTime()
-                                }))),
-
-                                catchError(err => {
-
-                                    return from(doc.atomicSet('error', JSON.stringify(err))).pipe(
-
-                                        finalize(() => this.retryChange.next(false)),
-                                    );
-                                }),
-
-                            );
-
-                        } else if (doc.method === 'DELETE') {
-
-                            return this.httpClient.delete(doc.tenantUrl.split('____')[1]).pipe(
-
-                                switchMap(() => doc.remove()),
-
-                                catchError(err => {
-
-                                    return from(doc.atomicSet('error', JSON.stringify(err))).pipe(
-
-                                        finalize(() => this.retryChange.next(false)),
-                                    );
-                                }),
-
-                            );
-                        }
-
-                        return throwError(`Document doesn\'t have valid method. Document: ${JSON.stringify(doc?.toJSON())}`);
-                    }),
-
-                );
-
-                return trigger ? hit : empty();
-            })
+            switchMap(trigger => trigger ? hit : empty())
         );
 
     }
