@@ -93,9 +93,8 @@ export class PwaDatabaseService<T> {
 
                     return from(k.find(query).$.pipe(
 
-                        distinctUntilChanged(),
+                        map(docs => docs.filter(d => d.method !== 'GET').map(d => ({collectionName: k.name, document: d}))),
 
-                        map(docs => docs.map(d => ({collectionName: k.name, document: d}))),
                     ));
                 });
 
