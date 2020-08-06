@@ -133,8 +133,6 @@ export class PwaDatabaseService<T> {
 
             concatMap(doc => {
 
-                console.log('popped document: ', doc.toJSON());
-
                 if (doc.method === 'POST') {
 
                     const url = doc.tenantUrl.split('____')[1].split('/');
