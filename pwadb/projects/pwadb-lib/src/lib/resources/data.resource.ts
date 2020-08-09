@@ -195,7 +195,6 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
             map(res => {
 
-                console.log('reactive database datachange', res);
                 // set last response
                 this.lastRes = res.length > 0 ? res[res.length - 1] : null;
 
@@ -203,6 +202,8 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
                 const data = [];
 
                 Array.prototype.push.apply(data, ...res.map(v => v.results));
+
+                console.log('reactive database datachange', res, data);
 
                 return data;
             }),
