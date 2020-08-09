@@ -120,18 +120,9 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
             switchMap(v => combineLatest(v)),
 
-            map(res => {
+            tap(res => this.lastRes = res.length > 0 ? res[res.length - 1] : null),
 
-                // set last response
-                this.lastRes = res.length > 0 ? res[res.length - 1] : null;
-
-                // push data
-                const data = [];
-
-                Array.prototype.push.apply(data, ...res.map(v => v.results));
-
-                return data;
-            }),
+            map(res => [].concat(...res.map(v => v.results))),
 
             tap(v => this.data = v),
 
@@ -193,20 +184,9 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
             switchMap(v => combineLatest(v)),
 
-            map(res => {
+            tap(res => this.lastRes = res.length > 0 ? res[res.length - 1] : null),
 
-                // set last response
-                this.lastRes = res.length > 0 ? res[res.length - 1] : null;
-
-                // push data
-                const data = [];
-
-                Array.prototype.push.apply(data, ...res.map(v => v.results));
-
-                console.log('reactive database datachange', res, data);
-
-                return data;
-            }),
+            map(res => [].concat(...res.map(v => v.results))),
 
             tap(v => this.data = v),
 
