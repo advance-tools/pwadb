@@ -65,26 +65,6 @@ export class CollectionAPI<T extends Datatype, Database> {
         return `${tenant}____${url}`;
     }
 
-    filterList(docs$: Observable<PwaDocument<T>[]>, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
-
-        const start = parseInt(params?.get('offset') || '0');
-
-        const end = start + parseInt(params?.get('limit') || '100');
-
-        return docs$.pipe(
-
-            map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
-
-            map(allDocs => ({
-                getCount: allDocs.filter(v => v.method === 'GET').length,
-                postCount: allDocs.filter(v => v.method === 'POST').length,
-                putResults: allDocs.filter(v => v.method === 'PUT'),
-                delResults: allDocs.filter(v => v.method === 'DELETE'),
-                results: allDocs.slice(start, end)
-            })),
-        );
-    }
-
     ////////////////
     // CRUD
     ////////////////
@@ -109,7 +89,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
-        const docs = this.collection$.pipe(
+        return this.collection$.pipe(
 
             switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
 
@@ -117,9 +97,26 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             map(v => v.sort((a, b) => b.time - a.time)),
 
-        );
+            map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
 
-        return this.filterList(docs, params, validQueryKeys);
+            map(allDocs => {
+
+                // tslint:disable-next-line: radix
+                const start = parseInt(params?.get('offset') || '0');
+
+                // tslint:disable-next-line: radix
+                const end = start + parseInt(params?.get('limit') || '100');
+
+                const next = allDocs.length - end > 0 ? `${url}?${params.set('offset', end.toString()).toString()}` : null;
+
+                const previous = start > 0 ? `${url}?${params.set('offset', start.toString()).toString()}` : null;
+
+                console.log('collection next', next, 'collection previous', previous);
+
+                return {next, previous, results: allDocs.slice(start, end)};
+            }),
+
+        );
     }
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
@@ -305,18 +302,18 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     //////////////
 
     // tslint:disable-next-line: max-line-length
-    downloadList(res: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<number> {
+    downloadList(res: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<ListResponse<T>> {
 
         // Exclude locally unsynced data in the api results
         let httpParams = params || new HttpParams();
 
-        const ids = res.putResults.concat(res.delResults).map(v => v.data.id);
+        const ids = res.results.filter(v => v.method === 'PUT' || v.method === 'DELETE').map(v => v.data.id);
 
         if (ids.length > 0) { httpParams = httpParams.set('exclude:id', ids.join(',')); }
 
         return this.restAPI.list(url, httpParams).pipe(
 
-            catchError(() => of({count: 0, results: []} as ListResponse<T>)),
+            catchError(() => of({next: null, previous: null, results: []} as ListResponse<T>)),
 
             switchMap(networkRes => this.collectionAPI.collection$.pipe(
 
@@ -338,11 +335,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
                         return forkJoin(...atomicWrite).pipe(
 
-                            map(() => networkRes.count)
+                            map(() => networkRes)
                         );
                     }
 
-                    return of(networkRes.count);
+                    return of(networkRes);
                 })
             )),
 
@@ -360,10 +357,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return apiFetch.pipe(
 
-            switchMap(apiCount => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
+            switchMap(networkRes => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
 
                 map(res => ({
-                    count: (apiCount || (res.getCount + res.putResults.length + res.delResults.length)) + res.postCount,
+                    next: networkRes.next || res.next,
+                    previous: networkRes.previous || res.previous,
                     results: res.results
                 })),
 

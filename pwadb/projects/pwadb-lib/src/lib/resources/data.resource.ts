@@ -35,7 +35,7 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
     data: PwaDocument<T>[];
 
     isLoadingChange: BehaviorSubject<boolean>;
-    totalCount = 0;
+    lastRes: PwaListResponse<T>;
 
     // tslint:disable-next-line: variable-name
     private _httpParams: HttpParams;
@@ -50,7 +50,7 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 
     get isLoading() { return this.isLoadingChange.value; }
     get offset() { return this.data.length; }
-    get isLoadable(): boolean { return this.offset < this.totalCount; }
+    get isLoadable(): boolean { return !!this.lastRes?.next; }
     get limit() { return this.__limit; }
 
     constructor(private __limit: number) {
@@ -67,15 +67,31 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
         this._httpParams = this.httpParams.set('offset', '0');
         this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
-        if (!this.httpParams.has('order_by')) { this._httpParams = this.httpParams.set('order_by', '-updated_at'); }
+        if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at'); }
     }
 
     loadMore() {
 
+        // set queryparams from next url
+        if (this.lastRes?.next) {
+
+            const split = this.lastRes.next.split('?');
+
+            if (split.length > 1) {
+
+                split[1].split('&').forEach(q => {
+
+                    const queryParam = q.split('=');
+
+                    this._httpParams = this.httpParams.set(queryParam[0], queryParam[1]);
+                });
+            }
+        }
+
         this._httpParams = this.httpParams.set('offset', this.offset.toString());
         this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
-        if (!this.httpParams.has('order_by')) { this._httpParams = this.httpParams.set('order_by', '-updated_at'); }
+        if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at'); }
     }
 
 }
@@ -102,9 +118,18 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
             switchMap(v => combineLatest(v)),
 
-            tap(res => this.totalCount = res.length > 0 ? res[res.length - 1].count : 0),
+            map(res => {
 
-            map(res => [].concat(...res.map(v => v.results))),
+                // set last response
+                this.lastRes = res.length > 0 ? res[res.length - 1] : null;
+
+                // push data
+                const data = [];
+
+                Array.prototype.push.apply(data, ...res.map(v => v.results));
+
+                return data;
+            }),
 
             tap(v => this.data = v),
 
@@ -166,9 +191,18 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
             switchMap(v => combineLatest(v)),
 
-            tap(res => this.totalCount = res.length > 0 ? res[res.length - 1].count : 0),
+            map(res => {
 
-            map(res => [].concat(...res.map(v => v.results))),
+                // set last response
+                this.lastRes = res.length > 0 ? res[res.length - 1] : null;
+
+                // push data
+                const data = [];
+
+                Array.prototype.push.apply(data, ...res.map(v => v.results));
+
+                return data;
+            }),
 
             tap(v => this.data = v),
 

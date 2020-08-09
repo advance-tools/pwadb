@@ -27,21 +27,19 @@ export const pwaCollectionMethods: PwaCollectionMethods = {};
 ///////////////////////
 
 export interface ListResponse<T extends Datatype> {
-    count: number;
     next: string;
     previous: string;
     results: T[];
 }
 
 export interface CollectionListResponse<T extends Datatype> {
-    getCount: number;
-    postCount: number;
-    putResults: PwaDocument<T>[];
-    delResults: PwaDocument<T>[];
+    next: string;
+    previous: string;
     results: PwaDocument<T>[];
 }
 
 export interface PwaListResponse<T extends Datatype> {
-    count: number;
+    next: string;
+    previous: string;
     results: PwaDocument<T>[];
 }
