@@ -92,7 +92,7 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
         this._httpParams = this.httpParams.set('offset', this.offset.toString());
         this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
-        if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at'); }
+        if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at,id'); }
 
     }
 
