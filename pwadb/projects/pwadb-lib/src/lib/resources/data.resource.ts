@@ -64,6 +64,7 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 
     reset() {
 
+        this._httpParams = this.httpParams.delete('cursor');
         this._httpParams = this.httpParams.set('offset', '0');
         this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
@@ -92,6 +93,7 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
         this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
         if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at'); }
+
     }
 
 }

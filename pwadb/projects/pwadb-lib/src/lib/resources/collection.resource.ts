@@ -111,7 +111,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 const previous = start > 0 ? `${url}?${params.set('offset', start.toString()).toString()}` : null;
 
-                console.log('collection next', next, 'collection previous', previous);
+                console.log(start, end, allDocs.length, next, previous);
 
                 return {next, previous, results: allDocs.slice(start, end)};
             }),
