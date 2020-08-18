@@ -36,6 +36,7 @@ export interface CollectionListResponse<T extends Datatype> {
     next: string;
     previous: string;
     results: PwaDocument<T>[];
+    count?: number;
 }
 
 export interface PwaListResponse<T extends Datatype> {
