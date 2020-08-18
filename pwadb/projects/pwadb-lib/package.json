@@ -1,6 +1,6 @@
 {
   "name": "@impriyanshub/pwadb-lib",
-  "version": "0.0.41",
+  "version": "0.0.42",
   "peerDependencies": {
     "@angular/common": "~10.0.8",
     "@angular/core": "~10.0.8"

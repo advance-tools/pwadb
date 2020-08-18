@@ -65,6 +65,32 @@ export class CollectionAPI<T extends Datatype, Database> {
         return `${tenant}____${url}`;
     }
 
+    filterDocs(docs: Observable<PwaDocument<T>[]>, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
+
+        return docs.pipe(
+
+            map(v => v.sort((a, b) => b.time - a.time)),
+
+            map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
+
+            map(allDocs => {
+
+                // tslint:disable-next-line: radix
+                const start = parseInt(params?.get('offset') || '0');
+
+                // tslint:disable-next-line: radix
+                const end = start + parseInt(params?.get('limit') || '100');
+
+                const next = allDocs.length - end > 0 ? `${url}?${params.set('offset', end.toString()).toString()}` : null;
+
+                const previous = start > 0 ? `${url}?${params.set('offset', start.toString()).toString()}` : null;
+
+                return {next, previous, results: allDocs.slice(start, end)};
+            }),
+
+        );
+    }
+
     ////////////////
     // CRUD
     ////////////////
@@ -89,32 +115,14 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
-        return this.collection$.pipe(
+        const docs = this.collection$.pipe(
 
             switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
 
             distinctUntilChanged(),
-
-            map(v => v.sort((a, b) => b.time - a.time)),
-
-            map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
-
-            map(allDocs => {
-
-                // tslint:disable-next-line: radix
-                const start = parseInt(params?.get('offset') || '0');
-
-                // tslint:disable-next-line: radix
-                const end = start + parseInt(params?.get('limit') || '100');
-
-                const next = allDocs.length - end > 0 ? `${url}?${params.set('offset', end.toString()).toString()}` : null;
-
-                const previous = start > 0 ? `${url}?${params.set('offset', start.toString()).toString()}` : null;
-
-                return {next, previous, results: allDocs.slice(start, end)};
-            }),
-
         );
+
+        return this.filterDocs(docs, url, params, validQueryKeys);
     }
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
@@ -377,5 +385,4 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             first(),
         );
     }
-
 }
