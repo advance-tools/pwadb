@@ -356,7 +356,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         for (const r of res.results) {
 
-            if (r.time < (currentTime - (this.cacheTimeInSeconds * 1000))) {
+            if (r.method === 'GET' && r.time < (currentTime - (this.cacheTimeInSeconds * 1000))) {
 
                 withInCacheTime = false;
 
