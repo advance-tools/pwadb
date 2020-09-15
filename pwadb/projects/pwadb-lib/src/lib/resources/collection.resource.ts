@@ -44,6 +44,9 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     collection$: Observable<PwaCollection<T>>;
 
+    cacheDocument: Map<string, Observable<PwaDocument<T>>>;
+    cacheDocuments: Map<string, Observable<PwaDocument<T>[]>>;
+
     constructor(private name: string, private db$: Observable<RxDatabase<Database>>) {
 
         this.collection$ = this.db$.pipe(
@@ -58,6 +61,8 @@ export class CollectionAPI<T extends Datatype, Database> {
             first()
         );
 
+        this.cacheDocument = new Map();
+        this.cacheDocuments = new Map();
     }
 
     makeTenantUrl(tenant: string, url: string): string {
@@ -97,12 +102,23 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     getReactive(tenant: string, url: string): Observable<PwaDocument<T>> {
 
-        return this.collection$.pipe(
+        const tenantUrl = this.makeTenantUrl(tenant, url);
 
-            switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
+        if (!this.cacheDocument.has(tenantUrl)) {
 
-            distinctUntilChanged(),
-        );
+            const doc = this.collection$.pipe(
+
+                switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
+
+                distinctUntilChanged(),
+
+                shareReplay(1),
+            );
+
+            this.cacheDocument.set(tenantUrl, doc);
+        }
+
+        return this.cacheDocument.get(tenantUrl);
     }
 
     get(tenant: string, url: string): Observable<PwaDocument<T>> {
@@ -115,14 +131,24 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
-        const docs = this.collection$.pipe(
+        const tenantUrl = this.makeTenantUrl(tenant, url);
 
-            switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
+        if (!this.cacheDocuments.has(tenantUrl)) {
 
-            distinctUntilChanged(),
-        );
+            const docs = this.collection$.pipe(
 
-        return this.filterDocs(docs, url, params, validQueryKeys);
+                switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
+
+                distinctUntilChanged(),
+
+                shareReplay(1),
+            );
+
+            this.cacheDocuments.set(tenantUrl, docs);
+
+        }
+
+        return this.filterDocs(this.cacheDocuments.get(tenantUrl), url, params, validQueryKeys);
     }
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
@@ -192,17 +218,21 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             switchMap(doc => {
 
-                if (doc?.method === 'POST') {
+                if (!!doc && doc.method === 'POST') {
 
                     return from(doc.remove());
 
-                } else if (doc?.method === 'PUT' || doc?.method === 'DELETE') {
+                } else if (!!doc && (doc.method === 'PUT' || doc.method === 'DELETE')) {
 
                     return from(doc.atomicUpdate((oldData) => ({...oldData, method: 'DELETE', error: null})));
 
-                }  else {
+                }  else if (!!doc) {
 
                     return from(doc.atomicUpdate((oldData) => ({...oldData, method: 'DELETE', error: null, time: new Date().getTime()})));
+
+                } else {
+
+                    return throwError('Document not found while deleting in database');
                 }
 
             })
@@ -219,12 +249,12 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             switchMap(doc => {
 
-                if (doc?.method !== 'GET' && doc?.method !== 'POST') {
+                if (!!doc && doc.method !== 'GET' && doc.method !== 'POST') {
 
                     return from(doc.atomicSet('method', 'POST'));
                 }
 
-                return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON())}`);
+                return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
             })
         );
     }
@@ -235,12 +265,12 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             switchMap(doc => {
 
-                if (doc?.method !== 'GET') {
+                if (!!doc && doc.method !== 'GET') {
 
                     return from(doc.remove());
                 }
 
-                return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON())}`);
+                return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
             })
         );
     }
@@ -251,6 +281,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     collectionAPI: CollectionAPI<T, Database>;
 
     restAPI: RestAPI<T>;
+
+    cacheTimeInSeconds = 60;
 
     constructor(private name: string, private db$: Observable<RxDatabase<Database>>, private httpClient: HttpClient) {
 
@@ -266,6 +298,10 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     downloadRetrieve(doc: PwaDocument<T> | null, tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T> | null> {
 
         if (!!doc && doc.method !== 'GET') { return of(doc); }
+
+        const currentTime = new Date().getTime();
+
+        if (!!doc && doc.time >= (currentTime - (this.cacheTimeInSeconds * 1000))) { return of(doc); }
 
         return forkJoin(this.restAPI.get(url, params), this.collectionAPI.collection$).pipe(
 

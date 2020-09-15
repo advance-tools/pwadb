@@ -35,10 +35,10 @@ export function parseDate(fieldValue: FieldDataType, inputValue: string): null |
 export function parseBoolean(fieldValue: FieldDataType, inputValue: string): null | {[key: string]: boolean} {
 
     // tslint:disable-next-line: max-line-length
-    const parsedFieldValue = fieldValue.toString().toLowerCase() === 'true' ? true : fieldValue.toString().toLowerCase() === 'false' ? false : null;
+    const parsedFieldValue = fieldValue?.toString().toLowerCase() === 'true' ? true : fieldValue?.toString().toLowerCase() === 'false' ? false : null;
 
     // tslint:disable-next-line: max-line-length
-    const parsedInputValue = inputValue.toString().toLowerCase() === 'true' ? true : inputValue.toString().toLowerCase() === 'false' ? false : null;
+    const parsedInputValue = inputValue?.toString().toLowerCase() === 'true' ? true : inputValue?.toString().toLowerCase() === 'false' ? false : null;
 
     return parsedFieldValue === null || parsedInputValue === null ? null : {parsedFieldValue, parsedInputValue};
 }
@@ -152,28 +152,28 @@ export const range: (v: PwaDocument<any>, field: string, inputValue: string) => 
 ///////////////////////////////////////////////
 
 // tslint:disable-next-line: max-line-length
-export const startswith: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().startsWith(inputValue);
+export const startswith: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType)?.toString().startsWith(inputValue);
 
 // tslint:disable-next-line: max-line-length
-export const endswith: (v: PwaDocument<any>, field: string, inputValue: string) => boolean   = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().endsWith(inputValue);
+export const endswith: (v: PwaDocument<any>, field: string, inputValue: string) => boolean   = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType)?.toString().endsWith(inputValue);
 
 // tslint:disable-next-line: max-line-length
-export const iexact: (v: PwaDocument<any>, field: string, inputValue: string) => boolean     = (v: PwaDocument<any>, field: string, inputValue: string) => !!(v.data[field] as FieldDataType).toString().match(new RegExp(`^${inputValue}$`, 'i'));
+export const iexact: (v: PwaDocument<any>, field: string, inputValue: string) => boolean     = (v: PwaDocument<any>, field: string, inputValue: string) => !!(v.data[field] as FieldDataType)?.toString().match(new RegExp(`^${inputValue}$`, 'i'));
 
 // tslint:disable-next-line: max-line-length
-export const exact: (v: PwaDocument<any>, field: string, inputValue: string) => boolean      = (v: PwaDocument<any>, field: string, inputValue: string) => !!(v.data[field] as FieldDataType).toString().match(new RegExp(`^${inputValue}$`));
+export const exact: (v: PwaDocument<any>, field: string, inputValue: string) => boolean      = (v: PwaDocument<any>, field: string, inputValue: string) => !!(v.data[field] as FieldDataType)?.toString().match(new RegExp(`^${inputValue}$`));
 
 // tslint:disable-next-line: max-line-length
-export const icontains: (v: PwaDocument<any>, field: string, inputValue: string) => boolean  = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().toLowerCase().includes(inputValue.toLowerCase());
+export const icontains: (v: PwaDocument<any>, field: string, inputValue: string) => boolean  = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType)?.toString().toLowerCase().includes(inputValue?.toLowerCase() || '');
 
 // tslint:disable-next-line: max-line-length
-export const contains: (v: PwaDocument<any>, field: string, inputValue: string) => boolean   = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType).toString().includes(inputValue);
+export const contains: (v: PwaDocument<any>, field: string, inputValue: string) => boolean   = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType)?.toString().includes(inputValue);
 
 ///////////////////////////////////////////////
 // Lookup Filters (boolean)
 ///////////////////////////////////////////////
 // tslint:disable-next-line: max-line-length
-export const isnull: (v: PwaDocument<any>, field: string, inputValue: string) => boolean     = (v: PwaDocument<any>, field: string, inputValue: string) => inputValue.toLowerCase() === 'true' ? v.data[field] === null : v.data[field] !== null;
+export const isnull: (v: PwaDocument<any>, field: string, inputValue: string) => boolean     = (v: PwaDocument<any>, field: string, inputValue: string) => inputValue?.toLowerCase() === 'true' ? v.data[field] === null : v.data[field] !== null;
 
 
 export function getQuery(key: string, value: string): {queryType: Query, fields: string[], lookup?: Lookup, inputValue?: string} {
