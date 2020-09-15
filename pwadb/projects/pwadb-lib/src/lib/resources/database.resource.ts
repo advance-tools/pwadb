@@ -254,22 +254,22 @@ export class PwaDatabaseService<T> {
 
     createNew(doc: PwaDocument<any>): Observable<PwaDocument<any>> {
 
-        if (doc?.method !== 'GET' && doc?.method !== 'POST') {
+        if (!!doc && doc.method !== 'GET' && doc.method !== 'POST') {
 
             return from(doc.atomicSet('method', 'POST'));
         }
 
-        return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON())}`);
+        return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
     }
 
     deleteConflict(doc: PwaDocument<any>): Observable<boolean> {
 
-        if (doc?.method !== 'GET') {
+        if (!!doc && doc.method !== 'GET') {
 
             return from(doc.remove());
         }
 
-        return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON())}`);
+        return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
     }
 
 }

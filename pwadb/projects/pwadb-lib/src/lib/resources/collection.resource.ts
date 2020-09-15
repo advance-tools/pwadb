@@ -44,8 +44,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     collection$: Observable<PwaCollection<T>>;
 
-    cacheDocument: Map<string, Observable<PwaDocument<T>>>;
-    cacheDocuments: Map<string, Observable<PwaDocument<T>[]>>;
+    private cacheDocument: Map<string, Observable<PwaDocument<T>>>;
+    private cacheDocuments: Map<string, Observable<PwaDocument<T>[]>>;
 
     constructor(private name: string, private db$: Observable<RxDatabase<Database>>) {
 
