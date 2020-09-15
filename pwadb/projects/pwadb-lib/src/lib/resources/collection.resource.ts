@@ -364,7 +364,12 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             }
         }
 
-        if (withInCacheTime) { return of({next: res.next, previous: res.previous, results: /*res.results.map(r => r.toJSON().data)*/ []}); }
+        const limit = params?.get('limit') || 100;
+
+        if (withInCacheTime && res.results.length === limit) {
+
+            return of({next: res.next, previous: res.previous, results: /*res.results.map(r => r.toJSON().data)*/ []});
+        }
 
         ////////////////////////////////////////////////////////////////
         // Exclude recents or locally unsynced data in the api results
