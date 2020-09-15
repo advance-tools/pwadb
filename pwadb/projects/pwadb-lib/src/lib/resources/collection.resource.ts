@@ -282,7 +282,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     restAPI: RestAPI<T>;
 
-    cacheTimeInSeconds = 60;
+    cacheTimeInSeconds = 120;
 
     constructor(private name: string, private db$: Observable<RxDatabase<Database>>, private httpClient: HttpClient) {
 
