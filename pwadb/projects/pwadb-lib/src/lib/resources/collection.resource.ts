@@ -364,7 +364,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             }
         }
 
-        if (!withInCacheTime) { return of({next: res.next, previous: res.previous, results: res.results.map(r => r.toJSON().data)}); }
+        if (withInCacheTime) { return of({next: res.next, previous: res.previous, results: res.results.map(r => r.toJSON().data)}); }
 
         ////////////////////////////////////////////////////////////////
         // Exclude recents or locally unsynced data in the api results
