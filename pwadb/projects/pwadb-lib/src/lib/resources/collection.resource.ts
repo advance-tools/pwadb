@@ -299,6 +299,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         if (!!doc && doc.method !== 'GET') { return of(doc); }
 
+        // check if document is within cacheTime
         const currentTime = new Date().getTime();
 
         if (!!doc && doc.time >= (currentTime - (this.cacheTimeInSeconds * 1000))) { return of(doc); }
@@ -346,10 +347,33 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     // tslint:disable-next-line: max-line-length
     downloadList(res: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<ListResponse<T>> {
 
-        // Exclude locally unsynced data in the api results
+        /////////////////////////////////////////
+        // check if document is within cacheTime
+        /////////////////////////////////////////
+        const currentTime = new Date().getTime();
+
+        let withInCacheTime = true;
+
+        for (const r of res.results) {
+
+            if (r.time < (currentTime - (this.cacheTimeInSeconds * 1000))) {
+
+                withInCacheTime = false;
+
+                break;
+            }
+        }
+
+        if (!withInCacheTime) { return of({next: res.next, previous: res.previous, results: res.results.map(r => r.toJSON().data)}); }
+
+        ////////////////////////////////////////////////////////////////
+        // Exclude recents or locally unsynced data in the api results
+        ////////////////////////////////////////////////////////////////
         let httpParams = params || new HttpParams();
 
-        const ids = res.results.filter(v => v.method === 'PUT' || v.method === 'DELETE').map(v => v.data.id);
+        const ids = res.results
+            .filter(v => v.method === 'PUT' || v.method === 'DELETE' || (v.method === 'GET' && v.time >= (currentTime - (this.cacheTimeInSeconds * 1000))))
+            .map(v => v.data.id);
 
         if (ids.length > 0) { httpParams = httpParams.set('exclude:id', ids.join(',')); }
 
@@ -399,8 +423,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return apiFetch.pipe(
 
-            startWith(null),
-
             switchMap(networkRes => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
 
                 map(res => ({
@@ -417,23 +439,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<PwaListResponse<T>> {
 
-        const apiFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
+        return this.listReactive(tenant, url, params, validQueryKeys, indexedbUrl).pipe(
 
-            switchMap(idbRes => this.downloadList(idbRes, tenant, url, params, indexedbUrl)),
-
-        );
-
-        return apiFetch.pipe(
-
-            switchMap(networkRes => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
-
-                map(res => ({
-                    next: networkRes?.next || res.next,
-                    previous: networkRes?.previous || res.previous,
-                    results: res.results
-                })),
-
-            )),
+            first()
         );
 
     }
