@@ -364,7 +364,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             }
         }
 
-        if (withInCacheTime) { return of({next: res.next, previous: res.previous, results: res.results.map(r => r.toJSON().data)}); }
+        if (withInCacheTime) { return of({next: res.next, previous: res.previous, results: /*res.results.map(r => r.toJSON().data)*/ []}); }
 
         ////////////////////////////////////////////////////////////////
         // Exclude recents or locally unsynced data in the api results
@@ -372,6 +372,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         let httpParams = params || new HttpParams();
 
         const ids = res.results
+            // tslint:disable-next-line: max-line-length
             .filter(v => v.method === 'PUT' || v.method === 'DELETE' || (v.method === 'GET' && v.time >= (currentTime - (this.cacheTimeInSeconds * 1000))))
             .map(v => v.data.id);
 
