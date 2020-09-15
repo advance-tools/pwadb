@@ -354,19 +354,29 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         let withInCacheTime = true;
 
-        for (const r of res.results) {
-
-            if (r.method === 'GET' && r.time < (currentTime - (this.cacheTimeInSeconds * 1000))) {
-
-                withInCacheTime = false;
-
-                break;
-            }
-        }
-
         const limit = params?.get('limit') || 100;
 
-        if (withInCacheTime && res.results.length === limit) {
+        // check if indexeddb response has same length as requested
+        if (res.results.length === limit) {
+
+            for (const r of res.results) {
+
+                if (r.method === 'GET' && r.time < (currentTime - (this.cacheTimeInSeconds * 1000))) {
+
+                    withInCacheTime = false;
+
+                    break;
+                }
+            }
+
+        } else {
+
+            // if not the same length we have to check with server
+            // if they have more data
+            withInCacheTime = false;
+        }
+
+        if (withInCacheTime) {
 
             return of({next: res.next, previous: res.previous, results: /*res.results.map(r => r.toJSON().data)*/ []});
         }
