@@ -1,7 +1,7 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, catchError, first, shareReplay, distinctUntilChanged } from 'rxjs/operators';
-import { Observable, forkJoin, of, from, throwError } from 'rxjs';
+import { switchMap, map, catchError, first, shareReplay, distinctUntilChanged, startWith } from 'rxjs/operators';
+import { Observable, forkJoin, of, from, throwError, combineLatest } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
@@ -399,26 +399,42 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return apiFetch.pipe(
 
+            startWith(null),
+
             switchMap(networkRes => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
 
                 map(res => ({
-                    next: networkRes.next || res.next,
-                    previous: networkRes.previous || res.previous,
+                    next: networkRes?.next || res.next,
+                    previous: networkRes?.previous || res.previous,
                     results: res.results
                 })),
 
             )),
 
-            distinctUntilChanged()
-        );
+        ) as Observable<PwaListResponse<T>>;
 
     }
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<PwaListResponse<T>> {
 
-        return this.listReactive(tenant, url, params, validQueryKeys, indexedbUrl).pipe(
+        const apiFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
-            first(),
+            switchMap(idbRes => this.downloadList(idbRes, tenant, url, params, indexedbUrl)),
+
         );
+
+        return apiFetch.pipe(
+
+            switchMap(networkRes => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
+
+                map(res => ({
+                    next: networkRes?.next || res.next,
+                    previous: networkRes?.previous || res.previous,
+                    results: res.results
+                })),
+
+            )),
+        );
+
     }
 }
