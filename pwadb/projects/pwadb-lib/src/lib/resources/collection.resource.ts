@@ -347,39 +347,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     // tslint:disable-next-line: max-line-length
     downloadList(res: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<ListResponse<T>> {
 
-        /////////////////////////////////////////
-        // check if document is within cacheTime
-        /////////////////////////////////////////
         const currentTime = new Date().getTime();
 
-        let withInCacheTime = true;
-
-        const limit = params?.get('limit') || 100;
-
-        // check if indexeddb response has same length as requested
-        if (res.results.length === limit) {
-
-            for (const r of res.results) {
-
-                if (r.method === 'GET' && r.time < (currentTime - (this.cacheTimeInSeconds * 1000))) {
-
-                    withInCacheTime = false;
-
-                    break;
-                }
-            }
-
-        } else {
-
-            // if not the same length we have to check with server
-            // if they have more data
-            withInCacheTime = false;
-        }
-
-        if (withInCacheTime) {
-
-            return of({next: res.next, previous: res.previous, results: /*res.results.map(r => r.toJSON().data)*/ []});
-        }
+        const limit = parseInt(params?.get('limit') || '100');
 
         ////////////////////////////////////////////////////////////////
         // Exclude recents or locally unsynced data in the api results
@@ -391,7 +361,13 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             .filter(v => v.method === 'PUT' || v.method === 'DELETE' || (v.method === 'GET' && v.time >= (currentTime - (this.cacheTimeInSeconds * 1000))))
             .map(v => v.data.id);
 
-        if (ids.length > 0) { httpParams = httpParams.set('exclude:id', ids.join(',')); }
+        if (ids.length === limit) {
+
+            // pass if all results are excluded
+            return of({next: res.next, previous: res.previous, results: /*res.results.map(r => r.toJSON().data)*/ []});
+        }
+
+        if (ids.length > 0) { httpParams = httpParams.set('exclude:id', ids.join(',')).set('limit', (limit - ids.length).toString()); }
 
         return this.restAPI.list(url, httpParams).pipe(
 
