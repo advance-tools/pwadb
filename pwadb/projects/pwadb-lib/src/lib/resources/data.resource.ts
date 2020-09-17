@@ -37,6 +37,7 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
     data: PwaDocument<T>[];
 
     _isLoadingChange: BehaviorSubject<boolean>;
+    isLoadingChange: Observable<boolean>;
     lastRes: PwaListResponse<T>;
 
     // tslint:disable-next-line: variable-name
@@ -54,13 +55,6 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
     get offset() { return this.data.length; }
     get isLoadable(): boolean { return !!this.lastRes?.next; }
     get limit() { return this.__limit; }
-    get isLoadingChange() {
-
-        return this._isLoadingChange.pipe(
-
-            enterZone(this.__zone)
-        );
-    }
 
     constructor(private __limit: number, private __zone: NgZone) {
 
@@ -69,6 +63,11 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
         this._isLoadingChange 	= new BehaviorSubject(false);
 
         this._httpParams        = new HttpParams();
+
+        this.isLoadingChange    = this._isLoadingChange.asObservable().pipe(
+
+            enterZone(this.__zone)
+        );
     }
 
     reset() {
