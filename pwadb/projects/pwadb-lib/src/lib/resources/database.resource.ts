@@ -5,6 +5,8 @@ import { HttpClient } from '@angular/common/http';
 import { PwaCollection, getCollectionCreator, pwaCollectionMethods } from '../definitions/collection';
 import { PwaDocument, pwaDocMethods } from '../definitions/document';
 import idb from 'pouchdb-adapter-idb';
+import { enterZone } from './operators.resource';
+import { NgZone } from '@angular/core';
 // import memory from 'pouchdb-adapter-memory';
 
 export class PwaDatabaseService<T> {
@@ -13,7 +15,7 @@ export class PwaDatabaseService<T> {
 
     private retryChange: BehaviorSubject<boolean>;
 
-    constructor(private httpClient: HttpClient, dbCreator: RxDatabaseCreator = {
+    constructor(private httpClient: HttpClient, private zone: NgZone, dbCreator: RxDatabaseCreator = {
         name: 'pwadb',
         adapter: 'idb',
         password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',     // <- password (optional)
@@ -111,6 +113,8 @@ export class PwaDatabaseService<T> {
 
             // tslint:disable-next-line: max-line-length
             map((sortedDocs: {collectionName: string, document: PwaDocument<any>}[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.document.time - b.document.time : b.document.time - a.document.time)),
+
+            enterZone<{collectionName: string, document: PwaDocument<any>}[]>(this.zone),
         );
     }
 
@@ -128,8 +132,6 @@ export class PwaDatabaseService<T> {
         );
 
         const hit = pop.pipe(
-
-            distinctUntilChanged((prev, cur) => JSON.stringify(prev) === JSON.stringify(cur)),
 
             concatMap(doc => {
 

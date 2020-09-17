@@ -3,6 +3,8 @@ import { PwaDocument } from '../definitions/document';
 import { HttpParams } from '@angular/common/http';
 import { PwaListResponse } from '../definitions/collection';
 import { switchMap, tap, shareReplay, map, filter } from 'rxjs/operators';
+import { enterZone } from './operators.resource';
+import { NgZone } from '@angular/core';
 
 /////////////////////
 // Interfaces
@@ -10,7 +12,7 @@ import { switchMap, tap, shareReplay, map, filter } from 'rxjs/operators';
 
 export interface DatabaseDatatype {
     id: string;
-    updated_at: string;
+    created_at: string;
 }
 
 export interface DatabaseService<T extends DatabaseDatatype> {
@@ -106,7 +108,7 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
     dataChange: Observable<PwaDocument<T>[]>;
 
-    constructor(private apiService: DatabaseService<T>, private _limit = 20) {
+    constructor(private apiService: DatabaseService<T>, private zone: NgZone, private _limit = 20) {
 
         super(_limit);
 
@@ -118,17 +120,21 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
             tap(() => this.isLoadingChange.next(true)),
 
+            enterZone<Observable<PwaListResponse<T>>[]>(zone),
+
             switchMap(v => combineLatest(v)),
 
             tap(res => this.lastRes = res.length > 0 ? res[res.length - 1] : null),
 
-            map(res => [].concat(...res.map(v => v.results))),
+            map(res => [].concat(...res.map(v => v.results)) as PwaDocument<T>[]),
 
             tap(v => this.data = v),
 
             tap(() => this.isLoadingChange.next(false)),
 
-        );
+            enterZone<PwaDocument<T>[]>(zone),
+
+        ) as Observable<PwaDocument<T>[]>;
     }
 
     getView(httpParams: HttpParams): Observable<PwaListResponse<T>> {
@@ -170,7 +176,7 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
     dataChange: Observable<PwaDocument<T>[]>;
 
-    constructor(private apiService: DatabaseService<T>, private _limit = 20) {
+    constructor(private apiService: DatabaseService<T>, private zone: NgZone, private _limit = 20) {
 
         super(_limit);
 
@@ -182,16 +188,21 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
             tap(() => this.isLoadingChange.next(true)),
 
+            enterZone<Observable<PwaListResponse<T>>[]>(zone),
+
             switchMap(v => combineLatest(v)),
 
             tap(res => this.lastRes = res.length > 0 ? res[res.length - 1] : null),
 
-            map(res => [].concat(...res.map(v => v.results))),
+            map(res => [].concat(...res.map(v => v.results)) as PwaDocument<T>[]),
 
             tap(v => this.data = v),
 
             tap(() => this.isLoadingChange.next(false)),
-        );
+
+            enterZone<PwaDocument<T>[]>(zone),
+
+        ) as Observable<PwaDocument<T>[]>;
     }
 
     getView(httpParams: HttpParams): Observable<PwaListResponse<T>> {

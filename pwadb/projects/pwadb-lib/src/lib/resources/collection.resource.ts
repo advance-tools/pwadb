@@ -5,6 +5,8 @@ import { Observable, forkJoin, of, from, throwError, combineLatest } from 'rxjs'
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
+import { NgZone } from '@angular/core';
+import { enterZone } from './operators.resource';
 
 export class RestAPI<T extends Datatype> {
 
@@ -47,7 +49,7 @@ export class CollectionAPI<T extends Datatype, Database> {
     private cacheDocument: Map<string, Observable<PwaDocument<T>>>;
     private cacheDocuments: Map<string, Observable<PwaDocument<T>[]>>;
 
-    constructor(private name: string, private db$: Observable<RxDatabase<Database>>) {
+    constructor(private name: string, private db$: Observable<RxDatabase<Database>>, private zone: NgZone) {
 
         this.collection$ = this.db$.pipe(
 
@@ -118,7 +120,10 @@ export class CollectionAPI<T extends Datatype, Database> {
             this.cacheDocument.set(tenantUrl, doc);
         }
 
-        return this.cacheDocument.get(tenantUrl);
+        return this.cacheDocument.get(tenantUrl).pipe(
+
+            enterZone<PwaDocument<T>>(this.zone),
+        );
     }
 
     get(tenant: string, url: string): Observable<PwaDocument<T>> {
@@ -148,7 +153,10 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         }
 
-        return this.filterDocs(this.cacheDocuments.get(tenantUrl), url, params, validQueryKeys);
+        return this.filterDocs(this.cacheDocuments.get(tenantUrl), url, params, validQueryKeys).pipe(
+
+            enterZone<CollectionListResponse<T>>(this.zone),
+        );
     }
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
@@ -265,8 +273,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             switchMap(doc => {
 
-                console.log('delete conflict', tenant, url, doc);
-
                 if (!!doc && doc.method !== 'GET') {
 
                     return from(doc.remove());
@@ -286,9 +292,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     cacheTimeInSeconds = 120;
 
-    constructor(private name: string, private db$: Observable<RxDatabase<Database>>, private httpClient: HttpClient) {
+    constructor(private name: string, private db$: Observable<RxDatabase<Database>>, private httpClient: HttpClient, private zone: NgZone) {
 
-        this.collectionAPI = new CollectionAPI<T, Database>(name, db$);
+        this.collectionAPI = new CollectionAPI<T, Database>(name, db$, zone);
 
         this.restAPI = new RestAPI<T>(httpClient);
     }

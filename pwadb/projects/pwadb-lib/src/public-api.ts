@@ -9,3 +9,4 @@ export * from './lib/resources/collection.resource';
 export * from './lib/resources/database.resource';
 export * from './lib/resources/filters.resource';
 export * from './lib/resources/data.resource';
+export * from './lib/resources/operators.resource';
