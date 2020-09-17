@@ -3,8 +3,8 @@ import { PwaDocument } from '../definitions/document';
 import { HttpParams } from '@angular/common/http';
 import { PwaListResponse } from '../definitions/collection';
 import { switchMap, tap, shareReplay, map, filter } from 'rxjs/operators';
-import { enterZone } from './operators.resource';
 import { NgZone } from '@angular/core';
+import { enterZone } from './operators.resource';
 
 /////////////////////
 // Interfaces
@@ -36,7 +36,7 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
     queueChange: BehaviorSubject<Observable<PwaListResponse<T>>[]>;
     data: PwaDocument<T>[];
 
-    isLoadingChange: BehaviorSubject<boolean>;
+    _isLoadingChange: BehaviorSubject<boolean>;
     lastRes: PwaListResponse<T>;
 
     // tslint:disable-next-line: variable-name
@@ -50,16 +50,23 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
         this.reset();
     }
 
-    get isLoading() { return this.isLoadingChange.value; }
+    get isLoading() { return this._isLoadingChange.value; }
     get offset() { return this.data.length; }
     get isLoadable(): boolean { return !!this.lastRes?.next; }
     get limit() { return this.__limit; }
+    get isLoadingChange() {
 
-    constructor(private __limit: number) {
+        return this._isLoadingChange.pipe(
+
+            enterZone(this.__zone)
+        );
+    }
+
+    constructor(private __limit: number, private __zone: NgZone) {
 
         this.data               = [];
         this.queueChange        = new BehaviorSubject([]);
-        this.isLoadingChange 	= new BehaviorSubject(false);
+        this._isLoadingChange 	= new BehaviorSubject(false);
 
         this._httpParams        = new HttpParams();
     }
@@ -110,7 +117,7 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
     constructor(private apiService: DatabaseService<T>, private zone: NgZone, private _limit = 20) {
 
-        super(_limit);
+        super(_limit, zone);
 
         this.dataChange = this.queueChange.asObservable().pipe(
 
@@ -118,9 +125,7 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
             filter(v => !!v.length),
 
-            tap(() => this.isLoadingChange.next(true)),
-
-            enterZone<Observable<PwaListResponse<T>>[]>(zone),
+            tap(() => this._isLoadingChange.next(true)),
 
             switchMap(v => combineLatest(v)),
 
@@ -130,11 +135,9 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 
             tap(v => this.data = v),
 
-            tap(() => this.isLoadingChange.next(false)),
+            tap(() => this._isLoadingChange.next(false)),
 
-            enterZone<PwaDocument<T>[]>(zone),
-
-        ) as Observable<PwaDocument<T>[]>;
+        );
     }
 
     getView(httpParams: HttpParams): Observable<PwaListResponse<T>> {
@@ -178,7 +181,7 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
     constructor(private apiService: DatabaseService<T>, private zone: NgZone, private _limit = 20) {
 
-        super(_limit);
+        super(_limit, zone);
 
         this.dataChange = this.queueChange.asObservable().pipe(
 
@@ -186,9 +189,7 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
             filter(v => !!v.length),
 
-            tap(() => this.isLoadingChange.next(true)),
-
-            enterZone<Observable<PwaListResponse<T>>[]>(zone),
+            tap(() => this._isLoadingChange.next(true)),
 
             switchMap(v => combineLatest(v)),
 
@@ -198,11 +199,9 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
             tap(v => this.data = v),
 
-            tap(() => this.isLoadingChange.next(false)),
+            tap(() => this._isLoadingChange.next(false)),
 
-            enterZone<PwaDocument<T>[]>(zone),
-
-        ) as Observable<PwaDocument<T>[]>;
+        );
     }
 
     getView(httpParams: HttpParams): Observable<PwaListResponse<T>> {
