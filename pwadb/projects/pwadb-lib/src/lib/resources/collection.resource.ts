@@ -265,6 +265,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             switchMap(doc => {
 
+                console.log('delete conflict', tenant, url, doc);
+
                 if (!!doc && doc.method !== 'GET') {
 
                     return from(doc.remove());
@@ -326,8 +328,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             switchMap(doc => this.downloadRetrieve(doc, tenant, url, params)),
 
             switchMap(() =>  this.collectionAPI.getReactive(tenant, url)),
-
-            distinctUntilChanged()
 
         );
     }
