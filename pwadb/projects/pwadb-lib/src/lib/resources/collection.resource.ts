@@ -1,7 +1,7 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, catchError, first, shareReplay, distinctUntilChanged, startWith } from 'rxjs/operators';
-import { Observable, forkJoin, of, from, throwError, combineLatest } from 'rxjs';
+import { switchMap, map, catchError, first, shareReplay, distinctUntilChanged } from 'rxjs/operators';
+import { Observable, forkJoin, of, from, throwError } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
