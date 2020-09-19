@@ -1,16 +1,17 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, catchError, first, shareReplay, distinctUntilChanged } from 'rxjs/operators';
+import { switchMap, map, catchError, first, shareReplay, distinctUntilChanged, tap, finalize } from 'rxjs/operators';
 import { Observable, forkJoin, of, from, throwError } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
 import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
+import { ApiProgressService } from './apiProgress.resource';
 
 export class RestAPI<T extends Datatype> {
 
-    constructor(private httpClient: HttpClient) {}
+    constructor(private httpClient: HttpClient, private apiProgress?: ApiProgressService) {}
 
     ////////////////
     // CRUD
@@ -18,27 +19,67 @@ export class RestAPI<T extends Datatype> {
 
     get(url: string, params?: HttpParams): Observable<T> {
 
-        return this.httpClient.get(url, {params}) as Observable<T>;
+        return of(true).pipe(
+
+            tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
+
+            switchMap(() => this.httpClient.get(url, {params})),
+
+            finalize(() => {if (!!this.apiProgress) { this.apiProgress.remove(); }}),
+
+        ) as Observable<T>;
     }
 
     post(url: string, data: Partial<T>): Observable<T> {
 
-        return this.httpClient.post(url, data) as Observable<T>;
+        return of(true).pipe(
+
+            tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
+
+            switchMap(() => this.httpClient.post(url, data)),
+
+            finalize(() => {if (!!this.apiProgress) { this.apiProgress.remove(); }}),
+
+        )  as Observable<T>;
     }
 
     put(url: string, data: Partial<T>): Observable<T> {
 
-        return this.httpClient.put(url, data) as Observable<T>;
+        return of(true).pipe(
+
+            tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
+
+            switchMap(() => this.httpClient.put(url, data)),
+
+            finalize(() => {if (!!this.apiProgress) { this.apiProgress.remove(); }}),
+
+        ) as Observable<T>;
     }
 
     list(url: string, params?: HttpParams): Observable<ListResponse<T>> {
 
-        return this.httpClient.get(url, {params}) as Observable<ListResponse<T>>;
+        return of(true).pipe(
+
+            tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
+
+            switchMap(() => this.httpClient.get(url, {params})),
+
+            finalize(() => {if (!!this.apiProgress) { this.apiProgress.remove(); }}),
+
+        ) as Observable<ListResponse<T>>;
     }
 
     delete(url: string): Observable<any> {
 
-        return this.httpClient.delete(url) as Observable<any>;
+        return of(true).pipe(
+
+            tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
+
+            switchMap(() => this.httpClient.delete(url)),
+
+            finalize(() => {if (!!this.apiProgress) { this.apiProgress.remove(); }}),
+
+        ) as Observable<any>;
     }
 }
 
@@ -72,7 +113,12 @@ export class CollectionAPI<T extends Datatype, Database> {
         return `${tenant}____${url}`;
     }
 
-    filterDocs(docs: Observable<PwaDocument<T>[]>, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
+    filterDocs(
+        docs: Observable<PwaDocument<T>[]>,
+        url: string,
+        params?: HttpParams,
+        validQueryKeys = []
+    ): Observable<CollectionListResponse<T>> {
 
         return docs.pipe(
 
@@ -292,11 +338,17 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     cacheTimeInSeconds = 120;
 
-    constructor(private name: string, private db$: Observable<RxDatabase<Database>>, private httpClient: HttpClient, private zone: NgZone) {
+    constructor(
+        private name: string,
+        private db$: Observable<RxDatabase<Database>>,
+        private httpClient: HttpClient,
+        private zone: NgZone,
+        private apiProgress?: ApiProgressService
+    ) {
 
         this.collectionAPI = new CollectionAPI<T, Database>(name, db$, zone);
 
-        this.restAPI = new RestAPI<T>(httpClient);
+        this.restAPI = new RestAPI<T>(httpClient, apiProgress);
     }
 
     //////////////
