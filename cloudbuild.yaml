@@ -6,7 +6,7 @@ steps:
         args:
           - '-c'
           - |
-              yarn install && yarn build &&
+              yarn install && yarn build
         dir: '/workspace/pwadb'
     -   
         id: Publish
