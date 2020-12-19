@@ -1,14 +1,12 @@
 steps:
     -
-        name: node:alpine
-        entrypoint: npm
+        name: gcr.io/cloud-builders/yarn
         args:
           - install
         dir: '/workspace/pwadb'
 
     -
-        name: node:alpine
-        entrypoint: npm
+        name: gcr.io/cloud-builders/yarn
         args:
             - run
             - build
@@ -18,7 +16,7 @@ steps:
         dir: '/workspace/pwadb'
 
     -   
-        name: node:alpine
+        name: gcr.io/cloud-builders/yarn
         entrypoint: /bin/sh
         args:
         - '-c'
