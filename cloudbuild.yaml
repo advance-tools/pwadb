@@ -1,21 +1,15 @@
 steps:
     -
+        id: Build
         name: gcr.io/cloud-builders/yarn
+        entrypoint: /bin/sh
         args:
-          - install
+          - '-c'
+          - |
+              yarn install && yarn build &&
         dir: '/workspace/pwadb'
-
-    -
-        name: gcr.io/cloud-builders/yarn
-        args:
-            - run
-            - build
-            - "--"
-            - pwadb-lib
-            - "--prod"
-        dir: '/workspace/pwadb'
-
     -   
+        id: Publish
         name: gcr.io/cloud-builders/yarn
         entrypoint: /bin/sh
         args:
