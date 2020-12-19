@@ -1,2 +1,2 @@
 # pwadb
-A wrapper library around rxdb to handle large scale collections in a pwadb
+A wrapper library around rxdb to have multiple collections and syncing data based on timestamp

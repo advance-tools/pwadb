@@ -9,6 +9,7 @@ import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 import { ApiProgressService } from './apiProgress.resource';
 
+
 export class RestAPI<T extends Datatype> {
 
     constructor(private httpClient: HttpClient, private apiProgress?: ApiProgressService) {}
@@ -92,12 +93,16 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     constructor(private name: string, private db$: Observable<RxDatabase<Database>>, private zone: NgZone) {
 
+        const collectionSchema = {};
+
+        collectionSchema[name] = getCollectionCreator(this.name, pwaCollectionMethods, pwaDocMethods);
+
         this.collection$ = this.db$.pipe(
 
             // tslint:disable-next-line: max-line-length
-            switchMap(db => name in db ? of([db[name]]) : forkJoin(db.collection(getCollectionCreator(this.name, pwaCollectionMethods, pwaDocMethods)))),
+            switchMap(db => name in db ? of([db[name]]) : from(db.addCollections(collectionSchema))),
 
-            map(collections => collections[0]),
+            map(collections => collections[name]),
 
             shareReplay(1),
 
@@ -158,8 +163,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
-                distinctUntilChanged(),
-
                 shareReplay(1),
             );
 
@@ -176,7 +179,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return this.getReactive(tenant, url).pipe(
 
-            first()
+            first(),
         );
     }
 
@@ -189,8 +192,6 @@ export class CollectionAPI<T extends Datatype, Database> {
             const docs = this.collection$.pipe(
 
                 switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
-
-                distinctUntilChanged(),
 
                 shareReplay(1),
             );
@@ -234,7 +235,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     put(tenant: string, url: string, data: T): Observable<PwaDocument<T>> {
 
-        return forkJoin(this.get(tenant, url), this.collection$).pipe(
+        return forkJoin([this.get(tenant, url), this.collection$]).pipe(
 
             switchMap(([doc, col]) => {
 
@@ -305,7 +306,13 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 if (!!doc && doc.method !== 'GET' && doc.method !== 'POST') {
 
-                    return from(doc.atomicSet('method', 'POST'));
+                    return from(doc.atomicUpdate(oldDoc => {
+
+                        oldDoc.method = 'POST';
+
+                        return oldDoc;
+
+                    }));
                 }
 
                 return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
@@ -346,9 +353,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         private apiProgress?: ApiProgressService
     ) {
 
-        this.collectionAPI = new CollectionAPI<T, Database>(name, db$, zone);
+        this.collectionAPI = new CollectionAPI<T, Database>(this.name, this.db$, this.zone);
 
-        this.restAPI = new RestAPI<T>(httpClient, apiProgress);
+        this.restAPI = new RestAPI<T>(this.httpClient, this.apiProgress);
     }
 
     //////////////
@@ -364,7 +371,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         if (!!doc && doc.time >= (currentTime - (this.cacheTimeInSeconds * 1000))) { return of(doc); }
 
-        return forkJoin(this.restAPI.get(url, params), this.collectionAPI.collection$).pipe(
+        return forkJoin([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
 
             switchMap(([res, col]) => col.atomicUpsert({
                 tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url),
@@ -407,6 +414,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         const currentTime = new Date().getTime();
 
+        // tslint:disable-next-line: radix
         const limit = parseInt(params?.get('limit') || '100');
 
         ////////////////////////////////////////////////////////////////

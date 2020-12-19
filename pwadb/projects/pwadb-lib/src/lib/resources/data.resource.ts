@@ -102,6 +102,8 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
 
         if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at,id'); }
 
+        console.log('Table httpParams', this.httpParams.toString());
+
     }
 
 }

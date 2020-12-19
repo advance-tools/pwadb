@@ -1,13 +1,13 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import { from, Observable, combineLatest, BehaviorSubject, forkJoin, empty, of, throwError } from 'rxjs';
-import { map, switchMap, filter, catchError, startWith, shareReplay, first, finalize, concatMap, distinctUntilChanged } from 'rxjs/operators';
+import { map, switchMap, filter, catchError, startWith, shareReplay, first, finalize, concatMap } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { PwaCollection, getCollectionCreator, pwaCollectionMethods } from '../definitions/collection';
 import { PwaDocument, pwaDocMethods } from '../definitions/document';
 import idb from 'pouchdb-adapter-idb';
 import { enterZone } from './operators.resource';
 import { NgZone } from '@angular/core';
-// import memory from 'pouchdb-adapter-memory';
+
 
 export class PwaDatabaseService<T> {
 
@@ -23,10 +23,8 @@ export class PwaDatabaseService<T> {
         eventReduce: true, // <- queryChangeDetection (optional, default: false)
     }) {
 
+        // add indexeddb adapter
         addRxPlugin(idb);
-        // addRxPlugin(memory);
-
-        // dbCreator.adapter = this.isIndexeddbAvailable() ? 'idb' : 'memory';
 
         this.db$ = from(createRxDatabase(dbCreator)).pipe(
 
@@ -67,17 +65,26 @@ export class PwaDatabaseService<T> {
 
             switchMap(db => {
 
+                // list of collections that exists
                 const collectionsExists = collectionNames
                     .filter(k => k in db.collections)
-                    .map(k => of(db.collections[k] as PwaCollection<any>));
+                    .map(k => db.collections[k] as PwaCollection<any>);
 
+                // dictionary of collections that does not exists
                 const collectionsDoesNotExists = collectionNames
                     .filter(k => !(k in db.collections))
-                    .map(k => from(db.collection(getCollectionCreator(k, pwaCollectionMethods, pwaDocMethods))));
+                    .reduce((collections, k) => {
 
-                const collections = collectionsExists.concat(collectionsDoesNotExists);
+                        collections[k] = getCollectionCreator(k, pwaCollectionMethods, pwaDocMethods);
 
-                return combineLatest(collections);
+                        return collections;
+
+                    }, {});
+
+                return from(db.addCollections(collectionsDoesNotExists)).pipe(
+
+                    map((newCollections) => collectionsExists.concat(Object.values(newCollections)))
+                );
             }),
         );
     }
@@ -153,7 +160,13 @@ export class PwaDatabaseService<T> {
 
                         catchError(err => {
 
-                            return from(doc.atomicSet('error', JSON.stringify(err))).pipe(
+                            return from(doc.atomicUpdate(oldDoc => {
+
+                                oldDoc.error = JSON.stringify(err);
+
+                                return oldDoc;
+
+                            })).pipe(
 
                                 finalize(() => this.retryChange.next(false)),
                             );
@@ -175,7 +188,13 @@ export class PwaDatabaseService<T> {
 
                         catchError(err => {
 
-                            return from(doc.atomicSet('error', JSON.stringify(err))).pipe(
+                            return from(doc.atomicUpdate(oldDoc => {
+
+                                oldDoc.error = JSON.stringify(err);
+
+                                return oldDoc;
+
+                            })).pipe(
 
                                 finalize(() => this.retryChange.next(false)),
                             );
@@ -191,7 +210,13 @@ export class PwaDatabaseService<T> {
 
                         catchError(err => {
 
-                            return from(doc.atomicSet('error', JSON.stringify(err))).pipe(
+                            return from(doc.atomicUpdate(oldDoc => {
+
+                                oldDoc.error = JSON.stringify(err);
+
+                                return oldDoc;
+
+                            })).pipe(
 
                                 finalize(() => this.retryChange.next(false)),
                             );
@@ -258,7 +283,13 @@ export class PwaDatabaseService<T> {
 
         if (!!doc && doc.method !== 'GET' && doc.method !== 'POST') {
 
-            return from(doc.atomicSet('method', 'POST'));
+            return from(doc.atomicUpdate(oldDoc => {
+
+                oldDoc.method = 'POST';
+
+                return oldDoc;
+
+            }));
         }
 
         return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);

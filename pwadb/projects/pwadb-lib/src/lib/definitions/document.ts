@@ -4,7 +4,7 @@ export type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 export type Datatype = {
     id: string;
-}
+};
 
 export type PwaDocType<T extends Datatype> = {
     tenantUrl: string;
