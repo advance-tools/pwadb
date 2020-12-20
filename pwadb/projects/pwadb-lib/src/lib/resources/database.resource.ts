@@ -15,18 +15,19 @@ export class PwaDatabaseService<T> {
 
     private retryChange: BehaviorSubject<boolean>;
 
-    constructor(private httpClient: HttpClient, private zone: NgZone, dbCreator: RxDatabaseCreator = {
-        name: 'pwadb',
-        adapter: 'idb',
-        password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',     // <- password (optional)
-        multiInstance: true,         // <- multiInstance (optional, default: true)
-        eventReduce: true, // <- queryChangeDetection (optional, default: false)
-    }) {
+    constructor(private httpClient: HttpClient, private zone: NgZone, dbCreator: Partial<RxDatabaseCreator> = {}) {
 
         // add indexeddb adapter
         addRxPlugin(idb);
 
-        this.db$ = from(createRxDatabase(dbCreator)).pipe(
+        this.db$ = from(createRxDatabase({
+            name: 'pwadb',
+            adapter: 'idb',
+            password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',
+            multiInstance: true,
+            eventReduce: true,
+            ...dbCreator
+        })).pipe(
 
             switchMap((db: any) => from(db.waitForLeadership()).pipe(
 
