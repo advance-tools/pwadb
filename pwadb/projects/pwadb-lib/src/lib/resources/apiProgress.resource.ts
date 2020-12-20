@@ -3,7 +3,9 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 import { enterZone } from './operators.resource';
 
-@Injectable({providedIn: 'root'})
+@Injectable({
+    providedIn: 'root'
+})
 export class ApiProgressService {
 
     isProgressing$: Observable<boolean>;
