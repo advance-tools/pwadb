@@ -7,6 +7,7 @@ import { PwaDocument, pwaDocMethods } from '../definitions/document';
 import idb from 'pouchdb-adapter-idb';
 import { enterZone } from './operators.resource';
 import { NgZone } from '@angular/core';
+import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 
 
 export class PwaDatabaseService<T> {
@@ -19,6 +20,9 @@ export class PwaDatabaseService<T> {
 
         // add indexeddb adapter
         addRxPlugin(idb);
+
+        // add encryption plugin
+        addRxPlugin(RxDBEncryptionPlugin);
 
         this.db$ = from(createRxDatabase({
             name: 'pwadb',
