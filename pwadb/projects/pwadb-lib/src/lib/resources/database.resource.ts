@@ -1,5 +1,5 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
-import { from, Observable, combineLatest, BehaviorSubject, forkJoin, throwError } from 'rxjs';
+import { from, Observable, combineLatest, BehaviorSubject, forkJoin, throwError, empty } from 'rxjs';
 import { map, switchMap, filter, catchError, startWith, shareReplay, first, finalize, concatMap } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { PwaCollection, getCollectionCreator, pwaCollectionMethods } from '../definitions/collection';
@@ -242,6 +242,7 @@ export class PwaDatabaseService<T> {
         return this.retryChange.asObservable().pipe(
 
             switchMap(trigger => trigger ? hit : empty())
+
         );
 
     }
