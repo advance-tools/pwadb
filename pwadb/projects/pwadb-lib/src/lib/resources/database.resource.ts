@@ -1,5 +1,5 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
-import { from, Observable, combineLatest, BehaviorSubject, forkJoin, empty, of, throwError } from 'rxjs';
+import { from, Observable, combineLatest, BehaviorSubject, forkJoin, throwError } from 'rxjs';
 import { map, switchMap, filter, catchError, startWith, shareReplay, first, finalize, concatMap } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { PwaCollection, getCollectionCreator, pwaCollectionMethods } from '../definitions/collection';
@@ -8,6 +8,7 @@ import idb from 'pouchdb-adapter-idb';
 import { enterZone } from './operators.resource';
 import { NgZone } from '@angular/core';
 import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
+import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 
 
 export class PwaDatabaseService<T> {
@@ -23,6 +24,9 @@ export class PwaDatabaseService<T> {
 
         // add encryption plugin
         addRxPlugin(RxDBEncryptionPlugin);
+
+        // add leader election plugin
+        addRxPlugin(RxDBLeaderElectionPlugin);
 
         this.db$ = from(createRxDatabase({
             name: 'pwadb',
