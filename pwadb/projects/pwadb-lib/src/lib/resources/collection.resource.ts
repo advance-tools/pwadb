@@ -100,7 +100,19 @@ export class CollectionAPI<T extends Datatype, Database> {
         this.collection$ = this.db$.pipe(
 
             // tslint:disable-next-line: max-line-length
-            switchMap(db => name in db ? of([db[name]]) : from(db.addCollections(collectionSchema))),
+            switchMap(db => {
+
+                if (name in db) {
+
+                    const c = {};
+
+                    c[name] = db[name];
+
+                    return of(c);
+                }
+
+                return from(db.addCollections(collectionSchema));
+            }),
 
             map(collections => collections[name]),
 
