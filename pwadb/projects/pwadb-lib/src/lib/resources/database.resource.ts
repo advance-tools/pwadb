@@ -9,6 +9,7 @@ import { enterZone } from './operators.resource';
 import { NgZone } from '@angular/core';
 import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
+import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
 
 
 export class PwaDatabaseService<T> {
@@ -27,6 +28,9 @@ export class PwaDatabaseService<T> {
 
         // add leader election plugin
         addRxPlugin(RxDBLeaderElectionPlugin);
+
+        // add schema validate plugin
+        addRxPlugin(RxDBValidatePlugin);
 
         this.db$ = from(createRxDatabase({
             name: 'pwadb',
