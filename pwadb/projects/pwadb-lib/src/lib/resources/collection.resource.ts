@@ -141,7 +141,11 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             map(v => v.sort((a, b) => b.time - a.time)),
 
+            tap(v => console.log('filterdocs, sorted', v)),
+
             map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
+
+            tap(v => console.log('filterdocs, queryFilter', v)),
 
             map(allDocs => {
 
@@ -157,6 +161,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 return {next, previous, results: allDocs.slice(start, end), count: allDocs.length};
             }),
+
+            tap(v => console.log('filterdocs, map', v)),
 
         );
     }
@@ -175,6 +181,9 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
+                tap(v => console.log('getReactive', v)),
+
+                shareReplay(1),
             );
 
             this.cacheDocument.set(tenantUrl, doc);
@@ -203,6 +212,10 @@ export class CollectionAPI<T extends Datatype, Database> {
             const docs = this.collection$.pipe(
 
                 switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
+
+                tap(v => console.log('listReactive', v)),
+
+                shareReplay(1),
 
             );
 
