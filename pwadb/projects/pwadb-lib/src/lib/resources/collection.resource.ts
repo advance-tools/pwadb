@@ -387,6 +387,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return forkJoin([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
 
+            tap(v => console.log('after forkjoin', v)),
+
             switchMap(([res, col]) => col.atomicUpsert({
                 tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url),
                 matchUrl: this.collectionAPI.makeTenantUrl(tenant, url),
@@ -404,15 +406,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return this.collectionAPI.get(tenant, url).pipe(
 
-            tap(v => console.log('from cache', v)),
-
             switchMap(doc => this.downloadRetrieve(doc, tenant, url, params)),
 
-            tap(v => console.log('after download', v)),
-
             switchMap(() =>  this.collectionAPI.getReactive(tenant, url)),
-
-            tap(v => console.log('from getReactive', v)),
 
         );
     }
@@ -453,7 +449,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             return of({next: res.next, previous: res.previous, results: /*res.results.map(r => r.toJSON().data)*/ []});
         }
 
-        if (ids.length > 0) { httpParams = httpParams.set('exclude:id', ids.join(',')).set('limit', (limit - ids.length).toString()); }
+        if (ids.length > 0) {
+
+            httpParams = httpParams.set('exclude:id', ids.join(',')).set('limit', (limit - ids.length).toString());
+
+        }
 
         return this.restAPI.list(url, httpParams).pipe(
 
