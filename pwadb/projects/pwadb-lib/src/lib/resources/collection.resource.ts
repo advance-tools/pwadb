@@ -404,9 +404,15 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return this.collectionAPI.get(tenant, url).pipe(
 
+            tap(v => console.log('from cache', v)),
+
             switchMap(doc => this.downloadRetrieve(doc, tenant, url, params)),
 
+            tap(v => console.log('after download', v)),
+
             switchMap(() =>  this.collectionAPI.getReactive(tenant, url)),
+
+            tap(v => console.log('from getReactive', v)),
 
         );
     }
@@ -471,7 +477,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
                     if (atomicWrite.length > 0) {
 
-                        return forkJoin(...atomicWrite).pipe(
+                        return forkJoin(atomicWrite).pipe(
 
                             map(() => networkRes)
                         );
