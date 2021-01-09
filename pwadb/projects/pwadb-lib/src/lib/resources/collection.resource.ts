@@ -1,7 +1,7 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
 import { switchMap, map, catchError, first, shareReplay, tap, finalize } from 'rxjs/operators';
-import { Observable, forkJoin, of, from, throwError, combineLatest } from 'rxjs';
+import { Observable, of, from, throwError, combineLatest } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
@@ -264,7 +264,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     put(tenant: string, url: string, data: T): Observable<PwaDocument<T>> {
 
-        return forkJoin(this.get(tenant, url), this.collection$).pipe(
+        return combineLatest([this.get(tenant, url), this.collection$]).pipe(
 
             switchMap(([doc, col]) => {
 
@@ -402,8 +402,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return combineLatest([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
 
-            tap(v => console.log('download retrieve', v)),
-
             switchMap(([res, col]) => col.atomicUpsert({
                 tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url),
                 matchUrl: this.collectionAPI.makeTenantUrl(tenant, url),
@@ -492,7 +490,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
                     if (atomicWrite.length > 0) {
 
-                        return forkJoin(...atomicWrite).pipe(
+                        return combineLatest(atomicWrite).pipe(
 
                             map(() => networkRes)
                         );
