@@ -1,7 +1,7 @@
 import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
 import { switchMap, map, catchError, first, shareReplay, tap, finalize } from 'rxjs/operators';
-import { Observable, forkJoin, of, from, throwError } from 'rxjs';
+import { Observable, forkJoin, of, from, throwError, combineLatest } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
@@ -400,9 +400,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         if (!!doc && doc.time >= (currentTime - (this.cacheTimeInSeconds * 1000))) { return of(doc); }
 
-        return forkJoin(this.restAPI.get(url, params), this.collectionAPI.collection$).pipe(
+        return combineLatest([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
 
-            tap(v => console.log('download Retrieve', v)),
+            tap(v => console.log('download retrieve', v)),
 
             switchMap(([res, col]) => col.atomicUpsert({
                 tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url),
