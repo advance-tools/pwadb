@@ -91,11 +91,26 @@ export class CollectionAPI<T extends Datatype, Database> {
     private cacheDocument: Map<string, Observable<PwaDocument<T>>>;
     private cacheDocuments: Map<string, Observable<PwaDocument<T>[]>>;
 
-    constructor(private name: string, private db$: Observable<RxDatabase<Database>>, private zone: NgZone) {
+    constructor(
+            private name: string,
+            private db$: Observable<RxDatabase<Database>>,
+            private zone: NgZone,
+            config: {attachments?: {}, options?: {}, migrationStrategies?: {}, autoMigrate?: boolean} = {}
+    ) {
 
         const collectionSchema = {};
 
-        collectionSchema[name] = getCollectionCreator(this.name, pwaCollectionMethods, pwaDocMethods);
+        const _config = {attachments: {}, options: {}, migrationStrategies: {}, autoMigrate: true, ...config};
+
+        collectionSchema[name] = getCollectionCreator(
+            this.name,
+            pwaCollectionMethods,
+            pwaDocMethods,
+            _config.attachments,
+            _config.options,
+            _config.migrationStrategies,
+            _config.autoMigrate
+        );
 
         this.collection$ = this.db$.pipe(
 
@@ -249,7 +264,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     put(tenant: string, url: string, data: T): Observable<PwaDocument<T>> {
 
-        return forkJoin([this.get(tenant, url), this.collection$]).pipe(
+        return forkJoin(this.get(tenant, url), this.collection$).pipe(
 
             switchMap(([doc, col]) => {
 
@@ -385,9 +400,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         if (!!doc && doc.time >= (currentTime - (this.cacheTimeInSeconds * 1000))) { return of(doc); }
 
-        return forkJoin([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
-
-            tap(v => console.log('after forkjoin', v)),
+        return forkJoin(this.restAPI.get(url, params), this.collectionAPI.collection$).pipe(
 
             switchMap(([res, col]) => col.atomicUpsert({
                 tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url),
@@ -477,7 +490,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
                     if (atomicWrite.length > 0) {
 
-                        return forkJoin(atomicWrite).pipe(
+                        return forkJoin(...atomicWrite).pipe(
 
                             map(() => networkRes)
                         );
