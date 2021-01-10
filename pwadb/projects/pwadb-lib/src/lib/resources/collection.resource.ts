@@ -195,6 +195,8 @@ export class CollectionAPI<T extends Datatype, Database> {
             this.cacheDocument.set(tenantUrl, doc);
         }
 
+        console.log('collectionAPI getReactive');
+
         return this.cacheDocument.get(tenantUrl).pipe(
 
             enterZone<PwaDocument<T>>(this.zone),
