@@ -190,12 +190,12 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
+                shareReplay(1),
+
             );
 
             this.cacheDocument.set(tenantUrl, doc);
         }
-
-        console.log('collectionAPI getReactive');
 
         return this.cacheDocument.get(tenantUrl).pipe(
 
@@ -221,6 +221,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
 
+                shareReplay(1),
             );
 
             this.cacheDocuments.set(tenantUrl, docs);
@@ -400,8 +401,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return combineLatest([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
 
-            tap(v => console.log('testing combineLatest', v)),
-
             switchMap(([res, col]) => col.atomicUpsert({
                 tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url),
                 matchUrl: this.collectionAPI.makeTenantUrl(tenant, url),
@@ -418,8 +417,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     getReactive(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
         return this.collectionAPI.get(tenant, url).pipe(
-
-            tap(v => console.log('from cache', v)),
 
             switchMap(doc => this.downloadRetrieve(doc, tenant, url, params)),
 
