@@ -402,6 +402,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return combineLatest([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
 
+            tap(v => console.log('testing combineLatest', v)),
+
             switchMap(([res, col]) => col.atomicUpsert({
                 tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url),
                 matchUrl: this.collectionAPI.makeTenantUrl(tenant, url),
