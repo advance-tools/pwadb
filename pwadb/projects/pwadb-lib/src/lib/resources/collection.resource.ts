@@ -421,6 +421,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return this.collectionAPI.get(tenant, url).pipe(
 
+            tap(v => console.log('from cache', v)),
+
             switchMap(doc => this.downloadRetrieve(doc, tenant, url, params)),
 
             switchMap(() =>  this.collectionAPI.getReactive(tenant, url)),
