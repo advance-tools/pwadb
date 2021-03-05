@@ -1,4 +1,4 @@
-import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
+import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator, RxCollection } from 'rxdb';
 import { from, Observable, combineLatest, BehaviorSubject, throwError, of } from 'rxjs';
 import { map, switchMap, filter, catchError, startWith, shareReplay, first, finalize, concatMap } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
@@ -16,9 +16,7 @@ export class PwaDatabaseService<T> {
 
     db$: Observable<RxDatabase<T>>;
 
-    private retryChange: BehaviorSubject<boolean>;
-
-    constructor(private httpClient: HttpClient, private zone: NgZone, dbCreator: Partial<RxDatabaseCreator> = {}) {
+    constructor(dbCreator: Partial<RxDatabaseCreator> = {}) {
 
         // add indexeddb adapter
         addRxPlugin(idb);
@@ -54,6 +52,47 @@ export class PwaDatabaseService<T> {
 
         );
 
+    }
+
+    ///////////////////
+    // Conflict Actions
+    ///////////////////
+
+    createNew(doc: PwaDocument<any>): Observable<PwaDocument<any>> {
+
+        if (!!doc && doc.method !== 'GET' && doc.method !== 'POST') {
+
+            return from(doc.atomicUpdate(oldDoc => {
+
+                oldDoc.method = 'POST';
+
+                return oldDoc;
+
+            }));
+        }
+
+        return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
+    }
+
+    deleteConflict(doc: PwaDocument<any>): Observable<boolean> {
+
+        if (!!doc && doc.method !== 'GET') {
+
+            return from(doc.remove());
+        }
+
+        return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
+    }
+
+}
+
+
+export class PwaDatabaseGroupService {
+
+    private retryChange: BehaviorSubject<boolean>;
+
+    constructor(private httpClient: HttpClient, private zone: NgZone) {
+
         this.retryChange = new BehaviorSubject(true);
     }
 
@@ -72,11 +111,11 @@ export class PwaDatabaseService<T> {
         this.retryChange.next(false);
     }
 
-    getCollections(collectionNames: string[]): Observable<PwaCollection<any>[]> {
+    getCollections(database: PwaDatabaseService<any>, collectionNames: string[]): Observable<PwaCollection<any>[]> {
 
-        return this.db$.pipe(
+        return database.db$.pipe(
 
-            switchMap(db => {
+            switchMap((db: RxDatabase<any>) => {
 
                 // list of collections that exists
                 const collectionsExists = collectionNames
@@ -103,11 +142,13 @@ export class PwaDatabaseService<T> {
     }
 
     // tslint:disable-next-line: max-line-length
-    unsynchronised(tenant: string, collectionNames: string[], order: 'desc' | 'asc' = 'asc'): Observable<{collectionName: string, document: PwaDocument<any>}[]> {
+    unsynchronised(tenant: string, databases: {database: PwaDatabaseService<any>, collectionNames: string[]}[], order: 'desc' | 'asc' = 'asc'): Observable<{collectionName: string, document: PwaDocument<any>}[]> {
 
-        return this.getCollections(collectionNames).pipe(
+        return combineLatest(databases.map(d => this.getCollections(d.database, d.collectionNames))).pipe(
 
-            switchMap(collections => {
+            map(nestedCollections => [].concat(nestedCollections)),
+
+            switchMap((collections: RxCollection<any>[]) => {
 
                 const query = {
                     selector: {
@@ -141,9 +182,10 @@ export class PwaDatabaseService<T> {
     //////////////////
     // Actions
     //////////////////
-    synchronise(tenant: string, collectionNames: string[]): Observable<PwaDocument<any> | boolean> {
+    // tslint:disable-next-line: max-line-length
+    synchronise(tenant: string, databases: {database: PwaDatabaseService<any>, collectionNames: string[]}[]): Observable<PwaDocument<any> | boolean> {
 
-        const pop: Observable<PwaDocument<any>> = this.unsynchronised(tenant, collectionNames, 'asc').pipe(
+        const pop: Observable<PwaDocument<any>> = this.unsynchronised(tenant, databases, 'asc').pipe(
 
             filter(sortedDocs => sortedDocs.length > 0),
 
@@ -251,17 +293,19 @@ export class PwaDatabaseService<T> {
 
     }
 
-    evict(collectionInfo: {[name: string]: number}): Observable<PwaDocument<any>[]> {
+    evict(databasesInfo: {database: PwaDatabaseService<any>, collectionInfo: {[name: string]: number}}[]): Observable<PwaDocument<any>[]> {
 
-        const collectionsNames = Object.keys(collectionInfo);
+        return combineLatest(databasesInfo.map(dbInfo => this.getCollections(dbInfo.database, Object.keys(dbInfo.collectionInfo)))).pipe(
 
-        return this.getCollections(collectionsNames).pipe(
+            map(nestedCollections => [].concat(nestedCollections)),
 
             map(collections => {
 
                 return collections.map(c => {
 
-                    const cacheAllowedAge = new Date().getTime() - (collectionInfo[c.name] * 1000);
+                    const dbInfoOfCollection = databasesInfo.find(dbInfo =>  c.name in dbInfo.collectionInfo);
+
+                    const cacheAllowedAge = new Date().getTime() - (dbInfoOfCollection.collectionInfo[c.name] * 1000);
 
                     return from(c.find({selector: {$and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]}}).remove());
                 });
@@ -271,19 +315,24 @@ export class PwaDatabaseService<T> {
 
             map(v => [].concat(...v)),
         );
+
     }
 
-    skipTrim(collectionInfo: {[name: string]: number}): Observable<PwaDocument<any>[]> {
+    // tslint:disable-next-line: max-line-length
+    skipTrim(databasesInfo: {database: PwaDatabaseService<any>, collectionInfo: {[name: string]: number}}[]): Observable<PwaDocument<any>[]> {
 
-        const collectionsNames = Object.keys(collectionInfo);
+        return combineLatest(databasesInfo.map(dbInfo => this.getCollections(dbInfo.database, Object.keys(dbInfo.collectionInfo)))).pipe(
 
-        return this.getCollections(collectionsNames).pipe(
+            map(nestedCollections => [].concat(nestedCollections)),
 
             map((collections: PwaCollection<any>[]) => {
 
                 return collections.map(c => {
 
-                    return from(c.find({selector: {method: {$eq: 'GET'}}, sort: [{time: 'desc'}], skip: collectionInfo[c.name]}).remove());
+                    const dbInfoOfCollection = databasesInfo.find(dbInfo =>  c.name in dbInfo.collectionInfo);
+
+                    // tslint:disable-next-line: max-line-length
+                    return from(c.find({selector: {method: {$eq: 'GET'}}, sort: [{time: 'desc'}], skip: dbInfoOfCollection.collectionInfo[c.name]}).remove());
                 });
             }),
 
@@ -291,36 +340,6 @@ export class PwaDatabaseService<T> {
 
             map(v => [].concat(...v)),
         );
-    }
-
-    ///////////////////
-    // Conflict Actions
-    ///////////////////
-
-    createNew(doc: PwaDocument<any>): Observable<PwaDocument<any>> {
-
-        if (!!doc && doc.method !== 'GET' && doc.method !== 'POST') {
-
-            return from(doc.atomicUpdate(oldDoc => {
-
-                oldDoc.method = 'POST';
-
-                return oldDoc;
-
-            }));
-        }
-
-        return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
-    }
-
-    deleteConflict(doc: PwaDocument<any>): Observable<boolean> {
-
-        if (!!doc && doc.method !== 'GET') {
-
-            return from(doc.remove());
-        }
-
-        return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
     }
 
 }
