@@ -15,7 +15,7 @@ steps:
         args:
         - '-c'
         - |
-            npm config set @impriyanshub:registry ${_GIT_REGISTRY} &&
+            npm config set @advance-tools:registry ${_GIT_REGISTRY} &&
             npm config set //npm.pkg.github.com/:_authToken ${_NPM_TOKEN} &&
             npm publish
         dir: '/workspace/pwadb/dist/pwadb-lib'

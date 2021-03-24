@@ -1,12 +1,12 @@
 {
   "name": "@impriyanshub/pwadb-lib",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "peerDependencies": {
     "@angular/common": "~11.0.5",
     "@angular/core": "~11.0.5"
   },
   "repository": {
-    "url": "git://github.com/impriyanshub/Books-PWA.git"
+    "url": "git://github.com/advance-tools/pwadb.git"
   },
   "dependencies": {
     "tslib": "^2.0.0"
