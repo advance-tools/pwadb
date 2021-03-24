@@ -1,4 +1,4 @@
-import { Datatype, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
+import { Datatype, getSchema, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
 import { switchMap, map, catchError, first, shareReplay, tap, finalize } from 'rxjs/operators';
 import { Observable, of, from, throwError, combineLatest } from 'rxjs';
@@ -8,6 +8,8 @@ import { RxDatabase } from 'rxdb';
 import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 import { ApiProgressService } from './apiProgress.resource';
+import { SynchroniseCollectionService } from './synchronise-collection.resource';
+import { SynchroniseDocType } from '../definitions/synchronise-document';
 
 
 export class RestAPI<T extends Datatype> {
@@ -95,7 +97,10 @@ export class CollectionAPI<T extends Datatype, Database> {
             private name: string,
             private db$: Observable<RxDatabase<Database>>,
             private zone: NgZone,
-            config: {attachments?: {}, options?: {}, migrationStrategies?: {}, autoMigrate?: boolean} = {}
+            config: {attachments?: {}, options?: {}, migrationStrategies?: {}, autoMigrate?: boolean} = {},
+            private synchroniseService?: SynchroniseCollectionService,
+            private collectionEvictTime = 86400,
+            private collectionSkipDocuments = 500
     ) {
 
         const collectionSchema = {};
@@ -117,19 +122,57 @@ export class CollectionAPI<T extends Datatype, Database> {
             // tslint:disable-next-line: max-line-length
             switchMap(db => {
 
-                if (name in db) {
+                return from(db.addCollections(collectionSchema)).pipe(
 
-                    const c = {};
+                    switchMap(collections => {
 
-                    c[name] = db[name];
+                        if (this.synchroniseService) {
 
-                    return of(c);
-                }
+                            const data: SynchroniseDocType = {
+                                id: db.name + '-' + this.name,
+                                databaseOptions: {
+                                    adapter: db.adapter,
+                                    name: db.name,
+                                    eventReduce: db.eventReduce,
+                                    multiInstance: db.multiInstance,
+                                    options: db.options,
+                                    password: db.password,
+                                    pouchSettings: db.pouchSettings
+                                },
+                                collectionEvictTime: this.collectionEvictTime,
+                                collectionSkipDocuments: this.collectionSkipDocuments,
+                                collectionName: this.name,
+                                collectionOptions: {
+                                    name: this.name,
+                                    schema: getSchema(this.name),
+                                    attachments: collections[this.name].attachments,
+                                    autoMigrate: true,
+                                    cacheReplacementPolicy: collections[this.name].cacheReplacementPolicy,
+                                    methods: collections[this.name].methods,
+                                    migrationStrategies: collections[this.name].migrationStrategies,
+                                    options: collections[this.name].options,
+                                    pouchSettings: collections[this.name].pouchSettings,
+                                    statics: collections[this.name].statics,
+                                }
+                            };
 
-                return from(db.addCollections(collectionSchema));
+                            // add collection to synchronise collection service
+                            return this.synchroniseService.addSynchroniseDocument(data).pipe(
+
+                                map(() => collections[name] as PwaCollection<T>)
+                            );
+
+                        } else {
+
+                            return of(collections).pipe(
+
+                                map(() => collections[name] as PwaCollection<T>)
+                            );
+                        }
+
+                    })
+                );
             }),
-
-            map(collections => collections[name]),
 
             shareReplay(1),
 
@@ -190,8 +233,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
-                shareReplay(1),
-
             );
 
             this.cacheDocument.set(tenantUrl, doc);
@@ -220,8 +261,6 @@ export class CollectionAPI<T extends Datatype, Database> {
             const docs = this.collection$.pipe(
 
                 switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
-
-                shareReplay(1),
             );
 
             this.cacheDocuments.set(tenantUrl, docs);
@@ -378,10 +417,22 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         private db$: Observable<RxDatabase<Database>>,
         private httpClient: HttpClient,
         private zone: NgZone,
-        private apiProgress?: ApiProgressService
+        private apiProgress?: ApiProgressService,
+        config: {attachments?: {}, options?: {}, migrationStrategies?: {}, autoMigrate?: boolean} = {},
+        private synchroniseService?: SynchroniseCollectionService,
+        collectionEvictTime = 86400,
+        collectionSkipDocuments = 500
     ) {
 
-        this.collectionAPI = new CollectionAPI<T, Database>(this.name, this.db$, this.zone);
+        this.collectionAPI = new CollectionAPI<T, Database>(
+            this.name,
+            this.db$,
+            this.zone,
+            config,
+            this.synchroniseService,
+            collectionEvictTime,
+            collectionSkipDocuments
+        );
 
         this.restAPI = new RestAPI<T>(this.httpClient, this.apiProgress);
     }
@@ -462,6 +513,12 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         }
 
         if (ids.length > 0) {
+
+            if (httpParams.has('exclude:id')) {
+
+                httpParams.delete('exclude:id');
+
+            }
 
             httpParams = httpParams.set('exclude:id', ids.join(',')).set('limit', (limit - ids.length).toString());
 
