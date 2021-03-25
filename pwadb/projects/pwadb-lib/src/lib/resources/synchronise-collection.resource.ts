@@ -5,10 +5,16 @@ import { BehaviorSubject, combineLatest, from, Observable, of, throwError } from
 import { catchError, concatMap, debounceTime, filter, finalize, first, map, shareReplay, switchMap } from 'rxjs/operators';
 import { PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
-import { getCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
-import { synchroniseDocMethods, SynchroniseDocType, SynchroniseDocument } from '../definitions/synchronise-document';
+import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
+import { RequestDocument, synchroniseDocMethods, SynchroniseDocType, SynchroniseDocument } from '../definitions/synchronise-document';
 import { enterZone } from './operators.resource';
 import { PwaDatabaseService } from './database.resource';
+
+interface Extras {
+    collection: PwaCollection<any>;
+}
+
+type SynchroniseDocTypeExtras = SynchroniseDocType & Extras;
 
 
 export class SynchroniseCollectionService {
@@ -31,7 +37,7 @@ export class SynchroniseCollectionService {
 
         const _config = {attachments: {}, options: {}, migrationStrategies: {}, autoMigrate: true, ...config};
 
-        collectionSchema[name] = getCollectionCreator(
+        collectionSchema[name] = getSynchroniseCollectionCreator(
             this.name,
             synchroniseCollectionMethods,
             synchroniseDocMethods,
@@ -66,7 +72,7 @@ export class SynchroniseCollectionService {
     // Synchronisation Management
     //////////////////////////////
 
-    retrySync() {
+    startSync() {
 
         this.retryChange.next(true);
     }
@@ -76,7 +82,7 @@ export class SynchroniseCollectionService {
         this.retryChange.next(false);
     }
 
-    getCollections(): Observable<{collection: PwaCollection<any>, skipDocuments: number, evictTime: number}[]> {
+    getCollections(): Observable<SynchroniseDocTypeExtras[]> {
 
         return this.collection$.pipe(
 
@@ -118,19 +124,20 @@ export class SynchroniseCollectionService {
 
                     switchMap(db => {
 
-                        const collectionInfoKeyValue = m.collectionInfo.reduce(
-                            (cur: {collectionName: string, skipDocuments: number, evictTime: number}, acc: {}) => {
+                        const collectionInfoKeyValue: {[key: string]: SynchroniseDocType} = m.collectionInfo.reduce(
+                            (cur: SynchroniseDocType, acc: {}) => {
 
                                 acc[cur.collectionName] = cur;
 
                                 return acc;
+
                             }, {});
 
                         const collections = {};
 
                         m.collectionInfo.forEach(i => {
 
-                            collections[i.collectionName] = getCollectionCreator(
+                            collections[i.collectionName] = getSynchroniseCollectionCreator(
                                 i.collectionName,
                                 pwaCollectionMethods,
                                 pwaDocMethods,
@@ -145,8 +152,7 @@ export class SynchroniseCollectionService {
 
                             map(v => Object.keys(v).map(k => ({
                                 collection: v[k] as PwaCollection<any>,
-                                skipDocuments: collectionInfoKeyValue[k].skipDocuments as number,
-                                evictTime: collectionInfoKeyValue[k].evictTime as number,
+                                ...collectionInfoKeyValue[k],
                             })))
                         );
                     })
@@ -158,7 +164,7 @@ export class SynchroniseCollectionService {
         );
     }
 
-    unsynchronised(tenant: string, order: 'desc' | 'asc' = 'asc'): Observable<{collectionName: string, document: PwaDocument<any>}[]> {
+    unsynchronised(tenant: string, order: 'desc' | 'asc' = 'asc'): Observable<RequestDocument[]> {
 
         return this.getCollections().pipe(
 
@@ -168,14 +174,19 @@ export class SynchroniseCollectionService {
                     selector: {
                         matchUrl: {$regex: new RegExp(`^${tenant}.*`)},
                         method: {$ne: 'GET'}
-                    },
+                    }
                 };
 
                 const sortedDocs$ = collectionsInfo.map(k => {
 
                     return from(k.collection.find(query).$.pipe(
 
-                        map(docs => docs.map(d => ({collectionName: k.collection.name, document: d}))),
+                        map(docs => docs.map(d => ({
+                            title: d.data[k.collectionReqTitleFieldName],
+                            subTitle: d.data[k.collectionReqSubTitleFieldName],
+                            icon: d.data[k.collectionReqIconFieldName],
+                            document: d
+                        } as RequestDocument))),
 
                     ));
                 });
@@ -187,9 +198,9 @@ export class SynchroniseCollectionService {
             map(sortedDocs => [].concat(...sortedDocs)),
 
             // tslint:disable-next-line: max-line-length
-            map((sortedDocs: {collectionName: string, document: PwaDocument<any>}[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.document.time - b.document.time : b.document.time - a.document.time)),
+            map((sortedDocs: RequestDocument[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.document.time - b.document.time : b.document.time - a.document.time)),
 
-            enterZone<{collectionName: string, document: PwaDocument<any>}[]>(this.zone),
+            enterZone<RequestDocument[]>(this.zone),
         );
     }
 
@@ -315,7 +326,7 @@ export class SynchroniseCollectionService {
 
                 return collectionInfo.map(k => {
 
-                    const cacheAllowedAge = new Date().getTime() - (k.evictTime * 1000);
+                    const cacheAllowedAge = new Date().getTime() - (k.collectionEvictTime * 1000);
 
                     return from(k.collection.find({selector: {$and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]}}).remove());
                 });
@@ -338,7 +349,7 @@ export class SynchroniseCollectionService {
                 return collectionInfo.map(k => {
 
                     // tslint:disable-next-line: max-line-length
-                    return from(k.collection.find({selector: {method: {$eq: 'GET'}}, sort: [{time: 'desc'}], skip: k.skipDocuments}).remove());
+                    return from(k.collection.find({selector: {method: {$eq: 'GET'}}, sort: [{time: 'desc'}], skip: k.collectionSkipDocuments}).remove());
                 });
             }),
 

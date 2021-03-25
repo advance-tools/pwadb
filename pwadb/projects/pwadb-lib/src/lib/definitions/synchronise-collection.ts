@@ -1,11 +1,11 @@
 import { RxCollection, RxCollectionCreator } from 'rxdb';
-import { getSchema, SynchroniseDocMethods, SynchroniseDocType } from './synchronise-document';
+import { getSynchroniseSchema, SynchroniseDocMethods, SynchroniseDocType } from './synchronise-document';
 
 export type SynchroniseCollectionMethods = {};
 
 export type SynchroniseCollection = RxCollection<SynchroniseDocType, SynchroniseDocMethods, SynchroniseCollectionMethods>;
 
-export const getCollectionCreator = (
+export const getSynchroniseCollectionCreator = (
     name: string,
     collectionMethods: SynchroniseCollectionMethods,
     documentMethods: SynchroniseDocMethods,
@@ -15,7 +15,7 @@ export const getCollectionCreator = (
     autoMigrate = true,
 ) => ({
         name,
-        schema: getSchema(),
+        schema: getSynchroniseSchema(),
         pouchSettings: {
             revs_limit: 0,
             auto_compaction: true,

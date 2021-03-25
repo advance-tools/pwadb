@@ -1,4 +1,5 @@
 import { RxCollectionCreator, RxDatabaseCreator, RxDocument, RxJsonSchema } from 'rxdb';
+import { PwaDocument } from './document';
 
 export type SynchroniseDocType = {
     id: string;
@@ -7,13 +8,16 @@ export type SynchroniseDocType = {
     collectionOptions: RxCollectionCreator,
     collectionEvictTime: number,
     collectionSkipDocuments: number,
+    collectionReqTitleFieldName: string,
+    collectionReqSubTitleFieldName: string,
+    collectionReqIconFieldName: string,
 };
 
 export type SynchroniseDocMethods = {};
 
 export type SynchroniseDocument = RxDocument<SynchroniseDocType>;
 
-export const getSchema: () => RxJsonSchema<SynchroniseDocType> = () => ({
+export const getSynchroniseSchema: () => RxJsonSchema<SynchroniseDocType> = () => ({
     title: 'synchronise_store',
     description: `Stores database & collectionNames of data in the collection`,
     keyCompression: false,
@@ -38,6 +42,15 @@ export const getSchema: () => RxJsonSchema<SynchroniseDocType> = () => ({
         },
         collectionSkipDocuments: {
             type: 'integer'
+        },
+        collectionReqTitleFieldName: {
+            type: 'string'
+        },
+        collectionReqSubTitleFieldName: {
+            type: ['string', 'null']
+        },
+        collectionReqIconFieldName: {
+            type: ['string', 'null']
         }
     },
     encrypted: [
@@ -49,3 +62,11 @@ export const getSchema: () => RxJsonSchema<SynchroniseDocType> = () => ({
 });
 
 export const synchroniseDocMethods: SynchroniseDocMethods = {};
+
+
+export interface RequestDocument {
+    title: string;
+    subTitle: string;
+    icon: string;
+    document: PwaDocument<any>;
+}

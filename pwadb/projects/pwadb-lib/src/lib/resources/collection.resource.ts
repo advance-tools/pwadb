@@ -90,9 +90,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     collection$: Observable<PwaCollection<T>>;
 
-    private cacheDocument: Map<string, Observable<PwaDocument<T>>>;
-    private cacheDocuments: Map<string, Observable<PwaDocument<T>[]>>;
-
     constructor(
             private name: string,
             private db$: Observable<RxDatabase<Database>>,
@@ -100,7 +97,10 @@ export class CollectionAPI<T extends Datatype, Database> {
             config: {attachments?: {}, options?: {}, migrationStrategies?: {}, autoMigrate?: boolean} = {},
             private synchroniseService?: SynchroniseCollectionService,
             private collectionEvictTime = 86400,
-            private collectionSkipDocuments = 500
+            private collectionSkipDocuments = 500,
+            private collectionReqTitleFieldName = '',
+            private collectionReqSubTitleFieldName: string | null = null,
+            private collectionReqIconFieldName: string | null = null,
     ) {
 
         const collectionSchema = {};
@@ -153,7 +153,10 @@ export class CollectionAPI<T extends Datatype, Database> {
                                     options: collections[this.name].options,
                                     pouchSettings: collections[this.name].pouchSettings,
                                     statics: collections[this.name].statics,
-                                }
+                                },
+                                collectionReqTitleFieldName,
+                                collectionReqSubTitleFieldName,
+                                collectionReqIconFieldName,
                             };
 
                             // add collection to synchronise collection service
@@ -178,9 +181,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             first()
         );
-
-        this.cacheDocument = new Map();
-        this.cacheDocuments = new Map();
     }
 
     makeTenantUrl(tenant: string, url: string): string {
@@ -225,23 +225,14 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     getReactive(tenant: string, url: string): Observable<PwaDocument<T>> {
 
-        const tenantUrl = this.makeTenantUrl(tenant, url);
+        return this.collection$.pipe(
 
-        if (!this.cacheDocument.has(tenantUrl)) {
-
-            const doc = this.collection$.pipe(
-
-                switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
-
-            );
-
-            this.cacheDocument.set(tenantUrl, doc);
-        }
-
-        return this.cacheDocument.get(tenantUrl).pipe(
+            switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
             enterZone<PwaDocument<T>>(this.zone),
+
         );
+
     }
 
     get(tenant: string, url: string): Observable<PwaDocument<T>> {
@@ -254,20 +245,12 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
-        const tenantUrl = this.makeTenantUrl(tenant, url);
+        const docs = this.collection$.pipe(
 
-        if (!this.cacheDocuments.has(tenantUrl)) {
+            switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
+        );
 
-            const docs = this.collection$.pipe(
-
-                switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
-            );
-
-            this.cacheDocuments.set(tenantUrl, docs);
-
-        }
-
-        return this.filterDocs(this.cacheDocuments.get(tenantUrl), url, params, validQueryKeys).pipe(
+        return this.filterDocs(docs, url, params, validQueryKeys).pipe(
 
             enterZone<CollectionListResponse<T>>(this.zone),
         );
@@ -421,7 +404,10 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         config: {attachments?: {}, options?: {}, migrationStrategies?: {}, autoMigrate?: boolean} = {},
         private synchroniseService?: SynchroniseCollectionService,
         collectionEvictTime = 86400,
-        collectionSkipDocuments = 500
+        collectionSkipDocuments = 500,
+        private collectionReqTitleFieldName = '',
+        private collectionReqSubTitleFieldName: string | null = null,
+        private collectionReqIconFieldName: string | null = null,
     ) {
 
         this.collectionAPI = new CollectionAPI<T, Database>(
@@ -431,7 +417,10 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             config,
             this.synchroniseService,
             collectionEvictTime,
-            collectionSkipDocuments
+            collectionSkipDocuments,
+            collectionReqTitleFieldName,
+            collectionReqSubTitleFieldName,
+            collectionReqIconFieldName
         );
 
         this.restAPI = new RestAPI<T>(this.httpClient, this.apiProgress);

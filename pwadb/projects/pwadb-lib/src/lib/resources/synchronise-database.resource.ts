@@ -5,7 +5,6 @@ import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
 import { first, map, shareReplay, startWith, switchMap } from 'rxjs/operators';
-import { SynchroniseCollection } from '../definitions/synchronise-collection';
 
 export class SynchroniseDatabaseService {
 
