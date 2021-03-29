@@ -5,7 +5,7 @@ export type SynchroniseDocType = {
     id: string;
     databaseOptions: RxDatabaseCreator,
     collectionName: string,
-    collectionOptions: RxCollectionCreator,
+    collectionOptions: Partial<RxCollectionCreator>,
     collectionEvictTime: number,
     collectionSkipDocuments: number,
     collectionReqTitleFieldName: string,
