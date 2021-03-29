@@ -3,7 +3,7 @@ import { PwaDocument } from './document';
 
 export type SynchroniseDocType = {
     id: string;
-    databaseOptions: RxDatabaseCreator,
+    databaseOptions: Partial<RxDatabaseCreator>,
     collectionName: string,
     collectionOptions: Partial<RxCollectionCreator>,
     collectionEvictTime: number,

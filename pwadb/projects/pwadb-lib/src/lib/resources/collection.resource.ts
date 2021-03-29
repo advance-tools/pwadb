@@ -135,9 +135,9 @@ export class CollectionAPI<T extends Datatype, Database> {
                                     name: db.name,
                                     eventReduce: db.eventReduce,
                                     multiInstance: db.multiInstance,
-                                    options: db.options,
+                                    // options: db.options,
                                     password: db.password,
-                                    pouchSettings: db.pouchSettings
+                                    // pouchSettings: db.pouchSettings
                                 },
                                 collectionEvictTime: this.collectionEvictTime,
                                 collectionSkipDocuments: this.collectionSkipDocuments,
