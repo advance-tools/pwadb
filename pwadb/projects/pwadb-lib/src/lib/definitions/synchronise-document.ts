@@ -56,8 +56,12 @@ export const getSynchroniseSchema: () => RxJsonSchema<SynchroniseDocType> = () =
     encrypted: [
         'databaseOptions',
         'collectionName',
+        'collectionOptions',
         'collectionEvictTime',
-        'collectionSkipDocuments'
+        'collectionSkipDocuments',
+        'collectionReqTitleFieldName',
+        'collectionReqSubTitleFieldName',
+        'collectionReqIconFieldName',
     ],
 });
 
