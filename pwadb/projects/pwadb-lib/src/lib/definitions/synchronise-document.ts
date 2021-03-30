@@ -1,11 +1,11 @@
-import { RxCollectionCreator, RxDatabaseCreator, RxDocument, RxJsonSchema } from 'rxdb';
+import { RxDocument, RxJsonSchema } from 'rxdb';
 import { PwaDocument } from './document';
 
 export type SynchroniseDocType = {
     id: string;
-    databaseOptions: Partial<RxDatabaseCreator>,
+    databaseOptions: string,
     collectionName: string,
-    collectionOptions: Partial<RxCollectionCreator>,
+    collectionOptions: string,
     collectionEvictTime: number,
     collectionSkipDocuments: number,
     collectionReqTitleFieldName: string,
@@ -29,13 +29,13 @@ export const getSynchroniseSchema: () => RxJsonSchema<SynchroniseDocType> = () =
             primary: true,
         },
         databaseOptions: {
-            type: 'object',
+            type: 'string',
         },
         collectionName: {
             type: 'string'
         },
         collectionOptions: {
-            type: 'object',
+            type: 'string',
         },
         collectionEvictTime: {
             type: 'integer'

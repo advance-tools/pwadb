@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { NgZone } from '@angular/core';
-import { RxDatabase } from 'rxdb';
+import { RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, from, Observable, of, throwError } from 'rxjs';
 import { catchError, concatMap, debounceTime, filter, finalize, first, map, shareReplay, switchMap } from 'rxjs/operators';
 import { PwaCollection, pwaCollectionMethods } from '../definitions/collection';
@@ -99,7 +99,7 @@ export class SynchroniseCollectionService {
 
                 docTypes.forEach(d => {
 
-                    const key = JSON.stringify(d.databaseOptions);
+                    const key = d.databaseOptions;
 
                     key in databasesSchema ? databasesSchema[key].push(d) : databasesSchema[key] = [d];
                 });
@@ -137,14 +137,16 @@ export class SynchroniseCollectionService {
 
                         m.collectionInfo.forEach(i => {
 
+                            const collectionOptions = JSON.parse(i.collectionOptions) as RxCollectionCreator;
+
                             collections[i.collectionName] = getSynchroniseCollectionCreator(
                                 i.collectionName,
                                 pwaCollectionMethods,
                                 pwaDocMethods,
-                                i.collectionOptions.attachments,
-                                i.collectionOptions.options,
-                                i.collectionOptions.migrationStrategies,
-                                i.collectionOptions.autoMigrate
+                                collectionOptions.attachments,
+                                collectionOptions.options,
+                                collectionOptions.migrationStrategies,
+                                collectionOptions.autoMigrate
                             );
                         });
 

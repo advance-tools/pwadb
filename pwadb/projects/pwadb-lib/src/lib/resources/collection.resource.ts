@@ -130,30 +130,30 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                             const data: SynchroniseDocType = {
                                 id: db.name + '-' + this.name,
-                                databaseOptions: {
+                                databaseOptions: JSON.stringify({
                                     adapter: db.adapter,
                                     name: db.name,
                                     eventReduce: db.eventReduce,
                                     multiInstance: db.multiInstance,
-                                    // options: db.options,
+                                    options: db.options,
                                     password: db.password,
-                                    // pouchSettings: db.pouchSettings
-                                },
+                                    pouchSettings: db.pouchSettings
+                                }),
                                 collectionEvictTime: this.collectionEvictTime,
                                 collectionSkipDocuments: this.collectionSkipDocuments,
                                 collectionName: this.name,
-                                collectionOptions: {
+                                collectionOptions: JSON.stringify({
                                     name: this.name,
                                     schema: getSchema(this.name),
-                                    // attachments: collections[this.name].attachments,
-                                    // autoMigrate: true,
-                                    // cacheReplacementPolicy: collections[this.name].cacheReplacementPolicy,
-                                    // methods: collections[this.name].methods,
-                                    // migrationStrategies: collections[this.name].migrationStrategies,
-                                    // options: collections[this.name].options,
-                                    // pouchSettings: collections[this.name].pouchSettings,
-                                    // statics: collections[this.name].statics,
-                                },
+                                    attachments: collections[this.name].attachments,
+                                    autoMigrate: true,
+                                    cacheReplacementPolicy: collections[this.name].cacheReplacementPolicy,
+                                    methods: collections[this.name].methods,
+                                    migrationStrategies: collections[this.name].migrationStrategies,
+                                    options: collections[this.name].options,
+                                    pouchSettings: collections[this.name].pouchSettings,
+                                    statics: collections[this.name].statics,
+                                }),
                                 collectionReqTitleFieldName,
                                 collectionReqSubTitleFieldName,
                                 collectionReqIconFieldName,
