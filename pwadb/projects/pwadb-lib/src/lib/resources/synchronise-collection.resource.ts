@@ -3,7 +3,7 @@ import { NgZone } from '@angular/core';
 import { RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, from, Observable, of, throwError } from 'rxjs';
 import { catchError, concatMap, debounceTime, filter, finalize, first, map, shareReplay, switchMap } from 'rxjs/operators';
-import { PwaCollection, pwaCollectionMethods } from '../definitions/collection';
+import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
 import { RequestDocument, synchroniseDocMethods, SynchroniseDocType, SynchroniseDocument } from '../definitions/synchronise-document';
@@ -139,7 +139,7 @@ export class SynchroniseCollectionService {
 
                             const collectionOptions = JSON.parse(i.collectionOptions) as RxCollectionCreator;
 
-                            collections[i.collectionName] = getSynchroniseCollectionCreator(
+                            collections[i.collectionName] = getCollectionCreator(
                                 i.collectionName,
                                 pwaCollectionMethods,
                                 pwaDocMethods,
