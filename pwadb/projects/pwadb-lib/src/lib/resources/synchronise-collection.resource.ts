@@ -162,7 +162,7 @@ export class SynchroniseCollectionService {
 
             }))),
 
-            map(v => [].concat(v)),
+            map(v => [].concat(...v)),
         );
     }
 
