@@ -110,7 +110,7 @@ export class SynchroniseCollectionService {
 
                 Object.keys(databasesSchema).forEach(schema => {
 
-                    const databaseService = new PwaDatabaseService<any>(JSON.parse(schema));
+                    const databaseService = new PwaDatabaseService<any>({...JSON.parse(schema), ignoreDuplicate: true});
 
                     databasesMap.push({database: databaseService.db$, collectionInfo: databasesSchema[schema]});
                 });
