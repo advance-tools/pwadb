@@ -158,17 +158,18 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     collection$: Observable<PwaCollection<T>>;
 
+    collectionEvictTime$: Observable<number> = of(86400);
+    collectionSkipDocuments$: Observable<number> = of(500);
+    collectionReqTitleFieldName = '';
+    collectionReqSubTitleFieldName: string | null = null;
+    collectionReqIconFieldName$: Observable<string> | null = null;
+
     constructor(
             private name: string,
             private db$: Observable<RxDatabase<Database>>,
             private zone: NgZone,
             config: {attachments?: {}, options?: {}, migrationStrategies?: {}, autoMigrate?: boolean} = {},
-            private synchroniseService?: SynchroniseCollectionService,
-            private collectionEvictTime$: Observable<number> = of(86400),
-            private collectionSkipDocuments$: Observable<number> = of(500),
-            private collectionReqTitleFieldName = '',
-            private collectionReqSubTitleFieldName: string | null = null,
-            private collectionReqIconFieldName$: Observable<string> | null = null,
+            private synchroniseService?: SynchroniseCollectionService
     ) {
 
         const collectionSchema = {};
@@ -192,9 +193,9 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 return combineLatest([
                     from(db.addCollections(collectionSchema)),
-                    collectionReqIconFieldName$ || of(null),
-                    collectionEvictTime$,
-                    collectionSkipDocuments$
+                    this.collectionReqIconFieldName$ || of(null),
+                    this.collectionEvictTime$,
+                    this.collectionSkipDocuments$
                 ]).pipe(
 
                     switchMap(([collections, reqIconFieldName, collectionEvictTime, collectionSkipDocuments]) => {
@@ -227,8 +228,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                                     pouchSettings: collections[this.name].pouchSettings,
                                     statics: collections[this.name].statics,
                                 }),
-                                collectionReqTitleFieldName,
-                                collectionReqSubTitleFieldName,
+                                collectionReqTitleFieldName: this.collectionReqTitleFieldName,
+                                collectionReqSubTitleFieldName: this.collectionReqSubTitleFieldName,
                                 collectionReqIconFieldName: reqIconFieldName,
                             };
 
@@ -475,12 +476,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         private zone: NgZone,
         private apiProgress?: ApiProgressService,
         config: {attachments?: {}, options?: {}, migrationStrategies?: {}, autoMigrate?: boolean} = {},
-        private synchroniseService?: SynchroniseCollectionService,
-        private collectionEvictTime$: Observable<number> = of(86400),
-        private collectionSkipDocuments$: Observable<number> = of(500),
-        private collectionReqTitleFieldName = '',
-        private collectionReqSubTitleFieldName: string | null = null,
-        private collectionReqIconFieldName$: Observable<string> | null = null,
+        private synchroniseService?: SynchroniseCollectionService
     ) {
 
         this.collectionAPI = new CollectionAPI<T, Database>(
@@ -488,15 +484,60 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             this.db$,
             this.zone,
             config,
-            this.synchroniseService,
-            collectionEvictTime$,
-            collectionSkipDocuments$,
-            collectionReqTitleFieldName,
-            collectionReqSubTitleFieldName,
-            collectionReqIconFieldName$
+            this.synchroniseService
         );
 
         this.restAPI = new RestAPI<T>(this.httpClient, this.apiProgress);
+    }
+
+    get collectionEvictTime$(): Observable<number> {
+
+        return this.collectionAPI.collectionEvictTime$;
+    }
+
+    set collectionEvictTime$(v: Observable<number>) {
+
+        this.collectionAPI.collectionEvictTime$ = v;
+    }
+
+    get collectionSkipDocuments$(): Observable<number> {
+
+        return this.collectionAPI.collectionSkipDocuments$;
+    }
+
+    set collectionSkipDocuments$(v: Observable<number>) {
+
+        this.collectionAPI.collectionSkipDocuments$ = v;
+    }
+
+    get collectionReqTitleFieldName(): string {
+
+        return this.collectionAPI.collectionReqTitleFieldName;
+    }
+
+    set collectionReqTitleFieldName(v: string) {
+
+        this.collectionAPI.collectionReqTitleFieldName = v;
+    }
+
+    get collectionReqSubTitleFieldName(): string | null {
+
+        return this.collectionAPI.collectionReqSubTitleFieldName;
+    }
+
+    set collectionReqSubTitleFieldName(v: string | null) {
+
+        this.collectionAPI.collectionReqSubTitleFieldName = v;
+    }
+
+    get collectionReqIconFieldName$(): Observable<string> | null {
+
+        return this.collectionAPI.collectionReqIconFieldName$;
+    }
+
+    set collectionReqIconFieldName$(v: Observable<string> | null) {
+
+        this.collectionAPI.collectionReqIconFieldName$ = v;
     }
 
     //////////////
