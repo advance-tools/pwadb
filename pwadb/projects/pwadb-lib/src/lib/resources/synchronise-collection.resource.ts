@@ -184,9 +184,9 @@ export class SynchroniseCollectionService {
                     return from(k.collection.find(query).$.pipe(
 
                         map(docs => docs.map(d => ({
-                            title: d.data[k.collectionReqTitleFieldName],
-                            subTitle: d.data[k.collectionReqSubTitleFieldName],
-                            icon: d.data[k.collectionReqIconFieldName],
+                            title: d.data.hasOwnProperty(k.collectionReqTitleFieldName) ? d.data[k.collectionReqTitleFieldName] : null,
+                            subTitle: d.data.hasOwnProperty(k.collectionReqSubTitleFieldName) ? d.data[k.collectionReqSubTitleFieldName] : null,
+                            icon: d.data.hasOwnProperty(k.collectionReqIconFieldName) ? d.data[k.collectionReqIconFieldName] : null,
                             document: d
                         } as RequestDocument))),
 

@@ -14,6 +14,8 @@ import { SynchroniseDocType } from '../definitions/synchronise-document';
 
 export class RestAPI<T extends Datatype> {
 
+    cache: Map<string, Observable<T> | Observable<ListResponse<T>>> = new Map();
+
     constructor(private httpClient: HttpClient, private apiProgress?: ApiProgressService) {}
 
     ////////////////
@@ -22,67 +24,133 @@ export class RestAPI<T extends Datatype> {
 
     get(url: string, params?: HttpParams): Observable<T> {
 
-        return of(true).pipe(
+        const cacheKey = url + params?.toString();
+
+        const req = of(true).pipe(
 
             tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
 
             switchMap(() => this.httpClient.get(url, {params})),
 
-            finalize(() => {if (!!this.apiProgress) { this.apiProgress.remove(); }}),
+            finalize(() => {
+
+                if (!!this.apiProgress) { this.apiProgress.remove(); }
+
+                if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
+
+            }),
+
+            shareReplay(1),
 
         ) as Observable<T>;
+
+        if (!this.cache.has(cacheKey)) { this.cache.set(cacheKey, req); }
+
+        return this.cache.get(cacheKey) as Observable<T>;
     }
 
     post(url: string, data: Partial<T>): Observable<T> {
 
-        return of(true).pipe(
+        const cacheKey = url;
+
+        const req = of(true).pipe(
 
             tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
 
             switchMap(() => this.httpClient.post(url, data)),
 
-            finalize(() => {if (!!this.apiProgress) { this.apiProgress.remove(); }}),
+            finalize(() => {
+
+                if (!!this.apiProgress) { this.apiProgress.remove(); }
+
+                if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
+            }),
+
+            shareReplay(1),
 
         )  as Observable<T>;
+
+        if (!this.cache.has(cacheKey)) { this.cache.set(cacheKey, req); }
+
+        return this.cache.get(cacheKey) as Observable<T>;
     }
 
     put(url: string, data: Partial<T>): Observable<T> {
 
-        return of(true).pipe(
+        const cacheKey = url;
+
+        const req = of(true).pipe(
 
             tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
 
             switchMap(() => this.httpClient.put(url, data)),
 
-            finalize(() => {if (!!this.apiProgress) { this.apiProgress.remove(); }}),
+            finalize(() => {
+
+                if (!!this.apiProgress) { this.apiProgress.remove(); }
+
+                if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
+            }),
+
+            shareReplay(1),
 
         ) as Observable<T>;
+
+        if (!this.cache.has(cacheKey)) { this.cache.set(cacheKey, req); }
+
+        return this.cache.get(cacheKey) as Observable<T>;
     }
 
     list(url: string, params?: HttpParams): Observable<ListResponse<T>> {
 
-        return of(true).pipe(
+        const cacheKey = url + params?.toString();
+
+        const req = of(true).pipe(
 
             tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
 
             switchMap(() => this.httpClient.get(url, {params})),
 
-            finalize(() => {if (!!this.apiProgress) { this.apiProgress.remove(); }}),
+            finalize(() => {
+
+                if (!!this.apiProgress) { this.apiProgress.remove(); }
+
+                if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
+            }),
+
+            shareReplay(1),
 
         ) as Observable<ListResponse<T>>;
+
+        if (!this.cache.has(cacheKey)) { this.cache.set(cacheKey, req); }
+
+        return this.cache.get(cacheKey) as Observable<ListResponse<T>>;
     }
 
     delete(url: string): Observable<any> {
 
-        return of(true).pipe(
+        const cacheKey = url;
+
+        const req = of(true).pipe(
 
             tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
 
             switchMap(() => this.httpClient.delete(url)),
 
-            finalize(() => {if (!!this.apiProgress) { this.apiProgress.remove(); }}),
+            finalize(() => {
+
+                if (!!this.apiProgress) { this.apiProgress.remove(); }
+
+                if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
+            }),
+
+            shareReplay(1),
 
         ) as Observable<any>;
+
+        if (!this.cache.has(cacheKey)) { this.cache.set(cacheKey, req); }
+
+        return this.cache.get(cacheKey);
     }
 }
 
@@ -96,11 +164,11 @@ export class CollectionAPI<T extends Datatype, Database> {
             private zone: NgZone,
             config: {attachments?: {}, options?: {}, migrationStrategies?: {}, autoMigrate?: boolean} = {},
             private synchroniseService?: SynchroniseCollectionService,
-            private collectionEvictTime = 86400,
-            private collectionSkipDocuments = 500,
+            private collectionEvictTime$: Observable<number> = of(86400),
+            private collectionSkipDocuments$: Observable<number> = of(500),
             private collectionReqTitleFieldName = '',
             private collectionReqSubTitleFieldName: string | null = null,
-            private collectionReqIconFieldName: string | null = null,
+            private collectionReqIconFieldName$: Observable<string> | null = null,
     ) {
 
         const collectionSchema = {};
@@ -122,9 +190,14 @@ export class CollectionAPI<T extends Datatype, Database> {
             // tslint:disable-next-line: max-line-length
             switchMap(db => {
 
-                return from(db.addCollections(collectionSchema)).pipe(
+                return combineLatest([
+                    from(db.addCollections(collectionSchema)),
+                    collectionReqIconFieldName$ || of(null),
+                    collectionEvictTime$,
+                    collectionSkipDocuments$
+                ]).pipe(
 
-                    switchMap(collections => {
+                    switchMap(([collections, reqIconFieldName, collectionEvictTime, collectionSkipDocuments]) => {
 
                         if (this.synchroniseService) {
 
@@ -139,8 +212,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                                     password: db.password,
                                     pouchSettings: db.pouchSettings
                                 }),
-                                collectionEvictTime: this.collectionEvictTime,
-                                collectionSkipDocuments: this.collectionSkipDocuments,
+                                collectionEvictTime,
+                                collectionSkipDocuments,
                                 collectionName: this.name,
                                 collectionOptions: JSON.stringify({
                                     name: this.name,
@@ -156,7 +229,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                                 }),
                                 collectionReqTitleFieldName,
                                 collectionReqSubTitleFieldName,
-                                collectionReqIconFieldName,
+                                collectionReqIconFieldName: reqIconFieldName,
                             };
 
                             // add collection to synchronise collection service
@@ -403,11 +476,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         private apiProgress?: ApiProgressService,
         config: {attachments?: {}, options?: {}, migrationStrategies?: {}, autoMigrate?: boolean} = {},
         private synchroniseService?: SynchroniseCollectionService,
-        collectionEvictTime = 86400,
-        collectionSkipDocuments = 500,
+        private collectionEvictTime$: Observable<number> = of(86400),
+        private collectionSkipDocuments$: Observable<number> = of(500),
         private collectionReqTitleFieldName = '',
         private collectionReqSubTitleFieldName: string | null = null,
-        private collectionReqIconFieldName: string | null = null,
+        private collectionReqIconFieldName$: Observable<string> | null = null,
     ) {
 
         this.collectionAPI = new CollectionAPI<T, Database>(
@@ -416,11 +489,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             this.zone,
             config,
             this.synchroniseService,
-            collectionEvictTime,
-            collectionSkipDocuments,
+            collectionEvictTime$,
+            collectionSkipDocuments$,
             collectionReqTitleFieldName,
             collectionReqSubTitleFieldName,
-            collectionReqIconFieldName
+            collectionReqIconFieldName$
         );
 
         this.restAPI = new RestAPI<T>(this.httpClient, this.apiProgress);
