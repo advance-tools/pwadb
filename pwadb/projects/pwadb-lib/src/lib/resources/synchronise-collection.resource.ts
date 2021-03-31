@@ -6,7 +6,7 @@ import { catchError, concatMap, debounceTime, filter, finalize, first, map, shar
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
-import { RequestDocument, synchroniseDocMethods, SynchroniseDocType, SynchroniseDocument } from '../definitions/synchronise-document';
+import { synchroniseDocMethods, SynchroniseDocType, SynchroniseDocument } from '../definitions/synchronise-document';
 import { enterZone } from './operators.resource';
 import { PwaDatabaseService } from './database.resource';
 
@@ -166,7 +166,7 @@ export class SynchroniseCollectionService {
         );
     }
 
-    unsynchronised(tenant: string, order: 'desc' | 'asc' = 'asc'): Observable<RequestDocument[]> {
+    unsynchronised(tenant: string, order: 'desc' | 'asc' = 'asc'): Observable<PwaDocument<any>[]> {
 
         return this.getCollections().pipe(
 
@@ -181,16 +181,7 @@ export class SynchroniseCollectionService {
 
                 const sortedDocs$ = collectionsInfo.map(k => {
 
-                    return from(k.collection.find(query).$.pipe(
-
-                        map(docs => docs.map(d => ({
-                            title: d.data.hasOwnProperty(k.collectionReqTitleFieldName) ? d.data[k.collectionReqTitleFieldName] : null,
-                            subTitle: d.data.hasOwnProperty(k.collectionReqSubTitleFieldName) ? d.data[k.collectionReqSubTitleFieldName] : null,
-                            icon: d.data.hasOwnProperty(k.collectionReqIconFieldName) ? d.data[k.collectionReqIconFieldName] : null,
-                            document: d
-                        } as RequestDocument))),
-
-                    ));
+                    return from(k.collection.find(query).$);
                 });
 
                 return combineLatest(sortedDocs$);
@@ -200,9 +191,9 @@ export class SynchroniseCollectionService {
             map(sortedDocs => [].concat(...sortedDocs)),
 
             // tslint:disable-next-line: max-line-length
-            map((sortedDocs: RequestDocument[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.document.time - b.document.time : b.document.time - a.document.time)),
+            map((sortedDocs: PwaDocument<any>[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.time - b.time : b.time - a.time)),
 
-            enterZone<RequestDocument[]>(this.zone),
+            enterZone<PwaDocument<any>[]>(this.zone),
         );
     }
 
@@ -212,7 +203,7 @@ export class SynchroniseCollectionService {
 
             filter(sortedDocs => sortedDocs.length > 0),
 
-            map(sortedDocs => sortedDocs[0].document),
+            map(sortedDocs => sortedDocs[0]),
 
         );
 

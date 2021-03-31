@@ -7,10 +7,7 @@ export type SynchroniseDocType = {
     collectionName: string,
     collectionOptions: string,
     collectionEvictTime: number,
-    collectionSkipDocuments: number,
-    collectionReqTitleFieldName: string,
-    collectionReqSubTitleFieldName: string,
-    collectionReqIconFieldName: string,
+    collectionSkipDocuments: number
 };
 
 export type SynchroniseDocMethods = {};
@@ -67,10 +64,3 @@ export const getSynchroniseSchema: () => RxJsonSchema<SynchroniseDocType> = () =
 
 export const synchroniseDocMethods: SynchroniseDocMethods = {};
 
-
-export interface RequestDocument {
-    title: string;
-    subTitle: string;
-    icon: string;
-    document: PwaDocument<any>;
-}

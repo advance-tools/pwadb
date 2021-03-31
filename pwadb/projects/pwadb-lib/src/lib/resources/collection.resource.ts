@@ -160,9 +160,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     collectionEvictTime$: Observable<number> = of(86400);
     collectionSkipDocuments$: Observable<number> = of(500);
-    collectionReqTitleFieldName = '';
-    collectionReqSubTitleFieldName: string | null = null;
-    collectionReqIconFieldName$: Observable<string> | null = null;
 
     constructor(
             private name: string,
@@ -193,12 +190,11 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 return combineLatest([
                     from(db.addCollections(collectionSchema)),
-                    this.collectionReqIconFieldName$ || of(null),
                     this.collectionEvictTime$,
                     this.collectionSkipDocuments$
                 ]).pipe(
 
-                    switchMap(([collections, reqIconFieldName, collectionEvictTime, collectionSkipDocuments]) => {
+                    switchMap(([collections, collectionEvictTime, collectionSkipDocuments]) => {
 
                         if (this.synchroniseService) {
 
@@ -227,10 +223,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                                     options: collections[this.name].options,
                                     pouchSettings: collections[this.name].pouchSettings,
                                     statics: collections[this.name].statics,
-                                }),
-                                collectionReqTitleFieldName: this.collectionReqTitleFieldName,
-                                collectionReqSubTitleFieldName: this.collectionReqSubTitleFieldName,
-                                collectionReqIconFieldName: reqIconFieldName,
+                                })
                             };
 
                             // add collection to synchronise collection service
@@ -508,36 +501,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     set collectionSkipDocuments$(v: Observable<number>) {
 
         this.collectionAPI.collectionSkipDocuments$ = v;
-    }
-
-    get collectionReqTitleFieldName(): string {
-
-        return this.collectionAPI.collectionReqTitleFieldName;
-    }
-
-    set collectionReqTitleFieldName(v: string) {
-
-        this.collectionAPI.collectionReqTitleFieldName = v;
-    }
-
-    get collectionReqSubTitleFieldName(): string | null {
-
-        return this.collectionAPI.collectionReqSubTitleFieldName;
-    }
-
-    set collectionReqSubTitleFieldName(v: string | null) {
-
-        this.collectionAPI.collectionReqSubTitleFieldName = v;
-    }
-
-    get collectionReqIconFieldName$(): Observable<string> | null {
-
-        return this.collectionAPI.collectionReqIconFieldName$;
-    }
-
-    set collectionReqIconFieldName$(v: Observable<string> | null) {
-
-        this.collectionAPI.collectionReqIconFieldName$ = v;
     }
 
     //////////////
