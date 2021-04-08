@@ -511,8 +511,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     };
 
     constructor(
-        private collectionAPI: CollectionAPI<T, Database>,
-        private restAPI: RestAPI<T>,
+        public collectionAPI: CollectionAPI<T, Database>,
+        public restAPI: RestAPI<T>,
     ) {}
 
     //////////////
