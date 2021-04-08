@@ -5,18 +5,46 @@ import { Observable, of, from, throwError, combineLatest } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
-import { NgZone } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 import { ApiProgressService } from './apiProgress.resource';
-import { SynchroniseCollectionService } from './synchronise-collection.resource';
+import { SyncCollectionService } from './synchronise-collection.resource';
 import { SynchroniseDocType } from '../definitions/synchronise-document';
 
 
+export interface RestAPICreator {
+    apiProgress?: ApiProgressService;
+}
+
+
+export interface CollectionAPICreator<Database> {
+    name?: string;
+    db$?: Observable<RxDatabase<Database>>;
+    collectionEvictTime$: Observable<number>;
+    collectionSkipDocuments$: Observable<number>;
+    synchroniseService?: SyncCollectionService;
+    attachments?: {};
+    options?: {};
+    migrationStrategies?: {};
+    autoMigrate?: boolean;
+}
+
+
+export interface PwaCollectionAPICreator<Database> {
+    collectionApiCreator: CollectionAPICreator<Database>;
+    restApiCreator: RestAPICreator;
+    cacheTimeInSeconds: number;
+}
+
+
+@Injectable()
 export class RestAPI<T extends Datatype> {
 
     cache: Map<string, Observable<T> | Observable<ListResponse<T>>> = new Map();
 
-    constructor(private httpClient: HttpClient, private apiProgress?: ApiProgressService) {}
+    config: RestAPICreator = {};
+
+    constructor(private httpClient: HttpClient) {}
 
     ////////////////
     // CRUD
@@ -28,13 +56,13 @@ export class RestAPI<T extends Datatype> {
 
         const req = of(true).pipe(
 
-            tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
+            tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
             switchMap(() => this.httpClient.get(url, {params})),
 
             finalize(() => {
 
-                if (!!this.apiProgress) { this.apiProgress.remove(); }
+                if (!!this.config.apiProgress) { this.config.apiProgress.remove(); }
 
                 if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
 
@@ -55,13 +83,13 @@ export class RestAPI<T extends Datatype> {
 
         const req = of(true).pipe(
 
-            tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
+            tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
             switchMap(() => this.httpClient.post(url, data)),
 
             finalize(() => {
 
-                if (!!this.apiProgress) { this.apiProgress.remove(); }
+                if (!!this.config.apiProgress) { this.config.apiProgress.remove(); }
 
                 if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
             }),
@@ -81,13 +109,13 @@ export class RestAPI<T extends Datatype> {
 
         const req = of(true).pipe(
 
-            tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
+            tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
             switchMap(() => this.httpClient.put(url, data)),
 
             finalize(() => {
 
-                if (!!this.apiProgress) { this.apiProgress.remove(); }
+                if (!!this.config.apiProgress) { this.config.apiProgress.remove(); }
 
                 if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
             }),
@@ -107,13 +135,13 @@ export class RestAPI<T extends Datatype> {
 
         const req = of(true).pipe(
 
-            tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
+            tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
             switchMap(() => this.httpClient.get(url, {params})),
 
             finalize(() => {
 
-                if (!!this.apiProgress) { this.apiProgress.remove(); }
+                if (!!this.config.apiProgress) { this.config.apiProgress.remove(); }
 
                 if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
             }),
@@ -133,13 +161,13 @@ export class RestAPI<T extends Datatype> {
 
         const req = of(true).pipe(
 
-            tap(() => { if (!!this.apiProgress) { this.apiProgress.add(); } }),
+            tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
             switchMap(() => this.httpClient.delete(url)),
 
             finalize(() => {
 
-                if (!!this.apiProgress) { this.apiProgress.remove(); }
+                if (!!this.config.apiProgress) { this.config.apiProgress.remove(); }
 
                 if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
             }),
@@ -154,52 +182,59 @@ export class RestAPI<T extends Datatype> {
     }
 }
 
+
+@Injectable()
 export class CollectionAPI<T extends Datatype, Database> {
 
-    collection$: Observable<PwaCollection<T>>;
+    config: CollectionAPICreator<Database> = {
+        name: 'no_name_collection_api',
+        db$: of(),
+        collectionEvictTime$: of(86400),
+        collectionSkipDocuments$: of(500),
+        attachments: {},
+        options: {},
+        migrationStrategies: {},
+        autoMigrate: true,
+    };
 
-    collectionEvictTime$: Observable<number> = of(86400);
-    collectionSkipDocuments$: Observable<number> = of(500);
+    // tslint:disable-next-line: variable-name
+    private _collection$: Observable<PwaCollection<T>>;
 
-    constructor(
-            private name: string,
-            private db$: Observable<RxDatabase<Database>>,
-            private zone: NgZone,
-            config: {attachments?: {}, options?: {}, migrationStrategies?: {}, autoMigrate?: boolean} = {},
-            private synchroniseService?: SynchroniseCollectionService
-    ) {
+    constructor(private zone: NgZone) {}
+
+    get collection$(): Observable<PwaCollection<T>> {
+
+        if (this._collection$) { return this._collection$; }
 
         const collectionSchema = {};
 
-        const _config = {attachments: {}, options: {}, migrationStrategies: {}, autoMigrate: true, ...config};
-
-        collectionSchema[name] = getCollectionCreator(
-            this.name,
+        collectionSchema[this.config.name] = getCollectionCreator(
+            this.config.name,
             pwaCollectionMethods,
             pwaDocMethods,
-            _config.attachments,
-            _config.options,
-            _config.migrationStrategies,
-            _config.autoMigrate
+            this.config.attachments,
+            this.config.options,
+            this.config.migrationStrategies,
+            this.config.autoMigrate
         );
 
-        this.collection$ = this.db$.pipe(
+        this._collection$ = this.config.db$.pipe(
 
             // tslint:disable-next-line: max-line-length
             switchMap(db => {
 
                 return combineLatest([
                     from(db.addCollections(collectionSchema)),
-                    this.collectionEvictTime$,
-                    this.collectionSkipDocuments$
+                    this.config.collectionEvictTime$,
+                    this.config.collectionSkipDocuments$
                 ]).pipe(
 
                     switchMap(([collections, collectionEvictTime, collectionSkipDocuments]) => {
 
-                        if (this.synchroniseService) {
+                        if (this.config.synchroniseService) {
 
                             const data: SynchroniseDocType = {
-                                id: db.name + '-' + this.name,
+                                id: db.name + '-' + this.config.name,
                                 databaseOptions: JSON.stringify({
                                     adapter: db.adapter,
                                     name: db.name,
@@ -211,32 +246,32 @@ export class CollectionAPI<T extends Datatype, Database> {
                                 }),
                                 collectionEvictTime,
                                 collectionSkipDocuments,
-                                collectionName: this.name,
+                                collectionName: this.config.name,
                                 collectionOptions: JSON.stringify({
-                                    name: this.name,
-                                    schema: getSchema(this.name),
-                                    attachments: collections[this.name].attachments,
+                                    name: this.config.name,
+                                    schema: getSchema(this.config.name),
+                                    attachments: collections[this.config.name].attachments,
                                     autoMigrate: true,
-                                    cacheReplacementPolicy: collections[this.name].cacheReplacementPolicy,
-                                    methods: collections[this.name].methods,
-                                    migrationStrategies: collections[this.name].migrationStrategies,
-                                    options: collections[this.name].options,
-                                    pouchSettings: collections[this.name].pouchSettings,
-                                    statics: collections[this.name].statics,
+                                    cacheReplacementPolicy: collections[this.config.name].cacheReplacementPolicy,
+                                    methods: collections[this.config.name].methods,
+                                    migrationStrategies: collections[this.config.name].migrationStrategies,
+                                    options: collections[this.config.name].options,
+                                    pouchSettings: collections[this.config.name].pouchSettings,
+                                    statics: collections[this.config.name].statics,
                                 })
                             };
 
                             // add collection to synchronise collection service
-                            return this.synchroniseService.addSynchroniseDocument(data).pipe(
+                            return this.config.synchroniseService.addSynchroniseDocument(data).pipe(
 
-                                map(() => collections[name] as PwaCollection<T>)
+                                map(() => collections[this.config.name] as PwaCollection<T>)
                             );
 
                         } else {
 
                             return of(collections).pipe(
 
-                                map(() => collections[name] as PwaCollection<T>)
+                                map(() => collections[this.config.name] as PwaCollection<T>)
                             );
                         }
 
@@ -248,6 +283,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             first()
         );
+
+        return this._collection$;
     }
 
     makeTenantUrl(tenant: string, url: string): string {
@@ -454,54 +491,29 @@ export class CollectionAPI<T extends Datatype, Database> {
     }
 }
 
+
+@Injectable()
 export class PwaCollectionAPI<T extends Datatype, Database> {
 
-    collectionAPI: CollectionAPI<T, Database>;
-
-    restAPI: RestAPI<T>;
-
-    cacheTimeInSeconds = 120;
+    config: PwaCollectionAPICreator<Database> = {
+        restApiCreator: {},
+        collectionApiCreator: {
+            name: 'no_name_pwa_collection_api',
+            db$: of(),
+            collectionEvictTime$: of(86400),
+            collectionSkipDocuments$: of(500),
+            attachments: {},
+            options: {},
+            migrationStrategies: {},
+            autoMigrate: true,
+        },
+        cacheTimeInSeconds: 120
+    };
 
     constructor(
-        private name: string,
-        private db$: Observable<RxDatabase<Database>>,
-        private httpClient: HttpClient,
-        private zone: NgZone,
-        private apiProgress?: ApiProgressService,
-        config: {attachments?: {}, options?: {}, migrationStrategies?: {}, autoMigrate?: boolean} = {},
-        private synchroniseService?: SynchroniseCollectionService
-    ) {
-
-        this.collectionAPI = new CollectionAPI<T, Database>(
-            this.name,
-            this.db$,
-            this.zone,
-            config,
-            this.synchroniseService
-        );
-
-        this.restAPI = new RestAPI<T>(this.httpClient, this.apiProgress);
-    }
-
-    get collectionEvictTime$(): Observable<number> {
-
-        return this.collectionAPI.collectionEvictTime$;
-    }
-
-    set collectionEvictTime$(v: Observable<number>) {
-
-        this.collectionAPI.collectionEvictTime$ = v;
-    }
-
-    get collectionSkipDocuments$(): Observable<number> {
-
-        return this.collectionAPI.collectionSkipDocuments$;
-    }
-
-    set collectionSkipDocuments$(v: Observable<number>) {
-
-        this.collectionAPI.collectionSkipDocuments$ = v;
-    }
+        private collectionAPI: CollectionAPI<T, Database>,
+        private restAPI: RestAPI<T>,
+    ) {}
 
     //////////////
     // Retrieve
@@ -514,7 +526,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         // check if document is within cacheTime
         const currentTime = new Date().getTime();
 
-        if (!!doc && doc.time >= (currentTime - (this.cacheTimeInSeconds * 1000))) { return of(doc); }
+        if (!!doc && doc.time >= (currentTime - (this.config.cacheTimeInSeconds * 1000))) { return of(doc); }
 
         return combineLatest([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
 
@@ -569,7 +581,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         const ids = res.results
             // tslint:disable-next-line: max-line-length
-            .filter(v => v.method === 'PUT' || v.method === 'DELETE' || (v.method === 'GET' && v.time >= (currentTime - (this.cacheTimeInSeconds * 1000))))
+            .filter(v => v.method === 'PUT' || v.method === 'DELETE' || (v.method === 'GET' && v.time >= (currentTime - (this.config.cacheTimeInSeconds * 1000))))
             .map(v => v.data.id);
 
         if (ids.length === limit) {

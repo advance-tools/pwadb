@@ -5,12 +5,28 @@ import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
 import { first, map, shareReplay, startWith, switchMap } from 'rxjs/operators';
+import { Injectable } from '@angular/core';
 
-export class SynchroniseDatabaseService {
 
-    db$: Observable<RxDatabase<any>>;
+export interface SyncDatabaseServiceCreator {
+    dbCreator: Partial<RxDatabaseCreator>;
+}
 
-    constructor(dbCreator: Partial<RxDatabaseCreator> = {}) {
+@Injectable()
+export class SyncDatabaseService {
+
+    config: SyncDatabaseServiceCreator = {
+        dbCreator: {}
+    };
+
+    // tslint:disable-next-line: variable-name
+    private _db$: Observable<RxDatabase<any>>;
+
+    constructor() {}
+
+    get db$(): Observable<RxDatabase<any>> {
+
+        if (this._db$) { return this._db$; }
 
         // add indexeddb adapter
         addRxPlugin(idb);
@@ -24,13 +40,13 @@ export class SynchroniseDatabaseService {
         // add schema validate plugin
         addRxPlugin(RxDBValidatePlugin);
 
-        this.db$ = from(createRxDatabase({
+        this._db$ = from(createRxDatabase({
             name: 'synchronise-pwadb',
             adapter: 'idb',
             password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',
             multiInstance: true,
             eventReduce: true,
-            ...dbCreator
+            ...this.config.dbCreator
         })).pipe(
 
             switchMap((db: any) => from(db.waitForLeadership()).pipe(
@@ -45,6 +61,9 @@ export class SynchroniseDatabaseService {
             first(),
 
         );
+
+        return this._db$;
     }
+
 }
 

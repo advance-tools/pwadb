@@ -1,5 +1,5 @@
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
-import { PwaDocument } from '../definitions/document';
+import { Datatype, PwaDocument } from '../definitions/document';
 import { HttpParams } from '@angular/common/http';
 import { PwaListResponse } from '../definitions/collection';
 import { switchMap, tap, shareReplay, map, filter } from 'rxjs/operators';
@@ -10,12 +10,7 @@ import { enterZone } from './operators.resource';
 // Interfaces
 /////////////////////
 
-export interface DatabaseDatatype {
-    id: string;
-    created_at: string;
-}
-
-export interface DatabaseService<T extends DatabaseDatatype> {
+export interface TableDatabase<T extends Datatype> {
 
     fetch: (params?: HttpParams) => Observable<PwaListResponse<T>>;
 
@@ -31,7 +26,11 @@ export interface IBaseDatabase {
     loadMore: () => void;
 }
 
-export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
+///////////////////
+// Tables
+///////////////////
+
+export class BaseDatabase<T extends Datatype> implements IBaseDatabase {
 
     queueChange: BehaviorSubject<Observable<PwaListResponse<T>>[]>;
     data: PwaDocument<T>[];
@@ -76,7 +75,7 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
         this._httpParams = this.httpParams.set('offset', '0');
         this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
-        if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at'); }
+        // if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at,id'); }
     }
 
     loadMore() {
@@ -100,23 +99,17 @@ export class BaseDatabase<T extends DatabaseDatatype> implements IBaseDatabase {
         this._httpParams = this.httpParams.set('offset', this.offset.toString());
         this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
-        if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at,id'); }
-
-        console.log('Table httpParams', this.httpParams.toString());
+        // if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at,id'); }
 
     }
 
 }
 
-///////////////////////////
-// Table
-//////////////////////////
-
-export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
+export class Database<T extends Datatype> extends BaseDatabase<T> {
 
     dataChange: Observable<PwaDocument<T>[]>;
 
-    constructor(private apiService: DatabaseService<T>, private zone: NgZone, private _limit = 20) {
+    constructor(private apiService: TableDatabase<T>, private zone: NgZone, private _limit = 20) {
 
         super(_limit, zone);
 
@@ -176,11 +169,11 @@ export class Database<T extends DatabaseDatatype> extends BaseDatabase<T> {
 }
 
 
-export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T> {
+export class ReactiveDatabase<T extends Datatype> extends BaseDatabase<T> {
 
     dataChange: Observable<PwaDocument<T>[]>;
 
-    constructor(private apiService: DatabaseService<T>, private zone: NgZone, private _limit = 20) {
+    constructor(private apiService: TableDatabase<T>, private zone: NgZone, private _limit = 20) {
 
         super(_limit, zone);
 
@@ -207,7 +200,7 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
 
     getView(httpParams: HttpParams): Observable<PwaListResponse<T>> {
 
-        return this.apiService.fetch(httpParams).pipe(
+        return this.apiService.fetchReactive(httpParams).pipe(
 
             shareReplay(1)
         );
@@ -236,139 +229,4 @@ export class ReactiveDatabase<T extends DatabaseDatatype> extends BaseDatabase<T
         // push to queue
         this.queueChange.next([].concat(this.queueChange.value, [view]));
     }
-}
-
-///////////////////////////
-// Tree
-///////////////////////////
-
-export type TreeNode<T extends DatabaseDatatype> = {item: PwaDocument<T>, children: Observable<TreeNode<any>[]>};
-
-export interface DatabaseInformation<T extends DatabaseDatatype> {
-    getDatabase: (limit?: number) => Database<T> | ReactiveDatabase<T>;
-    onCreationSetup?: (parentDoc: PwaDocument<T> | null, db: Database<T> | ReactiveDatabase<T>, params: HttpParams) => void;
-    children: TreeInformation<T>;
-}
-
-export interface TreeInformation<T extends DatabaseDatatype> {
-    [key: string]: DatabaseInformation<T>;
-}
-
-export class TreeDatabase<T extends DatabaseDatatype> {
-
-    childTreeMap: Map<PwaDocument<any>, Observable<TreeNode<any>[]>>;
-    databaseMap: Map<PwaDocument<any>, Database<any> | ReactiveDatabase<any>>;
-
-    dataChange: Observable<TreeNode<T>[]>;
-
-    private queueChange: BehaviorSubject<any>;
-    // tslint:disable-next-line: variable-name
-    private _httpParams: HttpParams;
-
-    get httpParams() { return this._httpParams; }
-    set httpParams(v: HttpParams) {
-
-        this._httpParams = v;
-
-        this.reset();
-    }
-
-    constructor(private treeInfo: TreeInformation<T>) {
-
-        this.databaseMap  = new Map();
-        this.childTreeMap = new Map();
-        this._httpParams  = new HttpParams();
-        this.queueChange  = new BehaviorSubject(true);
-
-        this.dataChange = this.queueChange.asObservable().pipe(
-
-            switchMap(() => this.buildTree(this.treeInfo, null, this.httpParams)),
-
-        );
-    }
-
-    buildTree(treeInfo: TreeInformation<T>, parentDoc: PwaDocument<T> = null, params = new HttpParams()): Observable<TreeNode<T>[]> {
-
-        const treeNodes = Object.keys(treeInfo).map(key => {
-
-            const db = treeInfo[key].getDatabase();
-
-            // extract http params
-            const keys = params.keys().filter(pk => pk && pk.includes(`${key}--`));
-
-            // create new params associated to this database
-            let childParams = new HttpParams();
-
-            // set params
-            keys.forEach(pk => childParams = childParams.set(pk.split(`${key}--`)[1], params.getAll(pk).join(',')));
-
-            // run callback
-            treeInfo[key].onCreationSetup ? treeInfo[key].onCreationSetup(parentDoc, db, childParams) : db.httpParams = childParams;
-
-            return db.dataChange.pipe(
-
-                map(docs => {
-
-                    const obs = docs.map(doc => {
-
-                        ///////////////////
-                        // Database Map
-                        ///////////////////
-                        if (!this.databaseMap.has(doc)) { this.databaseMap.set(doc, db); }
-
-                        ///////////////////
-                        // Child Tree
-                        ///////////////////
-
-                        if (!this.childTreeMap.has(doc)) {
-
-                            const childTree = this.buildTree(treeInfo[key].children, doc, childParams).pipe(
-
-                                shareReplay(1),
-
-                            ) as Observable<TreeNode<any>[]>;
-
-                            this.childTreeMap.set(doc, childTree);
-                        }
-
-                        return {item: doc, children: this.childTreeMap.get(doc)} as TreeNode<any>;
-
-                    });
-
-                    return obs;
-                }),
-
-            );
-        });
-
-        return combineLatest(treeNodes).pipe(
-
-            map(nodes => [].concat(...nodes)),
-
-            // startWith([])
-
-        );
-    }
-
-    reset() {
-
-        this.databaseMap  = new Map();
-        this.childTreeMap = new Map();
-
-        this.queueChange.next(true);
-    }
-
-}
-
-/////////////////////
-// DataSource
-/////////////////////
-
-/** Flat node with expandable and level information */
-export class DynamicFlatNode<T extends DatabaseDatatype> {
-    constructor(
-        public item: PwaDocument<T> | string,
-        public level = 1,
-        public expandable = false,
-    ) {}
 }

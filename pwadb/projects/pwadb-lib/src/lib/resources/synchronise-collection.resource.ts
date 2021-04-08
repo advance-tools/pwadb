@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { NgZone } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, from, Observable, of, throwError } from 'rxjs';
 import { catchError, concatMap, debounceTime, filter, finalize, first, map, shareReplay, switchMap } from 'rxjs/operators';
@@ -16,49 +16,69 @@ interface Extras {
 
 type SynchroniseDocTypeExtras = SynchroniseDocType & Extras;
 
+export interface SyncCollectionServiceCreator {
+    name: string;
+    db$: Observable<RxDatabase<any>>;
+    attachments?: {};
+    options?: {};
+    migrationStrategies?: {};
+    autoMigrate?: boolean;
+}
 
-export class SynchroniseCollectionService {
 
-    collection$: Observable<SynchroniseCollection>;
+@Injectable()
+export class SyncCollectionService {
+
+    // tslint:disable-next-line: variable-name
+    private _collection$: Observable<SynchroniseCollection>;
 
     private retryChange: BehaviorSubject<boolean>;
 
-    constructor(
-        private name: string,
-        private zone: NgZone,
-        private httpClient: HttpClient,
-        private db$: Observable<RxDatabase<any>>,
-        config: {attachments?: {}, options?: {}, migrationStrategies?: {}, autoMigrate?: boolean} = {}
-    ) {
+    config: SyncCollectionServiceCreator = {
+        name: 'no_name_sync_collection',
+        db$: of(),
+        attachments: {},
+        options: {},
+        migrationStrategies: {},
+        autoMigrate: true,
+    };
+
+    constructor(private zone: NgZone, private httpClient: HttpClient, private pwaDatabaseService: PwaDatabaseService<any>) {
 
         this.retryChange = new BehaviorSubject(true);
+    }
+
+    get collection$(): Observable<SynchroniseCollection> {
+
+        if (this._collection$) { return this._collection$; }
 
         const collectionSchema = {};
 
-        const _config = {attachments: {}, options: {}, migrationStrategies: {}, autoMigrate: true, ...config};
-
-        collectionSchema[name] = getSynchroniseCollectionCreator(
-            this.name,
+        collectionSchema[this.config.name] = getSynchroniseCollectionCreator(
+            this.config.name,
             synchroniseCollectionMethods,
             synchroniseDocMethods,
-            _config.attachments,
-            _config.options,
-            _config.migrationStrategies,
-            _config.autoMigrate
+            this.config.attachments,
+            this.config.options,
+            this.config.migrationStrategies,
+            this.config.autoMigrate
         );
 
-        this.collection$ = this.db$.pipe(
+        this._collection$ = this.config.db$.pipe(
 
             // tslint:disable-next-line: max-line-length
             switchMap(db => from(db.addCollections(collectionSchema))),
 
-            map(collections => collections[name]),
+            map(collections => collections[this.config.name]),
 
             shareReplay(1),
 
             first()
         );
+
+        return this._collection$;
     }
+
 
     addSynchroniseDocument(data: SynchroniseDocType): Observable<SynchroniseDocument> {
 
@@ -110,9 +130,9 @@ export class SynchroniseCollectionService {
 
                 Object.keys(databasesSchema).forEach(schema => {
 
-                    const databaseService = new PwaDatabaseService<any>({...JSON.parse(schema), ignoreDuplicate: true});
+                    this.pwaDatabaseService.config = {dbCreator: {...JSON.parse(schema), ignoreDuplicate: true}};
 
-                    databasesMap.push({database: databaseService.db$, collectionInfo: databasesSchema[schema]});
+                    databasesMap.push({database: this.pwaDatabaseService.db$, collectionInfo: databasesSchema[schema]});
                 });
 
                 return databasesMap;

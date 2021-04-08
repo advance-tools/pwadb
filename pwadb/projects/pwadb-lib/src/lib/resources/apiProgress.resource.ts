@@ -11,7 +11,7 @@ export class ApiProgressService {
     isProgressing$: Observable<boolean>;
     private progress: BehaviorSubject<boolean[]>;
 
-    constructor(private _zone: NgZone) {
+    constructor(private zone: NgZone) {
 
         this.progress = new BehaviorSubject([]);
 
@@ -21,7 +21,7 @@ export class ApiProgressService {
 
             distinctUntilChanged(),
 
-            enterZone(_zone)
+            enterZone(zone)
         );
     }
 
