@@ -73,28 +73,19 @@ export class TreeDatabase<T extends Datatype> {
             // create new params associated to this database
             let currentParams = new HttpParams();
 
-            // skip extracting params
-            // if isRecursive == true
-            if (treeInfo[key].isRecursive) {
+            // extract childParams
+            possibleParamKeys.forEach(pk => {
 
-                currentParams = parentParams;
+                const paramName = pk.split(`${key}--`)[1];
 
-            } else {
+                // only set param associated to this database
+                // extra '--' would mean params to nested database
+                if (!paramName.includes('--')) {
 
-                // extract childParams
-                possibleParamKeys.forEach(pk => {
+                    currentParams = currentParams.set(paramName, currentParams.getAll(pk).join(','));
+                }
 
-                    const paramName = pk.split(`${key}--`)[1];
-
-                    // only set param associated to this database
-                    // extra '--' would mean params to nested database
-                    if (!paramName.includes('--')) {
-
-                        currentParams = currentParams.set(paramName, currentParams.getAll(pk).join(','));
-                    }
-
-                });
-            }
+            });
 
             // run callback
             treeInfo[key].onCreationSetup ? treeInfo[key].onCreationSetup(parentDoc, db, currentParams) : db.httpParams = currentParams;
