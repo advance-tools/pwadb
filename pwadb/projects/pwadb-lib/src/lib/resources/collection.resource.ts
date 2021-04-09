@@ -204,6 +204,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     get collection$(): Observable<PwaCollection<T>> {
 
+        console.log('collection api', this.config.name);
+
         if (this._collection$) { return this._collection$; }
 
         const collectionSchema = {};

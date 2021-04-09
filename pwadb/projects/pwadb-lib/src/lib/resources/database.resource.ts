@@ -7,9 +7,11 @@ import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
 import { Injectable } from '@angular/core';
 
+
 export interface PwaDatabaseCreator {
     dbCreator: Partial<RxDatabaseCreator>;
 }
+
 
 @Injectable()
 export class PwaDatabaseService<T> {
@@ -24,6 +26,8 @@ export class PwaDatabaseService<T> {
     constructor() {}
 
     get db$(): Observable<RxDatabase<T>> {
+
+        console.log('pwa database service', this.config.dbCreator.name);
 
         if (this._db$) { return this._db$; }
 
