@@ -27,8 +27,6 @@ export class PwaDatabaseService<T> {
 
     get db$(): Observable<RxDatabase<T>> {
 
-        console.log('pwa database service', this.config.dbCreator.name);
-
         if (this._db$) { return this._db$; }
 
         // add indexeddb adapter
