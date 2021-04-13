@@ -592,13 +592,13 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         if (ids.length > 0) {
 
-            if (httpParams.has('exclude:id')) {
+            if (httpParams.has('exclude:id.in')) {
 
-                httpParams.delete('exclude:id');
+                httpParams.delete('exclude:id.in');
 
             }
 
-            httpParams = httpParams.set('exclude:id', ids.join(',')).set('limit', (limit - ids.length).toString());
+            httpParams = httpParams.set('exclude:id.in', ids.join(',')).set('limit', (limit - ids.length).toString());
 
         }
 
