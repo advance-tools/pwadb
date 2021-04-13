@@ -592,6 +592,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         if (ids.length > 0) {
 
+            console.log('exclude', httpParams);
+
             if (httpParams.has('exclude:id')) {
 
                 httpParams.delete('exclude:id');
