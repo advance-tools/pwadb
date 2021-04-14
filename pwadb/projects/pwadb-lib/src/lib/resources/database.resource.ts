@@ -5,7 +5,6 @@ import idb from 'pouchdb-adapter-idb';
 import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
-import { Injectable } from '@angular/core';
 
 
 export interface PwaDatabaseCreator {
@@ -13,24 +12,16 @@ export interface PwaDatabaseCreator {
 }
 
 
-@Injectable()
 export class PwaDatabaseService<T> {
-
-    config: PwaDatabaseCreator = {
-        dbCreator: {}
-    };
 
     // tslint:disable-next-line: variable-name
     private _db$: Observable<RxDatabase<T>>;
 
-    constructor() {}
+    constructor(private _config: PwaDatabaseCreator) {}
 
     get db$(): Observable<RxDatabase<T>> {
 
         if (this._db$) { return this._db$; }
-
-        console.log('creating database', this.config.dbCreator.name);
-
 
         // add indexeddb adapter
         addRxPlugin(idb);
@@ -50,7 +41,7 @@ export class PwaDatabaseService<T> {
             password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',
             multiInstance: true,
             eventReduce: true,
-            ...this.config.dbCreator
+            ...this._config.dbCreator
         })).pipe(
 
             switchMap((db: any) => from(db.waitForLeadership()).pipe(

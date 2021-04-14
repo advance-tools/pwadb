@@ -5,7 +5,7 @@ import { Observable, of, from, throwError, combineLatest } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
-import { Injectable, NgZone } from '@angular/core';
+import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 import { ApiProgressService } from './apiProgress.resource';
 import { SyncCollectionService } from './synchronise-collection.resource';
@@ -14,6 +14,7 @@ import { SynchroniseDocType } from '../definitions/synchronise-document';
 
 export interface RestAPICreator {
     apiProgress?: ApiProgressService;
+    httpClient?: HttpClient;
 }
 
 
@@ -27,24 +28,22 @@ export interface CollectionAPICreator<Database> {
     options?: {};
     migrationStrategies?: {};
     autoMigrate?: boolean;
+    ngZone: NgZone;
 }
 
 
 export interface PwaCollectionAPICreator<Database> {
-    collectionApiCreator: CollectionAPICreator<Database>;
-    restApiCreator: RestAPICreator;
+    collectionApiCreator: Partial<CollectionAPICreator<Database>>;
+    restApiCreator: Partial<RestAPICreator>;
     cacheTimeInSeconds: number;
 }
 
 
-@Injectable()
 export class RestAPI<T extends Datatype> {
 
-    cache: Map<string, Observable<T> | Observable<ListResponse<T>>> = new Map();
+    private cache: Map<string, Observable<T> | Observable<ListResponse<T>>> = new Map();
 
-    config: RestAPICreator = {};
-
-    constructor(private httpClient: HttpClient) {}
+    constructor(private config: RestAPICreator) {}
 
     ////////////////
     // CRUD
@@ -58,7 +57,7 @@ export class RestAPI<T extends Datatype> {
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.httpClient.get(url, {params})),
+            switchMap(() => this.config.httpClient.get(url, {params})),
 
             finalize(() => {
 
@@ -85,7 +84,7 @@ export class RestAPI<T extends Datatype> {
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.httpClient.post(url, data)),
+            switchMap(() => this.config.httpClient.post(url, data)),
 
             finalize(() => {
 
@@ -111,7 +110,7 @@ export class RestAPI<T extends Datatype> {
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.httpClient.put(url, data)),
+            switchMap(() => this.config.httpClient.put(url, data)),
 
             finalize(() => {
 
@@ -137,7 +136,7 @@ export class RestAPI<T extends Datatype> {
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.httpClient.get(url, {params})),
+            switchMap(() => this.config.httpClient.get(url, {params})),
 
             finalize(() => {
 
@@ -163,7 +162,7 @@ export class RestAPI<T extends Datatype> {
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.httpClient.delete(url)),
+            switchMap(() => this.config.httpClient.delete(url)),
 
             finalize(() => {
 
@@ -183,10 +182,9 @@ export class RestAPI<T extends Datatype> {
 }
 
 
-@Injectable()
 export class CollectionAPI<T extends Datatype, Database> {
 
-    config: CollectionAPICreator<Database> = {
+    private config: CollectionAPICreator<Database> = {
         name: 'no_name_collection_api',
         db$: of(),
         collectionEvictTime$: of(86400),
@@ -195,18 +193,23 @@ export class CollectionAPI<T extends Datatype, Database> {
         options: {},
         migrationStrategies: {},
         autoMigrate: true,
+        ngZone: null
     };
 
     // tslint:disable-next-line: variable-name
     private _collection$: Observable<PwaCollection<T>>;
 
-    constructor(private zone: NgZone) {}
+    constructor(private _config: Partial<CollectionAPICreator<Database>>) {
+
+        this.config = {
+            ...this.config,
+            ...this._config
+        };
+    }
 
     get collection$(): Observable<PwaCollection<T>> {
 
         if (this._collection$) { return this._collection$; }
-
-        console.log('creating collection', this.config.name);
 
         const collectionSchema = {};
 
@@ -335,7 +338,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
-            enterZone<PwaDocument<T>>(this.zone),
+            enterZone<PwaDocument<T>>(this.config.ngZone),
 
         );
 
@@ -358,7 +361,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return this.filterDocs(docs, url, params, validQueryKeys).pipe(
 
-            enterZone<CollectionListResponse<T>>(this.zone),
+            enterZone<CollectionListResponse<T>>(this.config.ngZone),
         );
     }
 
@@ -494,10 +497,9 @@ export class CollectionAPI<T extends Datatype, Database> {
 }
 
 
-@Injectable()
 export class PwaCollectionAPI<T extends Datatype, Database> {
 
-    config: PwaCollectionAPICreator<Database> = {
+    private config: PwaCollectionAPICreator<Database> = {
         restApiCreator: {},
         collectionApiCreator: {
             name: 'no_name_pwa_collection_api',
@@ -512,10 +514,27 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         cacheTimeInSeconds: 120
     };
 
-    constructor(
-        public collectionAPI: CollectionAPI<T, Database>,
-        public restAPI: RestAPI<T>,
-    ) {}
+    collectionAPI: CollectionAPI<T, Database>;
+    restAPI: RestAPI<T>;
+
+    constructor(private _config: Partial<PwaCollectionAPICreator<Database>>, ) {
+
+        this.config = {
+            ...this.config,
+            ...this._config,
+            restApiCreator: {
+                ...this.config.restApiCreator,
+                ...this._config.restApiCreator
+            },
+            collectionApiCreator: {
+                ...this.config.collectionApiCreator,
+                ...this._config.collectionApiCreator
+            }
+        };
+
+        this.restAPI        = new RestAPI(this.config.restApiCreator);
+        this.collectionAPI  = new CollectionAPI(this.config.collectionApiCreator);
+    }
 
     //////////////
     // Retrieve

@@ -5,24 +5,24 @@ import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
 import { first, map, shareReplay, startWith, switchMap } from 'rxjs/operators';
-import { Injectable } from '@angular/core';
 
 
 export interface SyncDatabaseServiceCreator {
     dbCreator: Partial<RxDatabaseCreator>;
 }
 
-@Injectable()
-export class SyncDatabaseService {
 
-    config: SyncDatabaseServiceCreator = {
-        dbCreator: {}
-    };
+export class SyncDatabaseService {
 
     // tslint:disable-next-line: variable-name
     private _db$: Observable<RxDatabase<any>>;
 
-    constructor() {}
+    constructor(private _config: SyncDatabaseServiceCreator) {
+
+        this._config = {
+            dbCreator: {}
+        };
+    }
 
     get db$(): Observable<RxDatabase<any>> {
 
@@ -46,7 +46,7 @@ export class SyncDatabaseService {
             password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',
             multiInstance: true,
             eventReduce: true,
-            ...this.config.dbCreator
+            ...this._config.dbCreator
         })).pipe(
 
             switchMap((db: any) => from(db.waitForLeadership()).pipe(

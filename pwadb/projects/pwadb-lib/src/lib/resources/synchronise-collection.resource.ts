@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, NgZone } from '@angular/core';
+import { NgZone } from '@angular/core';
 import { RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, from, Observable, of, throwError } from 'rxjs';
-import { catchError, concatMap, debounceTime, filter, finalize, first, map, shareReplay, switchMap } from 'rxjs/operators';
+import { catchError, concatMap, filter, finalize, first, map, shareReplay, switchMap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
@@ -16,6 +16,7 @@ interface Extras {
 
 type SynchroniseDocTypeExtras = SynchroniseDocType & Extras;
 
+
 export interface SyncCollectionServiceCreator {
     name: string;
     db$: Observable<RxDatabase<any>>;
@@ -23,10 +24,11 @@ export interface SyncCollectionServiceCreator {
     options?: {};
     migrationStrategies?: {};
     autoMigrate?: boolean;
+    ngZone: NgZone;
+    httpClient: HttpClient;
 }
 
 
-@Injectable()
 export class SyncCollectionService {
 
     // tslint:disable-next-line: variable-name
@@ -34,16 +36,23 @@ export class SyncCollectionService {
 
     private retryChange: BehaviorSubject<boolean>;
 
-    config: SyncCollectionServiceCreator = {
+    private config: SyncCollectionServiceCreator = {
         name: 'no_name_sync_collection',
         db$: of(),
         attachments: {},
         options: {},
         migrationStrategies: {},
         autoMigrate: true,
+        ngZone: null,
+        httpClient: null,
     };
 
-    constructor(private zone: NgZone, private httpClient: HttpClient, private pwaDatabaseService: PwaDatabaseService<any>) {
+    constructor(private _config: Partial<SyncCollectionServiceCreator>) {
+
+        this.config = {
+            ...this.config,
+            ...this._config
+        };
 
         this.retryChange = new BehaviorSubject(true);
     }
@@ -108,8 +117,6 @@ export class SyncCollectionService {
 
             switchMap(col => col.find().$),
 
-            debounceTime(100),
-
             map(docs => docs.map(d => d.toJSON())),
 
             map(docTypes => {
@@ -130,9 +137,9 @@ export class SyncCollectionService {
 
                 Object.keys(databasesSchema).forEach(schema => {
 
-                    this.pwaDatabaseService.config = {dbCreator: {...JSON.parse(schema), ignoreDuplicate: true}};
+                    const pwaDatabaseService = new PwaDatabaseService<any>({dbCreator: {...JSON.parse(schema), ignoreDuplicate: true}});
 
-                    databasesMap.push({database: this.pwaDatabaseService.db$, collectionInfo: databasesSchema[schema]});
+                    databasesMap.push({database: pwaDatabaseService.db$, collectionInfo: databasesSchema[schema]});
                 });
 
                 return databasesMap;
@@ -213,7 +220,7 @@ export class SyncCollectionService {
             // tslint:disable-next-line: max-line-length
             map((sortedDocs: PwaDocument<any>[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.time - b.time : b.time - a.time)),
 
-            enterZone<PwaDocument<any>[]>(this.zone),
+            enterZone<PwaDocument<any>[]>(this.config.ngZone),
         );
     }
 
@@ -237,7 +244,7 @@ export class SyncCollectionService {
 
                     url.splice(url.length - 1, 1);
 
-                    return this.httpClient.post(url.join('/'), doc.data).pipe(
+                    return this.config.httpClient.post(url.join('/'), doc.data).pipe(
 
                         switchMap(res => doc.atomicUpdate(oldData => ({
                             ...oldData,
@@ -265,7 +272,7 @@ export class SyncCollectionService {
 
                 } else if (doc.method === 'PUT') {
 
-                    return this.httpClient.put(doc.tenantUrl.split('____')[1], doc.data).pipe(
+                    return this.config.httpClient.put(doc.tenantUrl.split('____')[1], doc.data).pipe(
 
                         switchMap(res => doc.atomicUpdate(oldData => ({
                             ...oldData,
@@ -293,7 +300,7 @@ export class SyncCollectionService {
 
                 } else if (doc.method === 'DELETE') {
 
-                    return this.httpClient.delete(doc.tenantUrl.split('____')[1]).pipe(
+                    return this.config.httpClient.delete(doc.tenantUrl.split('____')[1]).pipe(
 
                         switchMap(() => doc.remove()),
 
