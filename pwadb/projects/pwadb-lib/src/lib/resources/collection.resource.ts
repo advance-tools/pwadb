@@ -206,6 +206,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         if (this._collection$) { return this._collection$; }
 
+        console.log('creating collection', this.config.name);
+
         const collectionSchema = {};
 
         collectionSchema[this.config.name] = getCollectionCreator(

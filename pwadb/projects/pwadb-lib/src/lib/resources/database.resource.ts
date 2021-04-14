@@ -29,6 +29,9 @@ export class PwaDatabaseService<T> {
 
         if (this._db$) { return this._db$; }
 
+        console.log('creating database', this.config.dbCreator.name);
+
+
         // add indexeddb adapter
         addRxPlugin(idb);
 
