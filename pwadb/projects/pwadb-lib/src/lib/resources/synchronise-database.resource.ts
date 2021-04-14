@@ -17,12 +17,7 @@ export class SyncDatabaseService {
     // tslint:disable-next-line: variable-name
     private _db$: Observable<RxDatabase<any>>;
 
-    constructor(private _config: SyncDatabaseServiceCreator) {
-
-        this._config = {
-            dbCreator: {}
-        };
-    }
+    constructor(private _config: SyncDatabaseServiceCreator) {}
 
     get db$(): Observable<RxDatabase<any>> {
 
@@ -41,7 +36,7 @@ export class SyncDatabaseService {
         addRxPlugin(RxDBValidatePlugin);
 
         this._db$ = from(createRxDatabase({
-            name: 'synchronise-pwadb',
+            name: 'synchronise/pwadb',
             adapter: 'idb',
             password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',
             multiInstance: true,
