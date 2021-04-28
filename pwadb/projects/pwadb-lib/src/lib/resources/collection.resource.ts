@@ -225,8 +225,9 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         this._collection$ = this.config.db$.pipe(
 
-            // tslint:disable-next-line: max-line-length
             switchMap(db => {
+
+                if (this.config.name in db) { return of(db[this.config.name]); }
 
                 return combineLatest([
                     from(db.addCollections(collectionSchema)),
