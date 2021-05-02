@@ -57,7 +57,7 @@ export class RestAPI<T extends Datatype> {
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.config.httpClient.get(url, {params})),
+            switchMap(() => this.config.httpClient.get(cacheKey)),
 
             finalize(() => {
 
@@ -132,13 +132,11 @@ export class RestAPI<T extends Datatype> {
 
         const cacheKey = url + params?.toString();
 
-        console.log('list view', params?.toString());
-
         const req = of(true).pipe(
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.config.httpClient.get(url, {params})),
+            switchMap(() => this.config.httpClient.get(cacheKey)),
 
             finalize(() => {
 
