@@ -10,7 +10,7 @@ import { enterZone } from './operators.resource';
 // Interfaces
 /////////////////////
 
-export interface TableDatabase<T extends Datatype> {
+export interface TableDatabase<T extends TableDataType> {
 
     fetch: (params?: HttpParams) => Observable<PwaListResponse<T>>;
 
@@ -26,11 +26,15 @@ export interface IBaseDatabase {
     loadMore: () => void;
 }
 
+export interface TableDataType extends Datatype {
+    created_at: string;
+}
+
 ///////////////////
 // Tables
 ///////////////////
 
-export class BaseDatabase<T extends Datatype> implements IBaseDatabase {
+export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
 
     queueChange: BehaviorSubject<Observable<PwaListResponse<T>>[]>;
     data: PwaDocument<T>[];
@@ -75,7 +79,7 @@ export class BaseDatabase<T extends Datatype> implements IBaseDatabase {
         this._httpParams = this.httpParams.set('offset', '0');
         this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
-        // if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at,id'); }
+        if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at'); }
     }
 
     loadMore() {
@@ -99,13 +103,13 @@ export class BaseDatabase<T extends Datatype> implements IBaseDatabase {
         this._httpParams = this.httpParams.set('offset', this.offset.toString());
         this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
-        // if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at,id'); }
+        if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at'); }
 
     }
 
 }
 
-export class Database<T extends Datatype> extends BaseDatabase<T> {
+export class Database<T extends TableDataType> extends BaseDatabase<T> {
 
     dataChange: Observable<PwaDocument<T>[]>;
 
@@ -169,7 +173,7 @@ export class Database<T extends Datatype> extends BaseDatabase<T> {
 }
 
 
-export class ReactiveDatabase<T extends Datatype> extends BaseDatabase<T> {
+export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
 
     dataChange: Observable<PwaDocument<T>[]>;
 

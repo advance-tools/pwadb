@@ -1,23 +1,23 @@
 import { HttpParams } from '@angular/common/http';
 import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
 import { map, shareReplay, switchMap } from 'rxjs/operators';
-import { Datatype, PwaDocument } from '../definitions/document';
-import { Database, ReactiveDatabase } from './table.resource';
+import { PwaDocument } from '../definitions/document';
+import { Database, ReactiveDatabase, TableDataType } from './table.resource';
 
 ///////////////////
 // Interfaces
 ///////////////////
 
-export type TreeNode<T extends Datatype> = {item: PwaDocument<T>, children: Observable<TreeNode<any>[]>};
+export type TreeNode<T extends TableDataType> = {item: PwaDocument<T>, children: Observable<TreeNode<any>[]>};
 
-export interface DatabaseInformation<T extends Datatype> {
+export interface DatabaseInformation<T extends TableDataType> {
     getDatabase: (limit?: number) => Database<T> | ReactiveDatabase<T>;
     onCreationSetup?: (parentDoc: PwaDocument<T> | null, db: Database<T> | ReactiveDatabase<T>, params: HttpParams) => void;
     isRecursive: boolean;
     children: TreeInformation<T>;
 }
 
-export interface TreeInformation<T extends Datatype> {
+export interface TreeInformation<T extends TableDataType> {
     [key: string]: DatabaseInformation<T>;
 }
 
@@ -27,7 +27,7 @@ export interface TreeInformation<T extends Datatype> {
 ///////////////////
 
 
-export class TreeDatabase<T extends Datatype> {
+export class TreeDatabase<T extends TableDataType> {
 
     childTreeMap: Map<PwaDocument<any>, Observable<TreeNode<any>[]>>;
     databaseMap: Map<PwaDocument<any>, Database<any> | ReactiveDatabase<any>>;
@@ -158,7 +158,7 @@ export class TreeDatabase<T extends Datatype> {
 /////////////////////
 
 /** Flat node with expandable and level information */
-export class DynamicFlatNode<T extends Datatype> {
+export class DynamicFlatNode<T extends TableDataType> {
     constructor(
         public item: PwaDocument<T> | string,
         public level = 1,

@@ -307,7 +307,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return docs.pipe(
 
-            map(v => v.sort((a, b) => b.time - a.time)),
+            // map(v => v.sort((a, b) => b.time - a.time)),
 
             map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
 

@@ -281,7 +281,7 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
     return docs;
 }
 
-export function filter(field: string, inputValue: string, docs: PwaDocument<any>[], lookup?: Lookup): PwaDocument<any>[] {
+export function filter(field: string, inputValue: string, docs: PwaDocument<any>[], lookup?: Lookup, isExclude = false): PwaDocument<any>[] {
 
     // in lookup would same as eq with OR values
     let f = (v: PwaDocument<any>) => inputValue.split(',').reduce((acc, cur) => acc || eq(v, field, cur), false);
@@ -310,14 +310,17 @@ export function filter(field: string, inputValue: string, docs: PwaDocument<any>
 
     if (lookup === 'isnull') { f = v => inputValue.split(',').reduce((acc, cur) => acc || isnull(v, field, cur), false); }
 
-    return docs.filter(f);
+    return docs.filter((v) => {
+
+        const o = f(v);
+
+        return isExclude ? !o : o;
+    });
 }
 
 export function exclude(field: string, inputValue: string, docs: PwaDocument<any>[], lookup?: Lookup): PwaDocument<any>[] {
 
-    const filteredDocs = new Set(filter(field, inputValue, docs, lookup));
-
-    return docs.filter(v => !filteredDocs.has(v));
+    return filter(field, inputValue, docs, lookup, true);
 }
 
 export function distinct(fields: string[], docs: PwaDocument<any>[]): PwaDocument<any>[] {
