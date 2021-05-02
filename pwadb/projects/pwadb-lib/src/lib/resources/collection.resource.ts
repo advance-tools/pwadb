@@ -51,7 +51,7 @@ export class RestAPI<T extends Datatype> {
 
     get(url: string, params?: HttpParams): Observable<T> {
 
-        const cacheKey = `${url}${params ? '?' : ''}${params?.toString() || ''}`;
+        const cacheKey = `${url}${params ? '?' : ''}${params?.keys().reduce((acc, k) => acc + '&' + params.getAll(k).join(','), '') || ''}`;
 
         const req = of(true).pipe(
 
@@ -130,7 +130,7 @@ export class RestAPI<T extends Datatype> {
 
     list(url: string, params?: HttpParams): Observable<ListResponse<T>> {
 
-        const cacheKey = `${url}${params ? '?' : ''}${params?.toString() || ''}`;
+        const cacheKey = `${url}${params ? '?' : ''}${params?.keys().reduce((acc, k) => acc + '&' + params.getAll(k).join(','), '') || ''}`;
 
         const req = of(true).pipe(
 
@@ -621,7 +621,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             }
 
-            ids.forEach(id => params = params.append('exclude:id.in', id));
+            params = params.append('exclude:id.in', ids.join(','));
 
             params = params.set('limit', (limit - ids.length).toString());
 
