@@ -27,7 +27,7 @@ export interface IBaseDatabase {
 }
 
 export interface TableDataType extends Datatype {
-    created_at: string;
+    created_at?: string;
 }
 
 ///////////////////
