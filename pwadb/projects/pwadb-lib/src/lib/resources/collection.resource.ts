@@ -199,6 +199,8 @@ export class CollectionAPI<T extends Datatype, Database> {
     // tslint:disable-next-line: variable-name
     private _collection$: Observable<PwaCollection<T>>;
 
+    private cache = new Map();
+
     constructor(private _config: Partial<CollectionAPICreator<Database>>) {
 
         this.config = {
@@ -335,12 +337,19 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     getReactive(tenant: string, url: string): Observable<PwaDocument<T>> {
 
-        return this.collection$.pipe(
+        if (!this.cache.has(tenant + url)) {
 
-            switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
+            const doc = this.collection$.pipe(
+
+                switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
+            );
+
+            this.cache.set(tenant + url, doc);
+        }
+
+        return this.cache.get(tenant + url).pipe(
 
             enterZone<PwaDocument<T>>(this.config.ngZone),
-
         );
 
     }
@@ -355,12 +364,17 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
-        const docs = this.collection$.pipe(
+        if (!this.cache.has(tenant + url)) {
 
-            switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
-        );
+            const docs = this.collection$.pipe(
 
-        return this.filterDocs(docs, url, params, validQueryKeys).pipe(
+                switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
+            );
+
+            this.cache.set(tenant + url, docs);
+        }
+
+        return this.filterDocs(this.cache.get(tenant + url), url, params, validQueryKeys).pipe(
 
             enterZone<CollectionListResponse<T>>(this.config.ngZone),
         );
