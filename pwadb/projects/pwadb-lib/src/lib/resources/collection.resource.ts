@@ -599,7 +599,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         ////////////////////////////////////////////////////////////////
         // Exclude recents or locally unsynced data in the api results
         ////////////////////////////////////////////////////////////////
-        let httpParams = params || new HttpParams();
 
         const ids = res.results
             // tslint:disable-next-line: max-line-length
@@ -612,19 +611,19 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             return of({next: res.next, previous: res.previous, results: /*res.results.map(r => r.toJSON().data)*/ []});
         }
 
-        if (ids.length > 0) {
+        if (ids.length > 0 && params) {
 
-            if (httpParams.has('exclude:id.in')) {
+            if (params.has('exclude:id.in')) {
 
-                httpParams.delete('exclude:id.in');
+                params.delete('exclude:id.in');
 
             }
 
-            httpParams = httpParams.appendAll({'exclude:id.in': ids}).set('limit', (limit - ids.length).toString());
+            params = params.appendAll({'exclude:id.in': ids}).set('limit', (limit - ids.length).toString());
 
         }
 
-        return this.restAPI.list(url, httpParams).pipe(
+        return this.restAPI.list(url, params).pipe(
 
             catchError(() => of({next: null, previous: null, results: []} as ListResponse<T>)),
 
