@@ -351,11 +351,11 @@ export function orderBy(fields: string[], docs: PwaDocument<any>[]): PwaDocument
         // tslint:disable-next-line: prefer-for-of
         for (let i = 0; i < fields.length; i++) {
 
-            if (!(fields[i] in a?.data) || !(fields[i] in b?.data)) { continue; }
-
             const order = fields[i].indexOf('-') === 0 ? 'desc' : 'asc';
 
             const parseFieldName = order === 'desc' ? fields[i].split('-')[1] : fields[i];
+
+            if (!(parseFieldName in a?.data) || !(parseFieldName in b?.data)) { continue; }
 
             const isDate = parseDate(a.data[parseFieldName], b.data[parseFieldName]);
 
