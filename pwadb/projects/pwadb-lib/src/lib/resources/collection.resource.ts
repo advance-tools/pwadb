@@ -51,7 +51,7 @@ export class RestAPI<T extends Datatype> {
 
     get(url: string, params?: HttpParams): Observable<T> {
 
-        const cacheKey = url + params?.toString();
+        const cacheKey = `${url}${params ? '?' : ''}${params?.toString()}`;
 
         const req = of(true).pipe(
 
@@ -130,7 +130,7 @@ export class RestAPI<T extends Datatype> {
 
     list(url: string, params?: HttpParams): Observable<ListResponse<T>> {
 
-        const cacheKey = url + params?.toString();
+        const cacheKey = `${url}${params ? '?' : ''}${params?.toString()}`;
 
         const req = of(true).pipe(
 
