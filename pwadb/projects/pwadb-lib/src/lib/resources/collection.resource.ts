@@ -611,7 +611,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             return of({next: res.next, previous: res.previous, results: /*res.results.map(r => r.toJSON().data)*/ []});
         }
 
-        if (ids.length > 0 && params) {
+        params = params || new HttpParams();
+
+        if (ids.length > 0) {
 
             if (params.has('exclude:id.in')) {
 
@@ -619,7 +621,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             }
 
-            params = params.appendAll({'exclude:id.in': ids}).set('limit', (limit - ids.length).toString());
+            ids.forEach(id => params = params.append('exclude:id.in', id));
+
+            params = params.set('limit', (limit - ids.length).toString());
 
         }
 
