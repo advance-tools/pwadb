@@ -620,7 +620,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             }
 
-            httpParams = httpParams.set('exclude:id.in', ids.join(',')).set('limit', (limit - ids.length).toString());
+            httpParams = httpParams.appendAll({'exclude:id.in': ids}).set('limit', (limit - ids.length).toString());
 
         }
 
