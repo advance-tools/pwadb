@@ -345,8 +345,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
-                shareReplay(1),
-
                 finalize(() => this.cache.delete(cacheKey))
             );
 
@@ -377,8 +375,6 @@ export class CollectionAPI<T extends Datatype, Database> {
             const docs = this.collection$.pipe(
 
                 switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
-
-                shareReplay(1),
 
                 finalize(() => this.cache.delete(cacheKey))
             );
