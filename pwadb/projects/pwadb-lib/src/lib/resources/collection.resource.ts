@@ -687,7 +687,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
                         return from(col.bulkInsert(atomicWrites)).pipe(
 
-                            // tap(() => this.collectionAPI.triggerChange()),
+                            tap(() => this.collectionAPI.triggerChange()),
 
                             map(() => networkRes)
                         );
