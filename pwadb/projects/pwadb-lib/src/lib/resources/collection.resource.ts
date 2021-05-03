@@ -337,17 +337,23 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     getReactive(tenant: string, url: string): Observable<PwaDocument<T>> {
 
-        if (!this.cache.has(tenant + url)) {
+        const cacheKey = tenant + url;
+
+        if (!this.cache.has(cacheKey)) {
 
             const doc = this.collection$.pipe(
 
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
+
+                shareReplay(1),
+
+                finalize(() => this.cache.delete(cacheKey))
             );
 
-            this.cache.set(tenant + url, doc);
+            this.cache.set(cacheKey, doc);
         }
 
-        return this.cache.get(tenant + url).pipe(
+        return this.cache.get(cacheKey).pipe(
 
             enterZone<PwaDocument<T>>(this.config.ngZone),
         );
@@ -364,17 +370,23 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
 
-        if (!this.cache.has(tenant + url)) {
+        const cacheKey = tenant + url;
+
+        if (!this.cache.has(cacheKey)) {
 
             const docs = this.collection$.pipe(
 
                 switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
+
+                shareReplay(1),
+
+                finalize(() => this.cache.delete(cacheKey))
             );
 
-            this.cache.set(tenant + url, docs);
+            this.cache.set(cacheKey, docs);
         }
 
-        return this.filterDocs(this.cache.get(tenant + url), url, params, validQueryKeys).pipe(
+        return this.filterDocs(this.cache.get(cacheKey), url, params, validQueryKeys).pipe(
 
             enterZone<CollectionListResponse<T>>(this.config.ngZone),
         );
