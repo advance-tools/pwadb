@@ -355,7 +355,7 @@ export function orderBy(fields: string[], docs: PwaDocument<any>[]): PwaDocument
 
             const parseFieldName = order === 'desc' ? fields[i].split('-')[1] : fields[i];
 
-            if (!(parseFieldName in a?.data) || !(parseFieldName in b?.data)) { continue; }
+            if (!(parseFieldName in a?.data) || !(parseFieldName in b?.data)) { console.log(parseFieldName, a?.data, b?.data); continue; }
 
             const isDate = parseDate(a.data[parseFieldName], b.data[parseFieldName]);
 

@@ -1,7 +1,7 @@
 import { Datatype, getSchema, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
 import { switchMap, map, catchError, first, shareReplay, tap, finalize } from 'rxjs/operators';
-import { Observable, of, from, throwError, combineLatest } from 'rxjs';
+import { Observable, of, from, throwError, combineLatest, BehaviorSubject } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxDatabase } from 'rxdb';
@@ -201,6 +201,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     private cache = new Map();
 
+    private trigger = new BehaviorSubject(false);
+
     constructor(private _config: Partial<CollectionAPICreator<Database>>) {
 
         this.config = {
@@ -331,6 +333,11 @@ export class CollectionAPI<T extends Datatype, Database> {
         );
     }
 
+    triggerChange() {
+
+        this.trigger.next(!this.trigger.value);
+    }
+
     ////////////////
     // CRUD
     ////////////////
@@ -342,6 +349,8 @@ export class CollectionAPI<T extends Datatype, Database> {
         if (!this.cache.has(cacheKey)) {
 
             const doc = this.collection$.pipe(
+
+                switchMap(col => this.trigger.asObservable().pipe(map(() => col))),
 
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
@@ -373,6 +382,8 @@ export class CollectionAPI<T extends Datatype, Database> {
         if (!this.cache.has(cacheKey)) {
 
             const docs = this.collection$.pipe(
+
+                switchMap(col => this.trigger.asObservable().pipe(map(() => col))),
 
                 switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
 
@@ -671,6 +682,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                     if (atomicWrites.length > 0) {
 
                         return from(col.bulkInsert(atomicWrites)).pipe(
+
+                            tap(() => this.collectionAPI.triggerChange()),
 
                             map(() => networkRes)
                         );
