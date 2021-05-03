@@ -658,7 +658,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 switchMap(col => {
 
                     // map network data to doctype
-                    const atomicWrite = networkRes.results
+                    const atomicWrites = networkRes.results
                         .map(data => ({
                             tenantUrl: indexedbUrl(data, this.collectionAPI.makeTenantUrl(tenant, url)),
                             matchUrl: indexedbUrl(data, this.collectionAPI.makeTenantUrl(tenant, url)),
@@ -666,12 +666,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                             method: 'GET',
                             error: null,
                             time: new Date().getTime(),
-                        }))
-                        .map((d: PwaDocType<T>) => from(col.atomicUpsert(d)));
+                        })) as PwaDocType<T>[];
 
-                    if (atomicWrite.length > 0) {
+                    if (atomicWrites.length > 0) {
 
-                        return combineLatest(atomicWrite).pipe(
+                        return from(col.bulkInsert(atomicWrites)).pipe(
 
                             map(() => networkRes)
                         );
