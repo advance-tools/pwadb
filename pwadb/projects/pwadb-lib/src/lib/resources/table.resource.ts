@@ -206,8 +206,6 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
 
         return this.apiService.fetchReactive(httpParams).pipe(
 
-            tap(() => console.log('get view', httpParams.toString())),
-
             shareReplay(1)
         );
     }

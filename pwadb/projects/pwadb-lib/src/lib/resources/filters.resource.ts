@@ -228,7 +228,7 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
 
             if (validQueryKeys.indexOf(k) > -1) {
 
-                const query = getQuery(k, params.getAll(k).join(','));
+                const query = getQuery(k, params.get(k));
 
                 if (query.queryType === 'filter') { docs = filter(query.fields[0], query.inputValue, docs, query.lookup); }
             }
@@ -242,7 +242,7 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
 
             if (validQueryKeys.indexOf(k) > -1) {
 
-                const query = getQuery(k, params.getAll(k).join(','));
+                const query = getQuery(k, params.get(k));
 
                 if (query.queryType === 'exclude') { docs = exclude(query.fields[0], query.inputValue, docs, query.lookup); }
             }
@@ -256,7 +256,7 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
 
             if (validQueryKeys.indexOf(k) > -1) {
 
-                const query = getQuery(k, params.getAll(k).join(','));
+                const query = getQuery(k, params.get(k));
 
                 if (query.queryType === 'ordering') { docs = orderBy(query.fields, docs); }
             }
@@ -270,7 +270,7 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
 
             if (validQueryKeys.indexOf(k) > -1) {
 
-                const query = getQuery(k, params.getAll(k).join(','));
+                const query = getQuery(k, params.get(k));
 
                 if (query.queryType === 'distinct') { docs = distinct(query.fields, docs); }
             }
@@ -355,7 +355,7 @@ export function orderBy(fields: string[], docs: PwaDocument<any>[]): PwaDocument
 
             const parseFieldName = order === 'desc' ? fields[i].split('-')[1] : fields[i];
 
-            if (!(parseFieldName in a?.data) || !(parseFieldName in b?.data)) { console.log(parseFieldName, a?.data, b?.data); continue; }
+            if (!(parseFieldName in a?.data) || !(parseFieldName in b?.data)) { console.log('ordering', parseFieldName); continue; }
 
             const isDate = parseDate(a.data[parseFieldName], b.data[parseFieldName]);
 
