@@ -1,6 +1,6 @@
 import { Datatype, getSchema, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, catchError, first, shareReplay, tap, finalize } from 'rxjs/operators';
+import { switchMap, map, catchError, first, shareReplay, tap, finalize, startWith } from 'rxjs/operators';
 import { Observable, of, from, throwError, combineLatest, BehaviorSubject } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -321,24 +321,32 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             map(allDocs => {
 
-                const frontendCursor = params?.get('frontendCursor') || null;
+                // const frontendCursor = params?.get('frontendCursor') || null;
 
-                const currentIndex = frontendCursor ? allDocs.findIndex(v => v.data.id === frontendCursor) : 0;
+                // const currentIndex = frontendCursor ? allDocs.findIndex(v => v.data.id === frontendCursor) : 0;
+
+                // // tslint:disable-next-line: radix
+                // const limit = parseInt(params?.get('limit') || '100');
+
+                // const nextIndex = allDocs.length > currentIndex + limit ? currentIndex + limit : null;
+
+                // const previousIndex = currentIndex - limit > 0 ? currentIndex - limit : 0;
+
+                // const next = nextIndex !== null && allDocs.length - 1 > nextIndex ? `${url}?${params.set('frontendCursor', allDocs[nextIndex].data.id).toString()}` : null;
+
+                // const previous = allDocs.length - 1 > previousIndex ? `${url}?${params.set('frontendCursor', allDocs[previousIndex].data.id).toString()}` : null;
 
                 // tslint:disable-next-line: radix
-                const limit = parseInt(params?.get('limit') || '100');
+                const start = parseInt(params?.get('offset') || '0');
 
-                const nextIndex = allDocs.length > currentIndex + limit ? currentIndex + limit : null;
+                // tslint:disable-next-line: radix
+                const end = start + parseInt(params?.get('limit') || '100');
 
-                const previousIndex = currentIndex - limit > 0 ? currentIndex - limit : 0;
+                const next = allDocs.length - end > 0 ? `${url}?${params.set('offset', end.toString()).toString()}` : null;
 
-                const next = nextIndex !== null && allDocs.length - 1 > nextIndex ? `${url}?${params.set('frontendCursor', allDocs[nextIndex].data.id).toString()}` : null;
+                const previous = start > 0 ? `${url}?${params.set('offset', start.toString()).toString()}` : null;
 
-                const previous = allDocs.length - 1 > previousIndex ? `${url}?${params.set('frontendCursor', allDocs[previousIndex].data.id).toString()}` : null;
-
-                console.log('previousIndex', previousIndex, 'currentIndex', currentIndex, 'nextIndex', nextIndex, next, previous);
-
-                return {next, previous, results: allDocs.slice(currentIndex, nextIndex), count: allDocs.length};
+                return {next, previous, results: allDocs.slice(start, end), count: allDocs.length};
             }),
 
         );
@@ -609,20 +617,39 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    getReactive(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
+    getReactive(tenant: string, url: string, params?: HttpParams, allowNetworkDelay=false): Observable<PwaDocument<T>> {
 
-        return this.collectionAPI.get(tenant, url).pipe(
+        let apiFetch = this.collectionAPI.get(tenant, url).pipe(
 
             switchMap(doc => this.downloadRetrieve(doc, tenant, url, params)),
 
-            switchMap(() =>  this.collectionAPI.getReactive(tenant, url)),
-
         );
+
+        if (allowNetworkDelay) {
+
+            return apiFetch.pipe(
+
+                switchMap(() =>  this.collectionAPI.getReactive(tenant, url)),
+            );
+
+        } else {
+
+            apiFetch = apiFetch.pipe(
+
+                // tslint:disable-next-line: deprecation
+                startWith(null)
+            );
+
+            return combineLatest([apiFetch, this.collectionAPI.getReactive(tenant, url)]).pipe(
+
+                map(([_, res]) => res)
+            );
+        }
     }
 
     get(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
-        return this.getReactive(tenant, url, params).pipe(
+        return this.getReactive(tenant, url, params, true).pipe(
 
             first()
         );
@@ -771,10 +798,15 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                         });
                     }
 
-                    const next = nextHttpParams.keys().length ? `${url}?${nextHttpParams.toString()}` : null;
+                    const nextQueryParamUrl = nextHttpParams.toString();
+
+                    const next = nextQueryParamUrl ? `${url}?${nextQueryParamUrl}` : null;
+
+
+                    const previousQueryParamUrl = previousHttpParams.toString();
 
                     // tslint:disable-next-line: max-line-length
-                    const previous = previousHttpParams.keys().length ? `${url}?${previousHttpParams.toString()}` : null;
+                    const previous = previousQueryParamUrl ? `${url}?${previousQueryParamUrl}` : null;
 
                     return {
                         next,
