@@ -771,10 +771,10 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                         });
                     }
 
-                    const next = decodeURIComponent((networkRes?.next.split('?')[0] || res.next.split('?')[0]) + nextHttpParams.toString());
+                    const next = decodeURIComponent(`${url}?${nextHttpParams.toString()}`);
 
                     // tslint:disable-next-line: max-line-length
-                    const previous = decodeURIComponent(((networkRes?.previous.split('?')[0] || res.previous.split('?')[0])) + previousHttpParams.toString());
+                    const previous = decodeURIComponent(`${url}?${previousHttpParams.toString()}`);
 
                     return {
                         next,
