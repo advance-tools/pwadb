@@ -725,11 +725,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                     let nextHttpParams = new HttpParams();
                     let previousHttpParams = new HttpParams();
 
-                    const splitNetworkNext  = networkRes?.next.split('?') || [];
-                    const splitResNext      = res.next.split('?') || [];
+                    const splitNetworkNext  = networkRes?.next?.split('?') || [];
+                    const splitResNext      = res?.next?.split('?') || [];
 
-                    const splitNetworkPrevious  = networkRes?.previous.split('?') || [];
-                    const splitResPrevious      = res.previous.split('?') || [];
+                    const splitNetworkPrevious  = networkRes?.previous?.split('?') || [];
+                    const splitResPrevious      = res?.previous?.split('?') || [];
 
                     if (splitNetworkNext.length > 1) {
 
