@@ -771,10 +771,10 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                         });
                     }
 
-                    const next = `${url}?${nextHttpParams.toString()}`;
+                    const next = nextHttpParams.keys().length ? `${url}?${nextHttpParams.toString()}` : null;
 
                     // tslint:disable-next-line: max-line-length
-                    const previous = `${url}?${previousHttpParams.toString()}`;
+                    const previous = previousHttpParams.keys().length ? `${url}?${previousHttpParams.toString()}` : null;
 
                     return {
                         next,
