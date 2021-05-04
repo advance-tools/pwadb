@@ -336,7 +336,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 const previous = allDocs.length - 1 > previousIndex ? `${url}?${params.set('frontendCursor', allDocs[previousIndex].data.id).toString()}` : null;
 
-                console.log('previousIndex', previousIndex, 'currentIndex', currentIndex, 'nextIndex', nextIndex);
+                console.log('previousIndex', previousIndex, 'currentIndex', currentIndex, 'nextIndex', nextIndex, next, previous);
 
                 return {next, previous, results: allDocs.slice(currentIndex, nextIndex), count: allDocs.length};
             }),
