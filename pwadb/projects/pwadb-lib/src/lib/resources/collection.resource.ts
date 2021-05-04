@@ -321,21 +321,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             map(allDocs => {
 
-                // const frontendCursor = params?.get('frontendCursor') || null;
-
-                // const currentIndex = frontendCursor ? allDocs.findIndex(v => v.data.id === frontendCursor) : 0;
-
-                // // tslint:disable-next-line: radix
-                // const limit = parseInt(params?.get('limit') || '100');
-
-                // const nextIndex = allDocs.length > currentIndex + limit ? currentIndex + limit : null;
-
-                // const previousIndex = currentIndex - limit > 0 ? currentIndex - limit : 0;
-
-                // const next = nextIndex !== null && allDocs.length - 1 > nextIndex ? `${url}?${params.set('frontendCursor', allDocs[nextIndex].data.id).toString()}` : null;
-
-                // const previous = allDocs.length - 1 > previousIndex ? `${url}?${params.set('frontendCursor', allDocs[previousIndex].data.id).toString()}` : null;
-
                 // tslint:disable-next-line: radix
                 const start = parseInt(params?.get('offset') || '0');
 
@@ -619,32 +604,13 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     getReactive(tenant: string, url: string, params?: HttpParams, allowNetworkDelay=false): Observable<PwaDocument<T>> {
 
-        let apiFetch = this.collectionAPI.get(tenant, url).pipe(
+        return this.collectionAPI.get(tenant, url).pipe(
 
             switchMap(doc => this.downloadRetrieve(doc, tenant, url, params)),
 
+            switchMap(() =>  this.collectionAPI.getReactive(tenant, url)),
+
         );
-
-        if (allowNetworkDelay) {
-
-            return apiFetch.pipe(
-
-                switchMap(() =>  this.collectionAPI.getReactive(tenant, url)),
-            );
-
-        } else {
-
-            apiFetch = apiFetch.pipe(
-
-                // tslint:disable-next-line: deprecation
-                startWith(null)
-            );
-
-            return combineLatest([apiFetch, this.collectionAPI.getReactive(tenant, url)]).pipe(
-
-                map(([_, res]) => res)
-            );
-        }
     }
 
     get(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
@@ -747,73 +713,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(networkRes => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
 
-                map(res => {
-
-                    let nextHttpParams = new HttpParams();
-                    let previousHttpParams = new HttpParams();
-
-                    const splitNetworkNext  = networkRes?.next?.split('?') || [];
-                    const splitResNext      = res?.next?.split('?') || [];
-
-                    const splitNetworkPrevious  = networkRes?.previous?.split('?') || [];
-                    const splitResPrevious      = res?.previous?.split('?') || [];
-
-                    if (splitNetworkNext.length > 1) {
-
-                        splitNetworkNext[1].split('&').forEach(q => {
-
-                            const queryParam = q.split('=');
-
-                            nextHttpParams = nextHttpParams.set(queryParam[0], queryParam[1]);
-                        });
-                    }
-
-                    if (splitResNext.length > 1) {
-
-                        splitResNext[1].split('&').forEach(q => {
-
-                            const queryParam = q.split('=');
-
-                            nextHttpParams = nextHttpParams.set(queryParam[0], queryParam[1]);
-                        });
-                    }
-
-                    if (splitNetworkPrevious.length > 1) {
-
-                        splitNetworkPrevious[1].split('&').forEach(q => {
-
-                            const queryParam = q.split('=');
-
-                            previousHttpParams = previousHttpParams.set(queryParam[0], queryParam[1]);
-                        });
-                    }
-
-                    if (splitResPrevious.length > 1) {
-
-                        splitResPrevious[1].split('&').forEach(q => {
-
-                            const queryParam = q.split('=');
-
-                            previousHttpParams = previousHttpParams.set(queryParam[0], queryParam[1]);
-                        });
-                    }
-
-                    const nextQueryParamUrl = nextHttpParams.toString();
-
-                    const next = nextQueryParamUrl ? `${url}?${nextQueryParamUrl}` : null;
-
-
-                    const previousQueryParamUrl = previousHttpParams.toString();
-
-                    // tslint:disable-next-line: max-line-length
-                    const previous = previousQueryParamUrl ? `${url}?${previousQueryParamUrl}` : null;
-
-                    return {
-                        next,
-                        previous,
-                        results: res.results
-                    };
-                }),
+                map(res => ({
+                    next: networkRes?.next || res.next,
+                    previous: networkRes?.previous || res.previous,
+                    results: res.results
+                })),
 
             )),
 
