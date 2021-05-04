@@ -55,7 +55,6 @@ export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
     }
 
     get isLoading() { return this._isLoadingChange.value; }
-    get offset() { return this.data.length; }
     get isLoadable(): boolean { return !!this.lastRes?.next; }
     get limit() { return this.__limit; }
 
@@ -76,7 +75,8 @@ export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
     reset() {
 
         this._httpParams = this.httpParams.delete('cursor');
-        this._httpParams = this.httpParams.set('offset', '0');
+        this._httpParams = this.httpParams.delete('frontendCursor');
+
         this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
         if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at'); }
@@ -100,7 +100,6 @@ export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
             }
         }
 
-        this._httpParams = this.httpParams.set('offset', this.offset.toString());
         this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
         if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at'); }

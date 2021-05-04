@@ -321,17 +321,24 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             map(allDocs => {
 
-                // tslint:disable-next-line: radix
-                const start = parseInt(params?.get('offset') || '0');
+                const frontendCursor = params?.get('frontendCursor') || null;
+
+                const currentIndex = frontendCursor ? allDocs.findIndex(v => v.data.id === frontendCursor) : 0;
 
                 // tslint:disable-next-line: radix
-                const end = start + parseInt(params?.get('limit') || '100');
+                const limit = parseInt(params?.get('limit') || '100');
 
-                const next = allDocs.length - end > 0 ? `${url}?${params.set('offset', end.toString()).toString()}` : null;
+                const nextIndex = allDocs.length > currentIndex + limit ? currentIndex + limit : null;
 
-                const previous = start > 0 ? `${url}?${params.set('offset', start.toString()).toString()}` : null;
+                const previousIndex = currentIndex - limit > 0 ? currentIndex - limit : 0;
 
-                return {next, previous, results: allDocs.slice(start, end), count: allDocs.length};
+                const next = nextIndex !== null && allDocs.length - 1 > nextIndex ? `${url}?${params.set('frontendCursor', allDocs[nextIndex].data.id).toString()}` : null;
+
+                const previous = allDocs.length - 1 > previousIndex ? `${url}?${params.set('frontendCursor', allDocs[previousIndex].data.id).toString()}` : null;
+
+                console.log('previousIndex', previousIndex, 'currentIndex', currentIndex, 'nextIndex', nextIndex);
+
+                return {next, previous, results: allDocs.slice(currentIndex, nextIndex), count: allDocs.length};
             }),
 
         );
