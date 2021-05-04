@@ -100,12 +100,6 @@ export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
             }
         }
 
-        console.log('loadmore httpParams', this.httpParams.toString);
-
-        this._httpParams = this.httpParams.set('limit', this.limit.toString());
-
-        if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at'); }
-
     }
 
 }

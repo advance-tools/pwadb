@@ -720,11 +720,68 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(networkRes => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
 
-                map(res => ({
-                    next: networkRes?.next || res.next,
-                    previous: networkRes?.previous || res.previous,
-                    results: res.results
-                })),
+                map(res => {
+
+                    let nextHttpParams = new HttpParams();
+                    let previousHttpParams = new HttpParams();
+
+                    const splitNetworkNext  = networkRes?.next.split('?') || [];
+                    const splitResNext      = res.next.split('?') || [];
+
+                    const splitNetworkPrevious  = networkRes?.previous.split('?') || [];
+                    const splitResPrevious      = res.previous.split('?') || [];
+
+                    if (splitNetworkNext.length > 1) {
+
+                        splitNetworkNext[1].split('&').forEach(q => {
+
+                            const queryParam = q.split('=');
+
+                            nextHttpParams = nextHttpParams.set(queryParam[0], queryParam[1]);
+                        });
+                    }
+
+                    if (splitResNext.length > 1) {
+
+                        splitResNext[1].split('&').forEach(q => {
+
+                            const queryParam = q.split('=');
+
+                            nextHttpParams = nextHttpParams.set(queryParam[0], queryParam[1]);
+                        });
+                    }
+
+                    if (splitNetworkPrevious.length > 1) {
+
+                        splitNetworkPrevious[1].split('&').forEach(q => {
+
+                            const queryParam = q.split('=');
+
+                            previousHttpParams = previousHttpParams.set(queryParam[0], queryParam[1]);
+                        });
+                    }
+
+                    if (splitResPrevious.length > 1) {
+
+                        splitResPrevious[1].split('&').forEach(q => {
+
+                            const queryParam = q.split('=');
+
+                            previousHttpParams = previousHttpParams.set(queryParam[0], queryParam[1]);
+                        });
+                    }
+
+                    const next = decodeURIComponent((networkRes?.next.split('?')[0] || res.next.split('?')[0]) + nextHttpParams.toString());
+
+                    // tslint:disable-next-line: max-line-length
+                    const previous = decodeURIComponent(((networkRes?.previous.split('?')[0] || res.previous.split('?')[0])) + previousHttpParams.toString());
+
+                    return {
+                        next,
+                        previous,
+                        results: res.results
+                    };
+                }),
 
             )),
 
