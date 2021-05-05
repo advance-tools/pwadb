@@ -358,6 +358,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
+                shareReplay(1),
+
                 finalize(() => this.cache.delete(cacheKey))
             );
 
@@ -390,6 +392,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                 switchMap(col => this.trigger.asObservable().pipe(map(() => col))),
 
                 switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
+
+                shareReplay(1),
 
                 finalize(() => this.cache.delete(cacheKey))
             );
@@ -602,7 +606,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    getReactive(tenant: string, url: string, params?: HttpParams, allowNetworkDelay=false): Observable<PwaDocument<T>> {
+    getReactive(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
         return this.collectionAPI.get(tenant, url).pipe(
 
@@ -615,7 +619,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     get(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
-        return this.getReactive(tenant, url, params, true).pipe(
+        return this.getReactive(tenant, url, params).pipe(
 
             first()
         );
