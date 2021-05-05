@@ -355,32 +355,55 @@ export function orderBy(fields: string[], docs: PwaDocument<any>[]): PwaDocument
 
             const parseFieldName = order === 'desc' ? fields[i].split('-')[1] : fields[i];
 
-            if (!(parseFieldName in a?.data) || !(parseFieldName in b?.data)) { console.log('skipped ordering', parseFieldName); continue; }
+            if (!(parseFieldName in a?.data) || !(parseFieldName in b?.data)) { continue; }
+
+            let output = 0;
 
             const isDate = parseDate(a.data[parseFieldName], b.data[parseFieldName]);
 
             // tslint:disable-next-line: max-line-length
-            if (isDate && order === 'asc' && isDate.parsedFieldValue !== isDate.parsedInputValue) { return isDate.parsedFieldValue - isDate.parsedInputValue; }
+            if (isDate && order === 'asc' && isDate.parsedFieldValue !== isDate.parsedInputValue) { 
+
+                output = isDate.parsedFieldValue - isDate.parsedInputValue;
+
+                if (output > 0 || output < 0) { return output; }
+            }
 
             // tslint:disable-next-line: max-line-length
-            if (isDate && order === 'desc' && isDate.parsedInputValue !== isDate.parsedFieldValue) { return isDate.parsedInputValue - isDate.parsedFieldValue; }
+            if (isDate && order === 'desc' && isDate.parsedInputValue !== isDate.parsedFieldValue) { 
+
+                output = isDate.parsedInputValue - isDate.parsedFieldValue;
+
+                if (output > 0 || output < 0) { return output; }
+            }
 
             const isNumber = parseNumber(a.data[parseFieldName], b.data[parseFieldName]);
 
             // tslint:disable-next-line: max-line-length
-            if (isNumber && order === 'asc' && isNumber.parsedFieldValue !== isNumber.parsedInputValue) { return isNumber.parsedFieldValue - isNumber.parsedInputValue; }
+            if (isNumber && order === 'asc' && isNumber.parsedFieldValue !== isNumber.parsedInputValue) {
+
+                output = isNumber.parsedFieldValue - isNumber.parsedInputValue;
+
+                if (output > 0 || output < 0) { return output; }
+            }
 
             // tslint:disable-next-line: max-line-length
-            if (isNumber && order === 'desc' && isNumber.parsedInputValue !== isNumber.parsedFieldValue) { return isNumber.parsedInputValue - isNumber.parsedFieldValue; }
+            if (isNumber && order === 'desc' && isNumber.parsedInputValue !== isNumber.parsedFieldValue) {
 
-            const valueA = ((a.data[parseFieldName] as FieldDataType)?.toString() || '').toLowerCase();
+                output = isNumber.parsedInputValue - isNumber.parsedFieldValue;
 
-            const valueB = ((b.data[parseFieldName] as FieldDataType)?.toString() || '').toLowerCase();
+                if (output > 0 || output < 0) { return output; }
+            }
 
-            if (valueA < valueB) { return order === 'asc' ? -1 : 1; }
+            const valueA = (a.data[parseFieldName] as FieldDataType)?.toString() || '';
 
-            if (valueA > valueB) { return order === 'asc' ? 1 : -1; }
+            const valueB = (b.data[parseFieldName] as FieldDataType)?.toString() || '';
 
+            output = order === 'asc' ? valueA.localeCompare(valueB) : valueA.localeCompare(valueB) * -1;
+
+            if (output > 0 || output < 0) { return output; }
+
+            console.log('unconcluded ordering', parseFieldName, a.data[parseFieldName], b.data[parseFieldName]);
         }
 
         return 0;
