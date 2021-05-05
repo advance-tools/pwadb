@@ -403,7 +403,6 @@ export function orderBy(fields: string[], docs: PwaDocument<any>[]): PwaDocument
 
             if (output > 0 || output < 0) { return output; }
 
-            console.log('unconcluded ordering', parseFieldName, a.data[parseFieldName], b.data[parseFieldName]);
         }
 
         return 0;
