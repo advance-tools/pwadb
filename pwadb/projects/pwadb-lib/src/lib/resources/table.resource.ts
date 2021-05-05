@@ -2,7 +2,7 @@ import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { Datatype, PwaDocument } from '../definitions/document';
 import { HttpParams } from '@angular/common/http';
 import { PwaListResponse } from '../definitions/collection';
-import { switchMap, tap, shareReplay, map, filter, debounceTime } from 'rxjs/operators';
+import { switchMap, tap, shareReplay, map, filter, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 
@@ -68,6 +68,8 @@ export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
         this._httpParams        = new HttpParams();
 
         this.isLoadingChange    = this._isLoadingChange.asObservable().pipe(
+
+            distinctUntilChanged(),
 
             enterZone(this.__zone)
         );
