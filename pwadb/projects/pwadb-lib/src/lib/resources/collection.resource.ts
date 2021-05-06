@@ -621,14 +621,12 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 switchMap(() => this.collectionAPI.getReactive(tenant, url)),
             );
 
-        } else {
-
-            return combineLatest([apiFetch.pipe(startWith(null)), this.collectionAPI.getReactive(tenant, url)]).pipe(
-
-                map(([_, res]) => res)
-            );
-
         }
+
+        return combineLatest([apiFetch.pipe(startWith(null)), this.collectionAPI.getReactive(tenant, url)]).pipe(
+
+            map(([_, res]) => res)
+        );
 
     }
 
@@ -720,7 +718,14 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     }
 
-    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<PwaListResponse<T>> {
+    listReactive(
+        tenant: string,
+        url: string,
+        params?: HttpParams,
+        validQueryKeys = [],
+        indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`,
+        allowNetworkDelay=false
+    ): Observable<PwaListResponse<T>> {
 
         const apiFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
@@ -728,25 +733,40 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         );
 
-        return apiFetch.pipe(
+        if (allowNetworkDelay) {
 
-            switchMap(networkRes => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
+            return apiFetch.pipe(
 
-                map(res => ({
-                    next: networkRes?.next || res.next,
-                    previous: networkRes?.previous || res.previous,
-                    results: res.results
-                })),
+                switchMap((networkRes) => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
 
-            )),
+                    map(res => ({
+                        next: networkRes?.next || res.next,
+                        previous: networkRes?.previous || res.previous,
+                        results: res.results
+                    })),
+
+                )),
+
+            ) as Observable<PwaListResponse<T>>;
+        }
+
+        return combineLatest([
+            apiFetch.pipe(startWith({next: null, previous: null, results: []})),
+            this.collectionAPI.listReactive(tenant, url, params, validQueryKeys)
+        ]).pipe(
+
+            map(([networkRes, res]) => ({
+                next: networkRes?.next || res.next,
+                previous: networkRes?.previous || res.previous,
+                results: res.results
+            }))
 
         ) as Observable<PwaListResponse<T>>;
-
     }
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<PwaListResponse<T>> {
 
-        return this.listReactive(tenant, url, params, validQueryKeys, indexedbUrl).pipe(
+        return this.listReactive(tenant, url, params, validQueryKeys, indexedbUrl, true).pipe(
 
             first()
         );
