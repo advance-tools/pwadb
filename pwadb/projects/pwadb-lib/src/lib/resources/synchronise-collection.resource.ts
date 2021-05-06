@@ -80,15 +80,6 @@ export class SyncCollectionService {
 
             map(collections => collections[this.config.name]),
 
-            tap(col => col.preSave((plainData, rxDocument) => {
-
-                // modify anyField before saving
-
-                plainData.createdAt = plainData.createdAt || new Date().getTime();
-                plainData.updatedAt = new Date().getTime();
-
-            }, false)),
-
             shareReplay(1),
 
             first()
@@ -199,6 +190,21 @@ export class SyncCollectionService {
             }))),
 
             map(v => [].concat(...v)),
+
+            tap((v: SynchroniseDocTypeExtras[]) =>  {
+
+                v.forEach(docType => {
+
+                    docType.collection.preSave((plainData, rxDocument) => {
+
+                        // modify anyField before saving
+                        plainData.createdAt = plainData.createdAt || new Date().getTime();
+                        plainData.updatedAt = new Date().getTime();
+
+                    }, false);
+
+                });
+            }),
         );
     }
 

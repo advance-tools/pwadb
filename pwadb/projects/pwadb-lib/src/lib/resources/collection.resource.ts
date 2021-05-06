@@ -221,14 +221,9 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         const collectionSchema = {};
 
-        collectionSchema[this.config.name] = getCollectionCreator(
-            this.config.name,
-            pwaCollectionMethods,
-            pwaDocMethods,
-            this.config.attachments,
-            this.config.options,
-            {
+        this.config.migrationStrategies = {
                 // 1 means, this transforms data from version 0 to version 1
+                // add hook in synchronise-collection as well
                 1: (oldDoc: PwaDocType<any>) => {
 
                     oldDoc.createdAt = new Date().getTime();
@@ -236,8 +231,16 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                     return oldDoc;
                 },
-                ...(this.config.migrationStrategies || {})
-            },
+                ...this.config.migrationStrategies
+        };
+
+        collectionSchema[this.config.name] = getCollectionCreator(
+            this.config.name,
+            pwaCollectionMethods,
+            pwaDocMethods,
+            this.config.attachments,
+            this.config.options,
+            this.config.migrationStrategies,
             this.config.autoMigrate
         );
 
