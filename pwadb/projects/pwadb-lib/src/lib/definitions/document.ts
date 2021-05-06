@@ -25,7 +25,7 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
     title: name + '_store',
     description: `Store ${name} types of data in the collection`,
     keyCompression: false,
-    version: 0,
+    version: 1,
     type: 'object',
     properties: {
         tenantUrl: {
