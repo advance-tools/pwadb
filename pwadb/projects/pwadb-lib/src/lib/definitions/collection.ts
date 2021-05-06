@@ -24,7 +24,17 @@ export const getCollectionCreator = (
         methods: documentMethods, // (optional) ORM-functions for documents
         attachments, // (optional) ORM-functions for attachments
         options, // (optional) Custom paramters that might be used in plugins
-        migrationStrategies, // (optional)
+        migrationStrategies: {
+            // 1 means, this transforms data from version 0 to version 1
+            1: (oldDoc: PwaDocType<any>) => {
+
+                oldDoc.createdAt = new Date().getTime();
+                oldDoc.updatedAt = new Date().getTime();
+
+                return oldDoc;
+            },
+            ...migrationStrategies
+        }, // (optional)
         autoMigrate, // (optional)
 } as RxCollectionCreator);
 

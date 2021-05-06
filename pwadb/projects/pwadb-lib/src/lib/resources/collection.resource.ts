@@ -221,19 +221,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         const collectionSchema = {};
 
-        this.config.migrationStrategies = {
-                // 1 means, this transforms data from version 0 to version 1
-                // add hook in synchronise-collection as well
-                1: (oldDoc: PwaDocType<any>) => {
-
-                    oldDoc.createdAt = new Date().getTime();
-                    oldDoc.updatedAt = new Date().getTime();
-
-                    return oldDoc;
-                },
-                ...this.config.migrationStrategies
-        };
-
         collectionSchema[this.config.name] = getCollectionCreator(
             this.config.name,
             pwaCollectionMethods,
@@ -309,7 +296,7 @@ export class CollectionAPI<T extends Datatype, Database> {
             tap(col => col.preSave((plainData, rxDocument) => {
 
                 // modify anyField before saving
-
+                // add hook in synchronise-collection as well
                 plainData.createdAt = plainData.createdAt || new Date().getTime();
                 plainData.updatedAt = new Date().getTime();
 
