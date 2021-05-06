@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, from, Observable, of, throwError } from 'rxjs';
-import { catchError, concatMap, filter, finalize, first, map, shareReplay, switchMap } from 'rxjs/operators';
+import { catchError, concatMap, filter, finalize, first, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
@@ -79,6 +79,15 @@ export class SyncCollectionService {
             switchMap(db => from(db.addCollections(collectionSchema))),
 
             map(collections => collections[this.config.name]),
+
+            tap(col => col.preSave((plainData, rxDocument) => {
+
+                // modify anyField before saving
+
+                plainData.createdAt = plainData.createdAt || new Date().getTime();
+                plainData.updatedAt = new Date().getTime();
+
+            }, false)),
 
             shareReplay(1),
 
