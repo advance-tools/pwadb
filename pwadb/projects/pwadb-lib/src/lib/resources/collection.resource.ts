@@ -205,8 +205,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     private cache = new Map();
 
-    private trigger = new BehaviorSubject(false);
-
     constructor(private _config: Partial<CollectionAPICreator<Database>>) {
 
         this.config = {
@@ -346,11 +344,6 @@ export class CollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    triggerChange() {
-
-        this.trigger.next(!this.trigger.value);
-    }
-
     ////////////////
     // CRUD
     ////////////////
@@ -363,22 +356,17 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             const doc = this.collection$.pipe(
 
-                switchMap(col => this.trigger.asObservable().pipe(map(() => col))),
-
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
                 shareReplay(1),
 
-                finalize(() => this.cache.delete(cacheKey))
+                enterZone<PwaDocument<T>>(this.config.ngZone),
             );
 
             this.cache.set(cacheKey, doc);
         }
 
-        return this.cache.get(cacheKey).pipe(
-
-            enterZone<PwaDocument<T>>(this.config.ngZone),
-        );
+        return this.cache.get(cacheKey);
 
     }
 
@@ -398,13 +386,9 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             const docs = this.collection$.pipe(
 
-                switchMap(col => this.trigger.asObservable().pipe(map(() => col))),
-
                 switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
 
                 shareReplay(1),
-
-                finalize(() => this.cache.delete(cacheKey))
             );
 
             this.cache.set(cacheKey, docs);
