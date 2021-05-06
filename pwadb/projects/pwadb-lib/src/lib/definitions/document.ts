@@ -13,6 +13,8 @@ export type PwaDocType<T extends Datatype> = {
     data: T | null;
     time: number;
     error: string | null;
+    createdAt: number;
+    updatedAt: number;
 };
 
 export type PwaDocMethods = {};
@@ -45,6 +47,12 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
         },
         error: {
             type: ['string', 'null'],
+        },
+        createdAt: {
+            type: 'integer',
+        },
+        updatedAt: {
+            type: 'integer'
         }
     },
     encrypted: [

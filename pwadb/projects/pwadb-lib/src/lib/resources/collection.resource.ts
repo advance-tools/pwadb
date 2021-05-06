@@ -227,7 +227,17 @@ export class CollectionAPI<T extends Datatype, Database> {
             pwaDocMethods,
             this.config.attachments,
             this.config.options,
-            this.config.migrationStrategies,
+            {
+                // 1 means, this transforms data from version 0 to version 1
+                1: (oldDoc: PwaDocType<any>) => {
+
+                    oldDoc.createdAt = new Date().getTime();
+                    oldDoc.updatedAt = new Date().getTime();
+
+                    return oldDoc;
+                },
+                ...(this.config.migrationStrategies || {})
+            },
             this.config.autoMigrate
         );
 
@@ -292,6 +302,15 @@ export class CollectionAPI<T extends Datatype, Database> {
                     })
                 );
             }),
+
+            tap(col => col.preSave((plainData, rxDocument) => {
+
+                // modify anyField before saving
+
+                plainData.createdAt = plainData.createdAt || new Date().getTime();
+                plainData.updatedAt = new Date().getTime();
+
+            }, false)),
 
             shareReplay(1),
 
@@ -452,7 +471,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 } else {
 
-                    const docData: PwaDocType<T> = {
+                    const docData: Partial<PwaDocType<T>> = {
                         tenantUrl: this.makeTenantUrl(tenant, url),
                         matchUrl: this.makeTenantUrl(tenant, url),
                         data,
@@ -606,33 +625,19 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    getReactive(tenant: string, url: string, params?: HttpParams, allowNetworkDelay=false): Observable<PwaDocument<T>> {
+    getReactive(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
-        const apiFetch = this.collectionAPI.get(tenant, url).pipe(
+        return this.collectionAPI.get(tenant, url).pipe(
 
             switchMap(doc => this.downloadRetrieve(doc, tenant, url, params)),
 
+            switchMap(() => this.collectionAPI.getReactive(tenant, url)),
         );
-
-        if (allowNetworkDelay) {
-
-            return apiFetch.pipe(
-
-                switchMap(() => this.collectionAPI.getReactive(tenant, url)),
-            );
-
-        }
-
-        return combineLatest([apiFetch.pipe(startWith(null)), this.collectionAPI.getReactive(tenant, url)]).pipe(
-
-            map(([_, res]) => res)
-        );
-
     }
 
     get(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
-        return this.getReactive(tenant, url, params, true).pipe(
+        return this.getReactive(tenant, url, params).pipe(
 
             first()
         );
@@ -724,49 +729,29 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         params?: HttpParams,
         validQueryKeys = [],
         indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`,
-        allowNetworkDelay=false
     ): Observable<PwaListResponse<T>> {
 
-        const apiFetch = this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
+        return this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
             switchMap(idbRes => this.downloadList(idbRes, tenant, url, params, indexedbUrl)),
 
-        );
+            switchMap((networkRes) => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
 
-        if (allowNetworkDelay) {
+                map(res => ({
+                    next: networkRes?.next || res.next,
+                    previous: networkRes?.previous || res.previous,
+                    results: res.results
+                })),
 
-            return apiFetch.pipe(
-
-                switchMap((networkRes) => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
-
-                    map(res => ({
-                        next: networkRes?.next || res.next,
-                        previous: networkRes?.previous || res.previous,
-                        results: res.results
-                    })),
-
-                )),
-
-            ) as Observable<PwaListResponse<T>>;
-        }
-
-        return combineLatest([
-            apiFetch.pipe(startWith({next: null, previous: null, results: []})),
-            this.collectionAPI.listReactive(tenant, url, params, validQueryKeys)
-        ]).pipe(
-
-            map(([networkRes, res]) => ({
-                next: networkRes?.next || res.next,
-                previous: networkRes?.previous || res.previous,
-                results: res.results
-            }))
+            )),
 
         ) as Observable<PwaListResponse<T>>;
+
     }
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<PwaListResponse<T>> {
 
-        return this.listReactive(tenant, url, params, validQueryKeys, indexedbUrl, true).pipe(
+        return this.listReactive(tenant, url, params, validQueryKeys, indexedbUrl).pipe(
 
             first()
         );
