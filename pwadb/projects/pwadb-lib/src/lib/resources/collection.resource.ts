@@ -606,20 +606,35 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    getReactive(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
+    getReactive(tenant: string, url: string, params?: HttpParams, allowNetworkDelay=false): Observable<PwaDocument<T>> {
 
-        return this.collectionAPI.get(tenant, url).pipe(
+        const apiFetch = this.collectionAPI.get(tenant, url).pipe(
 
             switchMap(doc => this.downloadRetrieve(doc, tenant, url, params)),
 
-            switchMap(() =>  this.collectionAPI.getReactive(tenant, url)),
-
         );
+
+        if (allowNetworkDelay) {
+
+            return apiFetch.pipe(
+
+                switchMap(() => this.collectionAPI.getReactive(tenant, url)),
+            );
+
+        } else {
+
+            return combineLatest([apiFetch.pipe(startWith(null)), this.collectionAPI.getReactive(tenant, url)]).pipe(
+
+                map(([_, res]) => res)
+            );
+
+        }
+
     }
 
     get(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T>> {
 
-        return this.getReactive(tenant, url, params).pipe(
+        return this.getReactive(tenant, url, params, true).pipe(
 
             first()
         );
