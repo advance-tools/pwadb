@@ -137,7 +137,9 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
 
             tap(() => this._isLoadingChange.next(false)),
 
-        );
+            shareReplay(1),
+
+        ) as Observable<PwaDocument<T>[]>;
     }
 
     getView(httpParams: HttpParams): Observable<PwaListResponse<T>> {
@@ -203,7 +205,9 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
 
             tap(() => this._isLoadingChange.next(false)),
 
-        );
+            shareReplay(1),
+
+        ) as Observable<PwaDocument<T>[]>;
     }
 
     getView(httpParams: HttpParams): Observable<PwaListResponse<T>> {
