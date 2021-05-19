@@ -5,6 +5,7 @@ import idb from 'pouchdb-adapter-idb';
 import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
+import { RxDBMigrationPlugin } from 'rxdb/dist/types/plugins/migration';
 
 
 export interface PwaDatabaseCreator {
@@ -34,6 +35,9 @@ export class PwaDatabaseService<T> {
 
         // add schema validate plugin
         addRxPlugin(RxDBValidatePlugin);
+
+        // add migration plugin
+        addRxPlugin(RxDBMigrationPlugin);
 
         this._db$ = from(createRxDatabase({
             name: 'pwadb',
