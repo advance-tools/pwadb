@@ -82,7 +82,7 @@ export class TreeDatabase<T extends TableDataType> {
                 // extra '--' would mean params to nested database
                 if (!paramName.includes('--')) {
 
-                    currentParams = currentParams.set(paramName, currentParams.get(pk));
+                    currentParams = currentParams.set(paramName, parentParams.get(pk));
                 }
 
             });
