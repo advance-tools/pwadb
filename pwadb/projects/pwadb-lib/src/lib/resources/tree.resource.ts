@@ -1,8 +1,10 @@
 import { HttpParams } from '@angular/common/http';
-import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, merge, Observable, Subscription } from 'rxjs';
 import { map, shareReplay, switchMap } from 'rxjs/operators';
 import { PwaDocument } from '../definitions/document';
 import { Database, ReactiveDatabase, TableDataType } from './table.resource';
+import {CollectionViewer, SelectionChange, DataSource} from '@angular/cdk/collections';
+import {FlatTreeControl} from '@angular/cdk/tree';
 
 ///////////////////
 // Interfaces
@@ -164,4 +166,189 @@ export class DynamicFlatNode<T extends TableDataType> {
         public level = 1,
         public expandable = false,
     ) {}
+}
+
+export class DynamicTreeFlattener<T, F> {
+
+    flatNodeMap = new Map<T, F>();
+    structuredNodeMap = new Map<F, T>();
+
+    subs = new Subscription();
+
+    constructor(public transformFunction: (node: T, level: number) => F,
+                public getLevel: (node: F) => number,
+                public isExpandable: (node: F) => boolean,
+                public getChildren: (node: T) =>
+                    Observable<T[]> | T[] | undefined | null) {}
+
+    _flattenNode(node: T, level: number): F {
+
+        if (!this.flatNodeMap.has(node)) {
+
+            const flatNode = this.transformFunction(node, level);
+
+            this.flatNodeMap.set(node, flatNode);
+            this.structuredNodeMap.set(flatNode, node);
+        }
+
+        return this.flatNodeMap.get(node);
+    }
+
+    insertChildrenNodes(parentNode: F, children: F[], resultNodes: F[]): F[] {
+
+        const index = resultNodes.indexOf(parentNode);
+
+        resultNodes.splice(index + 1, 0, ...children);
+
+        return resultNodes;
+    }
+
+    removeChildrenFlatNodes(parentNode: F, resultNodes: F[]): F[] {
+
+        const index = resultNodes.indexOf(parentNode);
+
+        let count = 0;
+
+        for (let i = index + 1; i < resultNodes.length && this.getLevel(resultNodes[i]) > this.getLevel(parentNode); i++, count++) {}
+
+        resultNodes.splice(index + 1, count);
+
+        return resultNodes;
+    }
+
+    addChildrenFlatNode(parentFlatNode: F, resultNodes: F[]): F[] {
+
+        // fetch structuredNode corresponding to this parentFlatNode
+        const structuredNode = this.structuredNodeMap.get(parentFlatNode);
+
+        // fetch structuredChildrenNode corresponding to this structuredNode
+        const structuredChildrenNodes = this.getChildren(structuredNode);
+
+        if (structuredChildrenNodes) {
+
+            if (Array.isArray(structuredChildrenNodes)) {
+
+                const flatChildren = structuredChildrenNodes.map(s => this._flattenNode(s, this.getLevel(parentFlatNode) + 1));
+
+                this.insertChildrenNodes(parentFlatNode, flatChildren, resultNodes);
+
+            } else {
+
+                const subs = structuredChildrenNodes.subscribe(children => {
+
+                    const flatChildren = children.map(s => this._flattenNode(s, this.getLevel(parentFlatNode) + 1));
+
+                    // remove previously inserted children
+                    this.removeChildrenFlatNodes(parentFlatNode, resultNodes);
+
+                    // add new children
+                    this.insertChildrenNodes(parentFlatNode, flatChildren, resultNodes);
+                });
+
+                this.subs.add(subs);
+            }
+        }
+
+        return resultNodes;
+    }
+
+    /**
+     * Flatten a list of node type T to flattened version of node F.
+     * Please note that type T may be nested, and the length of `structuredData` may be different
+     * from that of returned list `F[]`.
+     */
+    flattenNodes(structuredData: T[]): F[] {
+
+        return structuredData.map(node => this._flattenNode(node, 0));
+    }
+
+}
+
+export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
+
+    private readonly _flattenedData = new BehaviorSubject<F[]>([]);
+    private readonly _data = new BehaviorSubject<T[]>([]);
+
+    subs = new Subscription();
+
+    get data() { return this._data.value; }
+
+    set data(value: T[]) {
+
+        this._data.next(value);
+
+        this.flattenedData = this._treeFlattener.flattenNodes(this.data);
+    }
+
+    get flattenedData(): F[] { return this._flattenedData.value; }
+    set flattenedData(v: F[]) { this._flattenedData.next(v); }
+
+    constructor(private _treeControl: FlatTreeControl<F>,
+                private _treeFlattener: DynamicTreeFlattener<T, F>,
+                initialData?: T[]) {
+
+        const subs = this._flattenedData.subscribe(v => this._treeControl.dataNodes = v);
+
+        this.subs.add(subs);
+
+        if (initialData) {
+            // Assign the data through the constructor to ensure that all of the logic is executed.
+            this.data = initialData;
+        }
+    }
+
+    /**
+     * Toggle the node, remove from display list
+     */
+    toggleNode(flatNode: F, expand: boolean): void {
+
+        if (expand) {
+
+            if (this._treeFlattener.isExpandable(flatNode)) {
+
+                this.flattenedData = this._treeFlattener.addChildrenFlatNode(flatNode, this.flattenedData);
+            }
+
+        } else {
+
+            this.flattenedData = this._treeFlattener.removeChildrenFlatNodes(flatNode, this.flattenedData);
+        }
+    }
+
+    /** Handle expand/collapse behaviors */
+    handleTreeControl(change: SelectionChange<F>) {
+
+        if (change.added) {
+
+            change.added.forEach(node => this.toggleNode(node, true));
+        }
+
+        if (change.removed) {
+
+            change.removed.slice().reverse().forEach(node => this.toggleNode(node, false));
+        }
+    }
+
+    connect(collectionViewer: CollectionViewer): Observable<F[]> {
+
+        const subs = this._treeControl.expansionModel.changed.subscribe(change => {
+
+            if ((change as SelectionChange<F>).added || (change as SelectionChange<F>).removed) {
+
+                this.handleTreeControl(change as SelectionChange<F>);
+            }
+
+        });
+
+        this.subs.add(subs);
+
+        return merge(collectionViewer.viewChange, this._flattenedData.asObservable()).pipe(map(() => this.flattenedData));
+    }
+
+    disconnect(collectionViewer: CollectionViewer): void {
+
+        this._treeFlattener.subs.unsubscribe();
+
+        this.subs.unsubscribe();
+    }
 }
