@@ -281,9 +281,11 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
         this._data.next(value);
 
-        this.flattenedData = this._treeFlattener.flattenNodes(this.data);
+        const flattenedData = this._treeFlattener.flattenNodes(this.data);
 
-        this._treeControl.dataNodes = this.flattenedData;
+        this._treeControl.dataNodes = flattenedData;
+
+        this.flattenedData = flattenedData;
     }
 
     get flattenedData(): F[] { return this._flattenedData.value; }
@@ -345,13 +347,13 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
             switchMap(change => this.handleTreeControl(change as SelectionChange<F>)),
 
-            tap(v => this.flattenedData = v),
-
             tap(v => this._treeControl.dataNodes = v),
+
+            tap(v => this.flattenedData = v),
 
         );
 
-        return merge(collectionViewer.viewChange, changeObs).pipe(map(() => this.flattenedData));
+        return merge(collectionViewer.viewChange, changeObs, this._flattenedData.asObservable()).pipe(map(() => this.flattenedData));
     }
 
     disconnect(collectionViewer: CollectionViewer): void {}
