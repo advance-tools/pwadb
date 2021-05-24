@@ -1,6 +1,6 @@
 import { HttpParams } from '@angular/common/http';
 import { BehaviorSubject, combineLatest, concat, merge, Observable, of, Subscription } from 'rxjs';
-import { filter, map, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { filter, map, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { PwaDocument } from '../definitions/document';
 import { Database, ReactiveDatabase, TableDataType } from './table.resource';
 import {CollectionViewer, SelectionChange, DataSource} from '@angular/cdk/collections';
@@ -345,7 +345,7 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
             filter(change => !!(change as SelectionChange<F>).added?.length || !!(change as SelectionChange<F>).removed?.length),
 
-            switchMap(change => this.handleTreeControl(change as SelectionChange<F>)),
+            mergeMap(change => this.handleTreeControl(change as SelectionChange<F>)),
 
             tap(v => this._treeControl.dataNodes = v),
 
