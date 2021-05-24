@@ -264,7 +264,7 @@ export class DynamicTreeFlattener<T, F> {
 
 export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
-    private readonly _flattenedData = new BehaviorSubject<F[]>([]);
+    readonly _flattenedData = new BehaviorSubject<F[]>([]);
     private readonly _data = new BehaviorSubject<T[]>([]);
 
     get data() { return this._data.value; }
@@ -281,7 +281,7 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
     get flattenedData(): F[] { return this._flattenedData.value; }
     set flattenedData(v: F[]) { this._flattenedData.next(v); }
 
-    constructor(private _treeControl: FlatTreeControl<F>, private _treeFlattener: DynamicTreeFlattener<T, F>, initialData?: T[]) {
+    constructor(public _treeControl: FlatTreeControl<F>, public _treeFlattener: DynamicTreeFlattener<T, F>, initialData?: T[]) {
 
         if (initialData) {
             // Assign the data through the constructor to ensure that all of the logic is executed.
