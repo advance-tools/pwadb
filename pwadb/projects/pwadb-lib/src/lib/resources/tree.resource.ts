@@ -34,6 +34,8 @@ export class TreeDatabase<T extends TableDataType> {
     childTreeMap: Map<PwaDocument<any>, Observable<TreeNode<any>[]>>;
     databaseMap: Map<PwaDocument<any>, Database<any> | ReactiveDatabase<any>>;
 
+    databaseKeyMap: Map<string, Database<any> | ReactiveDatabase<any>>;
+
     dataChange: Observable<TreeNode<T>[]>;
 
     private queueChange: BehaviorSubject<any>;
@@ -50,8 +52,9 @@ export class TreeDatabase<T extends TableDataType> {
 
     constructor(private treeInfo: TreeInformation<T>) {
 
-        this.databaseMap  = new Map();
-        this.childTreeMap = new Map();
+        this.databaseMap    = new Map();
+        this.databaseKeyMap = new Map();
+        this.childTreeMap   = new Map();
 
         this._httpParams  = new HttpParams();
         this.queueChange  = new BehaviorSubject(true);
@@ -63,11 +66,15 @@ export class TreeDatabase<T extends TableDataType> {
         );
     }
 
-    buildTree(treeInfo: TreeInformation<T>, parentDoc: PwaDocument<T> = null, parentParams = new HttpParams()): Observable<TreeNode<T>[]> {
+    buildTree(treeInfo: TreeInformation<T>, parentDoc: PwaDocument<T> = null, parentParams = new HttpParams(), parentKey = null): Observable<TreeNode<T>[]> {
 
         const treeNodes = Object.keys(treeInfo).map(key => {
 
             const db = treeInfo[key].getDatabase();
+
+            const currentDatabaseMapKey = parentKey ? `${parentKey}--${key}` : key;
+
+            this.databaseKeyMap.set(currentDatabaseMapKey, db);
 
             // check current httpParams
             const possibleParamKeys = parentParams.keys().filter(pk => pk && pk.includes(`${key}--`));
@@ -96,7 +103,7 @@ export class TreeDatabase<T extends TableDataType> {
 
                 map(docs => {
 
-                    const obs = docs.map(doc => {
+                    const obsArr = docs.map(doc => {
 
                         ///////////////////
                         // Database Map
@@ -117,7 +124,7 @@ export class TreeDatabase<T extends TableDataType> {
 
                             }
 
-                            const childTree = this.buildTree(treeInfo[key].children, doc, parentParams).pipe(
+                            const childTree = this.buildTree(treeInfo[key].children, doc, parentParams, currentDatabaseMapKey).pipe(
 
                                 shareReplay(1),
 
@@ -130,7 +137,7 @@ export class TreeDatabase<T extends TableDataType> {
 
                     });
 
-                    return obs;
+                    return obsArr;
                 }),
 
             );
@@ -147,8 +154,9 @@ export class TreeDatabase<T extends TableDataType> {
 
     reset() {
 
-        this.databaseMap  = new Map();
-        this.childTreeMap = new Map();
+        this.databaseMap.clear();
+        this.databaseKeyMap.clear();
+        this.childTreeMap.clear();
 
         this.queueChange.next(true);
     }
