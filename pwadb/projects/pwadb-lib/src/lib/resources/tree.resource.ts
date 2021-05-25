@@ -1,5 +1,5 @@
 import { HttpParams } from '@angular/common/http';
-import { BehaviorSubject, combineLatest, concat, merge, Observable, of, Subscription } from 'rxjs';
+import { BehaviorSubject, combineLatest, concat, merge, Observable, of } from 'rxjs';
 import { filter, map, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { PwaDocument } from '../definitions/document';
 import { Database, ReactiveDatabase, TableDataType } from './table.resource';
@@ -63,6 +63,8 @@ export class TreeDatabase<T extends TableDataType> {
 
             switchMap(() => this.buildTree(this.treeInfo, null, this.httpParams)),
 
+            tap(d => console.log('treeNodes flatten emit', d.length)),
+
             shareReplay(1),
 
         );
@@ -102,8 +104,6 @@ export class TreeDatabase<T extends TableDataType> {
             treeInfo[key].onCreationSetup ? treeInfo[key].onCreationSetup(parentDoc, db, currentParams) : db.httpParams = currentParams;
 
             return db.dataChange.pipe(
-
-                tap(d => console.log('datachange emit', d.length)),
 
                 map(docs => {
 
@@ -150,10 +150,6 @@ export class TreeDatabase<T extends TableDataType> {
         return combineLatest(treeNodes).pipe(
 
             map(nodes => [].concat(...nodes)),
-
-            tap(d => console.log('treeNodes flatten emit', d.length)),
-
-            // startWith([])
 
         );
     }
