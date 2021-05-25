@@ -63,8 +63,6 @@ export class TreeDatabase<T extends TableDataType> {
 
             switchMap(() => this.buildTree(this.treeInfo, null, this.httpParams)),
 
-            tap(d => console.log('treeNodes flatten emit', d.length)),
-
             shareReplay(1),
 
         );
