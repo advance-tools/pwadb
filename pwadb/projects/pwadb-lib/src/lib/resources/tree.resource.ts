@@ -31,7 +31,7 @@ export interface TreeInformation<T extends TableDataType> {
 
 export class TreeDatabase<T extends TableDataType> {
 
-    childTreeMap: Map<PwaDocument<any>, Observable<TreeNode<any>[]>>;
+    childTreeMap: Map<PwaDocument<any>, TreeNode<any>>;
     databaseMap: Map<PwaDocument<any>, Database<any> | ReactiveDatabase<any>>;
 
     databaseKeyMap: Map<string, Database<any> | ReactiveDatabase<any>>;
@@ -72,7 +72,7 @@ export class TreeDatabase<T extends TableDataType> {
 
             const db = treeInfo[key].getDatabase();
 
-            const currentDatabaseMapKey = parentKey ? `${parentKey}--${key}` : key;
+            const currentDatabaseMapKey = parentKey && parentDoc ? `${parentKey}~${parentDoc.tenantUrl}--${key}` : key;
 
             this.databaseKeyMap.set(currentDatabaseMapKey, db);
 
@@ -130,10 +130,10 @@ export class TreeDatabase<T extends TableDataType> {
 
                             ) as Observable<TreeNode<any>[]>;
 
-                            this.childTreeMap.set(doc, childTree);
+                            this.childTreeMap.set(doc, {item: doc, children: childTree});
                         }
 
-                        return {item: doc, children: this.childTreeMap.get(doc)} as TreeNode<any>;
+                        return this.childTreeMap.get(doc);
 
                     });
 
