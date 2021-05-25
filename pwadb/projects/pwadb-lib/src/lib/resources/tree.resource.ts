@@ -63,6 +63,8 @@ export class TreeDatabase<T extends TableDataType> {
 
             switchMap(() => this.buildTree(this.treeInfo, null, this.httpParams)),
 
+            shareReplay(1),
+
         );
     }
 
@@ -100,6 +102,8 @@ export class TreeDatabase<T extends TableDataType> {
             treeInfo[key].onCreationSetup ? treeInfo[key].onCreationSetup(parentDoc, db, currentParams) : db.httpParams = currentParams;
 
             return db.dataChange.pipe(
+
+                tap(d => console.log('datachange emit', d.length)),
 
                 map(docs => {
 
@@ -147,6 +151,8 @@ export class TreeDatabase<T extends TableDataType> {
 
             map(nodes => [].concat(...nodes)),
 
+            tap(d => console.log('treeNodes flatten emit', d.length)),
+
             // startWith([])
 
         );
@@ -180,6 +186,7 @@ export class DynamicTreeFlattener<T, F> {
 
     flatNodeMap = new Map<T, F>();
     structuredNodeMap = new Map<F, T>();
+    parentNodeMap = new Map<F, F>();
 
     constructor(public transformFunction: (node: T, level: number) => F,
                 public getLevel: (node: F) => number,
@@ -206,6 +213,8 @@ export class DynamicTreeFlattener<T, F> {
 
         resultNodes.splice(index + 1, 0, ...children);
 
+        children.filter(c => !this.parentNodeMap.has(c)).forEach(c => this.parentNodeMap.set(c, parentNode));
+
         return resultNodes;
     }
 
@@ -217,7 +226,9 @@ export class DynamicTreeFlattener<T, F> {
 
         for (let i = index + 1; i < resultNodes.length && this.getLevel(resultNodes[i]) > this.getLevel(parentNode); i++, count++) {}
 
-        resultNodes.splice(index + 1, count);
+        const children = resultNodes.splice(index + 1, count);
+
+        children.filter(c => this.parentNodeMap.has(c)).forEach(c => this.parentNodeMap.delete(c));
 
         return resultNodes;
     }
