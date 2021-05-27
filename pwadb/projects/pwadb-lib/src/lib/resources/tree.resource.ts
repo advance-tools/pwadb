@@ -205,6 +205,8 @@ export class DynamicTreeFlattener<T, F> {
 
         const index = resultNodes.indexOf(parentNode);
 
+        console.log('inserting children', parentNode, children);
+
         resultNodes.splice(index + 1, 0, ...children);
 
         children.filter(c => !this.parentNodeMap.has(c)).forEach(c => this.parentNodeMap.set(c, parentNode));
@@ -221,6 +223,8 @@ export class DynamicTreeFlattener<T, F> {
         for (let i = index + 1; i < resultNodes.length && this.getLevel(resultNodes[i]) > this.getLevel(parentNode); i++, count++) {}
 
         const children = resultNodes.splice(index + 1, count);
+
+        console.log('remiving children', parentNode);
 
         children.filter(c => this.parentNodeMap.has(c)).forEach(c => this.parentNodeMap.delete(c));
 
@@ -280,8 +284,6 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
     readonly _flattenedData = new BehaviorSubject<F[]>([]);
     private readonly _data = new BehaviorSubject<T[]>([]);
 
-    toggleNodeMap: Map<F, Observable<F[]>> = new Map();
-
     get data() { return this._data.value; }
 
     set data(value: T[]) {
@@ -315,17 +317,7 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
             if (this._treeFlattener.isExpandable(flatNode)) {
 
-                if (!this.toggleNodeMap.has(flatNode)) {
-
-                    const obs = this._treeFlattener.addChildrenFlatNode(flatNode, this.flattenedData).pipe(
-
-                        shareReplay(1),
-                    );
-
-                    this.toggleNodeMap.set(flatNode, obs);
-                }
-
-                return this.toggleNodeMap.get(flatNode);
+                return this._treeFlattener.addChildrenFlatNode(flatNode, this.flattenedData);
             }
 
             return this._flattenedData.asObservable();
