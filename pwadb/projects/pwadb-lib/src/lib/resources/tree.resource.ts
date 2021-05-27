@@ -280,6 +280,8 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
     readonly _flattenedData = new BehaviorSubject<F[]>([]);
     private readonly _data = new BehaviorSubject<T[]>([]);
 
+    toggleNodeMap: Map<F, Observable<F[]>> = new Map();
+
     get data() { return this._data.value; }
 
     set data(value: T[]) {
@@ -313,7 +315,17 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
             if (this._treeFlattener.isExpandable(flatNode)) {
 
-                return this._treeFlattener.addChildrenFlatNode(flatNode, this.flattenedData);
+                if (!this.toggleNodeMap.has(flatNode)) {
+
+                    const obs = this._treeFlattener.addChildrenFlatNode(flatNode, this.flattenedData).pipe(
+
+                        shareReplay(1),
+                    );
+
+                    this.toggleNodeMap.set(flatNode, obs);
+                }
+
+                return this.toggleNodeMap.get(flatNode);
             }
 
             return this._flattenedData.asObservable();
