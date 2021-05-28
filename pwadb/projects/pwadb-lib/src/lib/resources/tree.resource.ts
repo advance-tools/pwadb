@@ -222,8 +222,6 @@ export class DynamicTreeFlattener<T, F> {
 
         const children = resultNodes.splice(index + 1, count);
 
-        console.log('removing children', parentNode, count);
-
         children.filter(c => this.parentNodeMap.has(c)).forEach(c => this.parentNodeMap.delete(c));
 
         return resultNodes;
@@ -312,8 +310,6 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
     toggleNode(flatNode: F, expand: boolean): Observable<F[]> {
 
         if (expand) {
-
-            console.log('adding children', this._treeFlattener.isExpandable(flatNode));
 
             return this._treeFlattener.addChildrenFlatNode(flatNode, this.flattenedData);
 
