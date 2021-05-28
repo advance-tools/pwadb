@@ -351,7 +351,7 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
             filter(change => !!(change as SelectionChange<F>).added?.length || !!(change as SelectionChange<F>).removed?.length),
 
-            mergeMap(change => this.handleTreeControl(change as SelectionChange<F>)),
+            switchMap(change => this.handleTreeControl(change as SelectionChange<F>)),
 
             tap(v => this._treeControl.dataNodes = v),
 
