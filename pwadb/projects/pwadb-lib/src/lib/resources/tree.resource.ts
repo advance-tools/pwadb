@@ -205,8 +205,6 @@ export class DynamicTreeFlattener<T, F> {
 
         const index = resultNodes.indexOf(parentNode);
 
-        console.log('inserting children', parentNode, children);
-
         resultNodes.splice(index + 1, 0, ...children);
 
         children.filter(c => !this.parentNodeMap.has(c)).forEach(c => this.parentNodeMap.set(c, parentNode));
@@ -255,7 +253,7 @@ export class DynamicTreeFlattener<T, F> {
 
                     map(flatChildren => {
 
-                        this.removeChildrenFlatNodes(parentFlatNode, resultNodes);
+                        resultNodes = this.removeChildrenFlatNodes(parentFlatNode, resultNodes);
 
                         return this.insertChildrenFlatNodes(parentFlatNode, flatChildren, resultNodes);
                     }),
@@ -350,7 +348,7 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
             filter(change => !!(change as SelectionChange<F>).added?.length || !!(change as SelectionChange<F>).removed?.length),
 
-            concatMap(change => this.handleTreeControl(change as SelectionChange<F>)),
+            switchMap(change => this.handleTreeControl(change as SelectionChange<F>)),
 
             tap(v => this._treeControl.dataNodes = v),
 
