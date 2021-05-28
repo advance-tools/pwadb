@@ -1,6 +1,6 @@
 import { HttpParams } from '@angular/common/http';
 import { BehaviorSubject, combineLatest, concat, merge, Observable, of } from 'rxjs';
-import { filter, map, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { concatMap, filter, map, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { PwaDocument } from '../definitions/document';
 import { Database, ReactiveDatabase, TableDataType } from './table.resource';
 import {CollectionViewer, SelectionChange, DataSource} from '@angular/cdk/collections';
@@ -224,7 +224,7 @@ export class DynamicTreeFlattener<T, F> {
 
         const children = resultNodes.splice(index + 1, count);
 
-        console.log('remiving children', parentNode);
+        console.log('removing children', parentNode, count);
 
         children.filter(c => this.parentNodeMap.has(c)).forEach(c => this.parentNodeMap.delete(c));
 
@@ -315,12 +315,9 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
         if (expand) {
 
-            if (this._treeFlattener.isExpandable(flatNode)) {
+            console.log('adding children', this._treeFlattener.isExpandable(flatNode));
 
-                return this._treeFlattener.addChildrenFlatNode(flatNode, this.flattenedData);
-            }
-
-            return this._flattenedData.asObservable();
+            return this._treeFlattener.addChildrenFlatNode(flatNode, this.flattenedData);
 
         } else {
 
@@ -345,7 +342,6 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
             return combineLatest(obsArray).pipe(map((o) => o[obsArray.length - 1]));
         }
 
-        return this._flattenedData.asObservable();
     }
 
     connect(collectionViewer: CollectionViewer): Observable<F[]> {
@@ -354,7 +350,7 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
             filter(change => !!(change as SelectionChange<F>).added?.length || !!(change as SelectionChange<F>).removed?.length),
 
-            mergeMap(change => this.handleTreeControl(change as SelectionChange<F>)),
+            concatMap(change => this.handleTreeControl(change as SelectionChange<F>)),
 
             tap(v => this._treeControl.dataNodes = v),
 
