@@ -288,6 +288,8 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
         const flattenedData = this._treeFlattener.flattenNodes(this.data);
 
+        this._treeControl.expansionModel.clear();
+
         this._treeControl.dataNodes = flattenedData;
 
         this.flattenedData = flattenedData;
@@ -311,7 +313,12 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
         if (expand) {
 
-            return this._treeFlattener.addChildrenFlatNode(flatNode, this.flattenedData);
+            if (this._treeFlattener.isExpandable(flatNode)) {
+
+                return this._treeFlattener.addChildrenFlatNode(flatNode, this.flattenedData);
+            }
+
+            return this._flattenedData.asObservable();
 
         } else {
 
@@ -344,7 +351,7 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
             filter(change => !!(change as SelectionChange<F>).added?.length || !!(change as SelectionChange<F>).removed?.length),
 
-            switchMap(change => this.handleTreeControl(change as SelectionChange<F>)),
+            mergeMap(change => this.handleTreeControl(change as SelectionChange<F>)),
 
             tap(v => this._treeControl.dataNodes = v),
 
