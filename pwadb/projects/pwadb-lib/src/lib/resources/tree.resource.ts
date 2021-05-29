@@ -297,17 +297,19 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
     mergeData(value: T[]) {
 
+        debugger;
+
         this._data.next(value);
 
         const flattenedData = this._treeFlattener.flattenNodes(this.data);
 
-        debugger;
+        const mergedFlattenedSet = new Set(this.flattenedData.concat(flattenedData));
 
-        const appendFlattenedData = this.flattenedData.concat(flattenedData);
+        const mergedFlattenedData = Array.from(mergedFlattenedSet.values());
 
-        this._treeControl.dataNodes = appendFlattenedData;
+        this._treeControl.dataNodes = mergedFlattenedData;
 
-        this.flattenedData = appendFlattenedData;
+        this.flattenedData = mergedFlattenedData;
     }
 
     get flattenedData(): F[] { return this._flattenedData.value; }
