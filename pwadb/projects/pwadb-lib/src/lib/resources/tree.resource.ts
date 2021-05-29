@@ -301,9 +301,9 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
         const flattenedData = this._treeFlattener.flattenNodes(this.data);
 
-        const mergedFlattenedSet = new Set(this.flattenedData.concat(flattenedData));
+        debugger;
 
-        const appendFlattenedData = Array.from(mergedFlattenedSet.values());
+        const appendFlattenedData = this.flattenedData.concat(flattenedData);
 
         this._treeControl.dataNodes = appendFlattenedData;
 
@@ -366,7 +366,7 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
             filter(change => !!(change as SelectionChange<F>).added?.length || !!(change as SelectionChange<F>).removed?.length),
 
-            switchMap(change => this.handleTreeControl(change as SelectionChange<F>)),
+            mergeMap(change => this.handleTreeControl(change as SelectionChange<F>)),
 
             tap(v => this._treeControl.dataNodes = v),
 
