@@ -1,7 +1,7 @@
 import { HttpParams } from '@angular/common/http';
-import { BehaviorSubject, combineLatest, concat, merge, Observable, of } from 'rxjs';
-import { concatMap, filter, map, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
-import { PwaDocument } from '../definitions/document';
+import { BehaviorSubject, combineLatest, merge, Observable, of } from 'rxjs';
+import { filter, map, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { Datatype, PwaDocument } from '../definitions/document';
 import { Database, ReactiveDatabase, TableDataType } from './table.resource';
 import {CollectionViewer, SelectionChange, DataSource} from '@angular/cdk/collections';
 import {FlatTreeControl} from '@angular/cdk/tree';
@@ -275,7 +275,7 @@ export class DynamicTreeFlattener<T, F> {
 
 }
 
-export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
+export class DynamicFlatTreeDataSource<T, F extends Datatype> implements DataSource<F> {
 
     readonly _flattenedData = new BehaviorSubject<F[]>([]);
     private readonly _data = new BehaviorSubject<T[]>([]);
@@ -303,9 +303,11 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
         const flattenedData = this._treeFlattener.flattenNodes(this.data);
 
-        const mergedFlattenedSet = new Set(this.flattenedData.concat(flattenedData));
+        const mergeObj: {[key: string]: F} = {};
 
-        const mergedFlattenedData = Array.from(mergedFlattenedSet.values());
+        this.flattenedData.concat(flattenedData).forEach(f => mergeObj[f.id] = f);
+
+        const mergedFlattenedData = Object.values(mergeObj);
 
         this._treeControl.dataNodes = mergedFlattenedData;
 
@@ -350,14 +352,14 @@ export class DynamicFlatTreeDataSource<T, F> implements DataSource<F> {
 
             const obsArray = change.added.map(node => this.toggleNode(node, true));
 
-            return combineLatest(obsArray).pipe(map((o) => o[obsArray.length - 1]));
+            return combineLatest(obsArray).pipe(map((o) => o.length > 0 ? o[obsArray.length - 1] : []));
         }
 
         if (change.removed) {
 
             const obsArray = change.removed.slice().reverse().map(node => this.toggleNode(node, false));
 
-            return combineLatest(obsArray).pipe(map((o) => o[obsArray.length - 1]));
+            return combineLatest(obsArray).pipe(map((o) => o.length > 0 ? o[obsArray.length - 1] : []));
         }
 
     }
