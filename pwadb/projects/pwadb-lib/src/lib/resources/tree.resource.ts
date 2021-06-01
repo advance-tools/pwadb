@@ -1,6 +1,6 @@
 import { HttpParams } from '@angular/common/http';
-import { BehaviorSubject, combineLatest, merge, Observable, of } from 'rxjs';
-import { filter, map, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, merge, Observable, of, Subscription } from 'rxjs';
+import { auditTime, filter, map, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { Datatype, PwaDocument } from '../definitions/document';
 import { Database, ReactiveDatabase, TableDataType } from './table.resource';
 import {CollectionViewer, SelectionChange, DataSource} from '@angular/cdk/collections';
@@ -280,6 +280,8 @@ export class DynamicFlatTreeDataSource<T, F extends Datatype> implements DataSou
     readonly _flattenedData = new BehaviorSubject<F[]>([]);
     private readonly _data = new BehaviorSubject<T[]>([]);
 
+    subs = new Subscription();
+
     get data() { return this._data.value; }
 
     set data(value: T[]) {
@@ -350,14 +352,21 @@ export class DynamicFlatTreeDataSource<T, F extends Datatype> implements DataSou
 
             const obsArray = change.added.map(node => this.toggleNode(node, true));
 
-            return combineLatest(obsArray).pipe(map((o) => o.length > 0 ? o[obsArray.length - 1] : []));
+            return combineLatest(obsArray).pipe(
+
+                map((o) => o.length > 0 ? o[obsArray.length - 1] : [])
+            );
         }
 
         if (change.removed) {
 
             const obsArray = change.removed.slice().reverse().map(node => this.toggleNode(node, false));
 
-            return combineLatest(obsArray).pipe(map((o) => o.length > 0 ? o[obsArray.length - 1] : []));
+            return combineLatest(obsArray).pipe(
+
+                map((o) => o.length > 0 ? o[obsArray.length - 1] : [])
+
+            );
         }
 
     }
@@ -370,14 +379,23 @@ export class DynamicFlatTreeDataSource<T, F extends Datatype> implements DataSou
 
             mergeMap(change => this.handleTreeControl(change as SelectionChange<F>)),
 
-            tap(v => this._treeControl.dataNodes = v),
-
-            tap(v => this.flattenedData = v),
-
+            auditTime(1000 / 60)
         );
 
-        return merge(collectionViewer.viewChange, changeObs, this._flattenedData.asObservable()).pipe(map(() => this.flattenedData));
+        const subs = changeObs.subscribe((v) => {
+
+            this._treeControl.dataNodes = v;
+
+            this.flattenedData = v;
+        });
+
+        this.subs.add(subs);
+
+        return merge(collectionViewer.viewChange, this._flattenedData.asObservable()).pipe(map(() => this.flattenedData));
     }
 
-    disconnect(collectionViewer: CollectionViewer): void {}
+    disconnect(collectionViewer: CollectionViewer): void {
+
+        this.subs.unsubscribe();
+    }
 }
