@@ -297,8 +297,6 @@ export class DynamicFlatTreeDataSource<T, F extends Datatype> implements DataSou
 
     mergeData(value: T[]) {
 
-        debugger;
-
         this._data.next(value);
 
         const flattenedData = this._treeFlattener.flattenNodes(this.data);
