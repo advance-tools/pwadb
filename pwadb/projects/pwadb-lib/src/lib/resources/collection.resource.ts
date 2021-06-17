@@ -1,6 +1,6 @@
 import { Datatype, getSchema, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, catchError, first, shareReplay, tap, finalize } from 'rxjs/operators';
+import { switchMap, map, catchError, first, shareReplay, tap, finalize, startWith } from 'rxjs/operators';
 import { Observable, of, from, throwError, combineLatest } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -703,11 +703,14 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         params?: HttpParams,
         validQueryKeys = [],
         indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`,
+        wait = false
     ): Observable<PwaListResponse<T>> {
 
         return this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
-            switchMap(idbRes => this.downloadList(idbRes, tenant, url, params, indexedbUrl)),
+            switchMap(idbRes => wait ?
+                this.downloadList(idbRes, tenant, url, params, indexedbUrl) :
+                this.downloadList(idbRes, tenant, url, params, indexedbUrl).pipe(startWith({next: null, previous: null, results: []}))),
 
             switchMap((networkRes) => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
 
@@ -725,7 +728,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<PwaListResponse<T>> {
 
-        return this.listReactive(tenant, url, params, validQueryKeys, indexedbUrl).pipe(
+        return this.listReactive(tenant, url, params, validQueryKeys, indexedbUrl, true).pipe(
 
             first()
         );

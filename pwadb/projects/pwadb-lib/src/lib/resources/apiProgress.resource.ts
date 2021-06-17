@@ -21,7 +21,7 @@ export class ApiProgressService {
 
             distinctUntilChanged(),
 
-            auditTime(1000 / 60),,
+            auditTime(1000 / 60),
 
             enterZone(zone)
         );
