@@ -1,6 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { distinctUntilChanged, map } from 'rxjs/operators';
+import { auditTime, distinctUntilChanged, map } from 'rxjs/operators';
 import { enterZone } from './operators.resource';
 
 @Injectable({
@@ -20,6 +20,8 @@ export class ApiProgressService {
             map(v => !!v.length),
 
             distinctUntilChanged(),
+
+            auditTime(1000 / 60),,
 
             enterZone(zone)
         );

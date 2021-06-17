@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
-import { NgZone } from '@angular/core';
+import { ApplicationRef, NgZone } from '@angular/core';
 import { RxCollectionCreator, RxDatabase } from 'rxdb';
-import { BehaviorSubject, combineLatest, from, Observable, of, throwError } from 'rxjs';
-import { catchError, concatMap, filter, finalize, first, map, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, concat, from, Observable, of, throwError } from 'rxjs';
+import { auditTime, catchError, concatMap, filter, finalize, first, map, shareReplay, switchMap, take, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
@@ -47,7 +47,12 @@ export class SyncCollectionService {
         httpClient: null,
     };
 
-    constructor(private _config: Partial<SyncCollectionServiceCreator>) {
+    storedCollections: Observable<SynchroniseDocTypeExtras[]>;
+
+    constructor(
+        private _config: Partial<SyncCollectionServiceCreator>,
+        private appRef: ApplicationRef,
+    ) {
 
         this.config = {
             ...this.config,
@@ -55,65 +60,8 @@ export class SyncCollectionService {
         };
 
         this.retryChange = new BehaviorSubject(true);
-    }
 
-    get collection$(): Observable<SynchroniseCollection> {
-
-        if (this._collection$) { return this._collection$; }
-
-        const collectionSchema = {};
-
-        collectionSchema[this.config.name] = getSynchroniseCollectionCreator(
-            this.config.name,
-            synchroniseCollectionMethods,
-            synchroniseDocMethods,
-            this.config.attachments,
-            this.config.options,
-            this.config.migrationStrategies,
-            this.config.autoMigrate
-        );
-
-        this._collection$ = this.config.db$.pipe(
-
-            // tslint:disable-next-line: max-line-length
-            switchMap(db => from(db.addCollections(collectionSchema))),
-
-            map(collections => collections[this.config.name]),
-
-            shareReplay(1),
-
-            first()
-        );
-
-        return this._collection$;
-    }
-
-
-    addSynchroniseDocument(data: SynchroniseDocType): Observable<SynchroniseDocument> {
-
-        return this.collection$.pipe(
-
-            switchMap(col => col.atomicUpsert(data))
-        );
-    }
-
-    /////////////////////////////
-    // Synchronisation Management
-    //////////////////////////////
-
-    startSync() {
-
-        this.retryChange.next(true);
-    }
-
-    stopSync() {
-
-        this.retryChange.next(false);
-    }
-
-    getCollections(): Observable<SynchroniseDocTypeExtras[]> {
-
-        return this.collection$.pipe(
+        this.storedCollections = this.collection$.pipe(
 
             switchMap(col => col.find().$),
 
@@ -205,12 +153,68 @@ export class SyncCollectionService {
 
                 });
             }),
+
+            shareReplay(1),
         );
+    }
+
+    get collection$(): Observable<SynchroniseCollection> {
+
+        if (this._collection$) { return this._collection$; }
+
+        const collectionSchema = {};
+
+        collectionSchema[this.config.name] = getSynchroniseCollectionCreator(
+            this.config.name,
+            synchroniseCollectionMethods,
+            synchroniseDocMethods,
+            this.config.attachments,
+            this.config.options,
+            this.config.migrationStrategies,
+            this.config.autoMigrate
+        );
+
+        this._collection$ = this.config.db$.pipe(
+
+            // tslint:disable-next-line: max-line-length
+            switchMap(db => from(db.addCollections(collectionSchema))),
+
+            map(collections => collections[this.config.name]),
+
+            shareReplay(1),
+
+            first()
+        );
+
+        return this._collection$;
+    }
+
+
+    addSynchroniseDocument(data: SynchroniseDocType): Observable<SynchroniseDocument> {
+
+        return this.collection$.pipe(
+
+            switchMap(col => col.atomicUpsert(data))
+        );
+    }
+
+    /////////////////////////////
+    // Synchronisation Management
+    //////////////////////////////
+
+    startSync() {
+
+        this.retryChange.next(true);
+    }
+
+    stopSync() {
+
+        this.retryChange.next(false);
     }
 
     unsynchronised(tenant: string, order: 'desc' | 'asc' = 'asc'): Observable<PwaDocument<any>[]> {
 
-        return this.getCollections().pipe(
+        return this.storedCollections.pipe(
 
             switchMap((collectionsInfo) => {
 
@@ -223,7 +227,10 @@ export class SyncCollectionService {
 
                 const sortedDocs$ = collectionsInfo.map(k => {
 
-                    return from(k.collection.find(query).$);
+                    return from(k.collection.find(query).$.pipe(
+
+                        auditTime(1000 / 60)
+                    ));
                 });
 
                 return combineLatest(sortedDocs$);
@@ -353,44 +360,52 @@ export class SyncCollectionService {
     // Evict Management
     ////////////////////////
 
-    evict(): Observable<PwaDocument<any>[]> {
+    evict(): Observable<any> {
 
-        return this.getCollections().pipe(
+        return this.storedCollections.pipe(
 
-            map(collectionInfo => {
+            take(1),
+
+            tap(collectionInfo => {
 
                 return collectionInfo.map(k => {
 
                     const cacheAllowedAge = new Date().getTime() - (k.collectionEvictTime * 1000);
 
-                    return from(k.collection.find({selector: {$and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]}}).remove());
+                    // tslint:disable-next-line: max-line-length
+                    k.collection.preSave(() => k.collection.find({selector: {$and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]}}).remove(), false);
+
                 });
             }),
-
-            switchMap(v => combineLatest(v)),
-
-            map(v => [].concat(...v)),
         );
 
     }
 
     // tslint:disable-next-line: max-line-length
-    skipTrim(): Observable<PwaDocument<any>[]> {
+    skipTrim(): Observable<any> {
 
-        return this.getCollections().pipe(
+        return this.storedCollections.pipe(
 
-            map((collectionInfo) => {
+            take(1),
+
+            tap((collectionInfo) => {
 
                 return collectionInfo.map(k => {
 
                     // tslint:disable-next-line: max-line-length
-                    return from(k.collection.find({selector: {method: {$eq: 'GET'}}, sort: [{time: 'desc'}], skip: k.collectionSkipDocuments}).remove());
+                    k.collection.preSave(() => k.collection.find({selector: {method: {$eq: 'GET'}}, sort: [{time: 'desc'}], skip: k.collectionSkipDocuments}).remove(), false);
                 });
             }),
+        );
+    }
 
-            switchMap(v => combineLatest(v)),
+    startEviction() {
 
-            map(v => [].concat(...v)),
+        return this.appRef.isStable.pipe(
+
+            take(1),
+
+            switchMap(() => concat(this.evict(), this.skipTrim()))
         );
     }
 
