@@ -2,7 +2,7 @@ import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { Datatype, PwaDocument } from '../definitions/document';
 import { HttpParams } from '@angular/common/http';
 import { PwaListResponse } from '../definitions/collection';
-import { switchMap, tap, shareReplay, map, filter, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { switchMap, tap, shareReplay, map, filter, auditTime, distinctUntilChanged } from 'rxjs/operators';
 import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 
@@ -127,7 +127,7 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
 
             switchMap(v => combineLatest(v)),
 
-            debounceTime(10),
+            auditTime(1000 / 60),
 
             tap(res => this.lastRes = res.length > 0 ? res[res.length - 1] : null),
 
@@ -195,7 +195,7 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
 
             switchMap(v => combineLatest(v)),
 
-            debounceTime(10),
+            auditTime(1000 / 60),
 
             tap(res => this.lastRes = res.length > 0 ? res[res.length - 1] : null),
 
