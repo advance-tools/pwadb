@@ -1,6 +1,6 @@
 import { Datatype, getSchema, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take } from 'rxjs/operators';
+import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take, auditTime } from 'rxjs/operators';
 import { Observable, of, from, throwError, combineLatest } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -610,11 +610,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 this.downloadRetrieve(doc, tenant, url, params).pipe(startWith(null))
             ),
 
-            tap(v => console.log('wait', wait, 'output', v)),
-
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
 
-            tap(v => console.log('getReactive', v)),
+            auditTime(1000 / 60),
+
+            tap(v => console.log('reactive', v.toJSON().data.id)),
         );
     }
 
