@@ -610,7 +610,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 this.downloadRetrieve(doc, tenant, url, params).pipe(startWith(null))
             ),
 
+            tap(v => console.log('wait', wait, 'output', v)),
+
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
+
+            tap(v => console.log('getReactive', v)),
         );
     }
 
