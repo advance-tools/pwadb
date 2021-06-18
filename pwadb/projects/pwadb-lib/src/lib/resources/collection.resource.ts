@@ -1,6 +1,6 @@
 import { Datatype, getSchema, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, catchError, first, shareReplay, tap, finalize, startWith } from 'rxjs/operators';
+import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take } from 'rxjs/operators';
 import { Observable, of, from, throwError, combineLatest } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -241,6 +241,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                     this.config.collectionSkipDocuments$
                 ]).pipe(
 
+                    take(1),
+
                     switchMap(([collections, collectionEvictTime, collectionSkipDocuments]) => {
 
                         if (this.config.synchroniseService) {
@@ -302,7 +304,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             shareReplay(1),
 
-            first()
+            take(1),
         );
 
         return this._collection$;
@@ -374,7 +376,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return this.getReactive(tenant, url).pipe(
 
-            first(),
+            take(1),
         );
     }
 
@@ -404,7 +406,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return this.listReactive(tenant, url, params, validQueryKeys).pipe(
 
-            first()
+            take(1)
         );
     }
 
@@ -605,7 +607,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
             switchMap(doc => wait ?
                 this.downloadRetrieve(doc, tenant, url, params) :
-                this.downloadRetrieve(doc, tenant, url, params).pipe(startWith([]))
+                this.downloadRetrieve(doc, tenant, url, params).pipe(startWith(null))
             ),
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
@@ -616,7 +618,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return this.getReactive(tenant, url, params, true).pipe(
 
-            first()
+            take(1)
         );
     }
 
@@ -733,7 +735,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return this.listReactive(tenant, url, params, validQueryKeys, indexedbUrl, true).pipe(
 
-            first()
+            take(1)
         );
 
     }

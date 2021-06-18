@@ -364,18 +364,21 @@ export class SyncCollectionService {
 
         return this.storedCollections.pipe(
 
-            take(1),
+            switchMap(collectionInfo => {
 
-            tap(collectionInfo => {
-
-                return collectionInfo.map(k => {
+                const evicts = collectionInfo.map(k => {
 
                     const cacheAllowedAge = new Date().getTime() - (k.collectionEvictTime * 1000);
 
-                    // tslint:disable-next-line: max-line-length
-                    k.collection.preSave(() => k.collection.find({selector: {$and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]}}).remove(), false);
+                    return k.collection.insert$.pipe(
+
+                        // tslint:disable-next-line: max-line-length
+                        switchMap(() => k.collection.find({selector: {$and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]}}).remove())
+                    );
 
                 });
+
+                return combineLatest(evicts);
             }),
         );
 
@@ -386,15 +389,18 @@ export class SyncCollectionService {
 
         return this.storedCollections.pipe(
 
-            take(1),
+            switchMap((collectionInfo) => {
 
-            tap((collectionInfo) => {
+                const skipTrims = collectionInfo.map(k => {
 
-                return collectionInfo.map(k => {
+                    return k.collection.insert$.pipe(
 
-                    // tslint:disable-next-line: max-line-length
-                    k.collection.preSave(() => k.collection.find({selector: {method: {$eq: 'GET'}}, sort: [{time: 'desc'}], skip: k.collectionSkipDocuments}).remove(), false);
+                        // tslint:disable-next-line: max-line-length
+                        switchMap(() => k.collection.find({selector: {method: {$eq: 'GET'}}, sort: [{time: 'desc'}], skip: k.collectionSkipDocuments}).remove())
+                    );
                 });
+
+                return combineLatest(skipTrims);
             }),
         );
     }
