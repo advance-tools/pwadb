@@ -613,8 +613,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
 
             auditTime(1000 / 60),
-
-            tap(v => console.log('reactive', v.toJSON().data.id)),
         );
     }
 
