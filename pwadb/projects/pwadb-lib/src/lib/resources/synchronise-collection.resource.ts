@@ -49,10 +49,7 @@ export class SyncCollectionService {
 
     storedCollections: Observable<SynchroniseDocTypeExtras[]>;
 
-    constructor(
-        private _config: Partial<SyncCollectionServiceCreator>,
-        private appRef: ApplicationRef,
-    ) {
+    constructor(private _config: Partial<SyncCollectionServiceCreator>) {
 
         this.config = {
             ...this.config,
@@ -402,16 +399,6 @@ export class SyncCollectionService {
 
                 return combineLatest(skipTrims);
             }),
-        );
-    }
-
-    startEviction() {
-
-        return this.appRef.isStable.pipe(
-
-            take(1),
-
-            switchMap(() => concat(this.evict(), this.skipTrim()))
         );
     }
 
