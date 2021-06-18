@@ -360,8 +360,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
-                shareReplay(1),
-
                 enterZone<PwaDocument<T>>(this.config.ngZone),
             );
 
