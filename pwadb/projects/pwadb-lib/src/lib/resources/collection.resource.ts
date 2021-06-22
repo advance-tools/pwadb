@@ -360,8 +360,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
-                auditTime(1000 / 60),
-
                 shareReplay(1),
 
                 enterZone<PwaDocument<T>>(this.config.ngZone),
@@ -611,6 +609,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 this.downloadRetrieve(doc, tenant, url, params) :
                 this.downloadRetrieve(doc, tenant, url, params).pipe(startWith(null))
             ),
+
+            auditTime(1000 / 60),
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
 
