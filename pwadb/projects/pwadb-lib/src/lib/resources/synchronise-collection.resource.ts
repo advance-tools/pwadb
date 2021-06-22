@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
-import { ApplicationRef, NgZone } from '@angular/core';
+import { NgZone } from '@angular/core';
 import { RxCollectionCreator, RxDatabase } from 'rxdb';
-import { BehaviorSubject, combineLatest, concat, from, Observable, of, throwError } from 'rxjs';
-import { auditTime, catchError, concatMap, filter, finalize, first, map, shareReplay, switchMap, take, tap } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, from, Observable, of, throwError } from 'rxjs';
+import { auditTime, catchError, concatMap, filter, finalize, first, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
