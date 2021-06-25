@@ -228,7 +228,7 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
 
             if (validQueryKeys.indexOf(k) > -1) {
 
-                const query = getQuery(decodeURIComponent(k), decodeURIComponent(params.getAll(k).join(',')));
+                const query = getQuery(decodeURIComponent(k), params.getAll(k).join(','));
 
                 if (query.queryType === 'filter') { docs = filter(query.fields[0], query.inputValue, docs, query.lookup); }
             }
@@ -242,7 +242,7 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
 
             if (validQueryKeys.indexOf(k) > -1) {
 
-                const query = getQuery(decodeURIComponent(k), decodeURIComponent(params.getAll(k).join(',')));
+                const query = getQuery(decodeURIComponent(k), params.getAll(k).join(','));
 
                 if (query.queryType === 'exclude') { docs = exclude(query.fields[0], query.inputValue, docs, query.lookup); }
             }
@@ -256,7 +256,7 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
 
             if (validQueryKeys.indexOf(k) > -1) {
 
-                const query = getQuery(decodeURIComponent(k), decodeURIComponent(params.getAll(k).join(',')));
+                const query = getQuery(decodeURIComponent(k), params.getAll(k).join(','));
 
                 if (query.queryType === 'ordering') { docs = orderBy(query.fields, docs); }
             }
@@ -270,7 +270,7 @@ export function queryFilter(validQueryKeys: string[], params: HttpParams, docs: 
 
             if (validQueryKeys.indexOf(k) > -1) {
 
-                const query = getQuery(decodeURIComponent(k), decodeURIComponent(params.getAll(k).join(',')));
+                const query = getQuery(decodeURIComponent(k), params.getAll(k).join(','));
 
                 if (query.queryType === 'distinct') { docs = distinct(query.fields, docs); }
             }
