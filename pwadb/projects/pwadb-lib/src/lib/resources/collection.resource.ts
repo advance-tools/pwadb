@@ -51,9 +51,9 @@ export class RestAPI<T extends Datatype> {
 
     get(url: string, params?: HttpParams): Observable<T> {
 
-        const paramsUrl = params?.keys().map(k => `${k}=${params.get(k)}`).join('&');
+        const paramsUrl = params?.keys().map(k => `${k}=${params.getAll(k).join(',')}`).join('&');
 
-        const cacheKey = decodeURIComponent(`${url}${paramsUrl ? '?' + paramsUrl : ''}`);
+        const cacheKey = `${url}${paramsUrl ? '?' + paramsUrl : ''}`;
 
         const req = of(true).pipe(
 
@@ -132,9 +132,9 @@ export class RestAPI<T extends Datatype> {
 
     list(url: string, params?: HttpParams): Observable<ListResponse<T>> {
 
-        const paramsUrl = params?.keys().map(k => `${k}=${params.get(k)}`).join('&');
+        const paramsUrl = params?.keys().map(k => `${k}=${params.getAll(k).join(',')}`).join('&');
 
-        const cacheKey = decodeURIComponent(`${url}${paramsUrl ? '?' + paramsUrl : ''}`);
+        const cacheKey = `${url}${paramsUrl ? '?' + paramsUrl : ''}`;
 
         const req = of(true).pipe(
 
