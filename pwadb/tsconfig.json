@@ -25,7 +25,6 @@
     },
     "incremental": true,
     "removeComments": true,
-    "emitDecoratorMetadata": true,
     "suppressImplicitAnyIndexErrors": true,
     "typeRoots": [
       "../../node_modules/@types/"
