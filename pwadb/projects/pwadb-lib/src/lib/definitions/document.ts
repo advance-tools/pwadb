@@ -13,6 +13,7 @@ export type PwaDocType<T extends Datatype> = {
     data: T | null;
     time: number;
     error: string | null;
+    fileFields: string[];
     createdAt: number;
     updatedAt: number;
 };
@@ -25,7 +26,7 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
     title: name + '_store',
     description: `Store ${name} types of data in the collection`,
     keyCompression: false,
-    version: 1,
+    version: 2,
     type: 'object',
     properties: {
         tenantUrl: {
@@ -47,6 +48,14 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
         },
         error: {
             type: ['string', 'null'],
+        },
+        fileFields: {
+            type: ['array'],
+            default: [],
+            uniqueItems: true,
+            items: {
+                type: ['string']
+            }
         },
         createdAt: {
             type: 'integer',
