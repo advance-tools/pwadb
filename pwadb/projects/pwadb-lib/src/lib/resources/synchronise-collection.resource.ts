@@ -303,7 +303,7 @@ export class SyncCollectionService {
 
                     Object.keys(doc.toJSON().data).forEach(k => formData.set(k, doc.data[k]));
 
-                    doc.fileFields.forEach(k => formData.set(k.fileField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType})));
+                    doc.fileFields.forEach(k => formData.set(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType})));
 
                     console.log('formData', formData);
 
