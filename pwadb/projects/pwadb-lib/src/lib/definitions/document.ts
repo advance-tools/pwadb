@@ -10,6 +10,7 @@ export interface FileConfig {
     fileField: string;
     fileNameField: string;
     fileType: string;
+    fileKeyField: string;
 }
 
 export type PwaDocType<T extends Datatype> = {
@@ -32,7 +33,7 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
     title: name + '_store',
     description: `Store ${name} types of data in the collection`,
     keyCompression: false,
-    version: 3,
+    version: 4,
     type: 'object',
     properties: {
         tenantUrl: {
@@ -68,6 +69,9 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
                         type: ['string']
                     },
                     fileType: {
+                        type: ['string']
+                    },
+                    fileKeyField: {
                         type: ['string']
                     }
                 }
