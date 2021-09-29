@@ -1,4 +1,4 @@
-import { Datatype, getSchema, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
+import { Datatype, FileConfig, getSchema, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
 import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take, auditTime } from 'rxjs/operators';
 import { Observable, of, from, throwError, combineLatest } from 'rxjs';
@@ -414,7 +414,7 @@ export class CollectionAPI<T extends Datatype, Database> {
     // Actions
     /////////////
 
-    post(tenant: string, url: string, data: T): Observable<PwaDocument<T>> {
+    post(tenant: string, url: string, data: T, fileFields: FileConfig[] = []): Observable<PwaDocument<T>> {
 
         return this.collection$.pipe(
 
@@ -425,11 +425,12 @@ export class CollectionAPI<T extends Datatype, Database> {
                 data,
                 error: null,
                 time: new Date().getTime(),
+                fileFields
             })),
         );
     }
 
-    put(tenant: string, url: string, data: T): Observable<PwaDocument<T>> {
+    put(tenant: string, url: string, data: T, fileFields: FileConfig[] = []): Observable<PwaDocument<T>> {
 
         return combineLatest([this.get(tenant, url), this.collection$]).pipe(
 
@@ -442,7 +443,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                         method: oldData.method !== 'POST' ? 'PUT' : oldData.method,
                         data,
                         error: null,
-                        time: oldData.method === 'GET' ? new Date().getTime() : oldData.time
+                        time: oldData.method === 'GET' ? new Date().getTime() : oldData.time,
+                        fileFields
                     }));
 
                 } else {
