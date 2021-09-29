@@ -1,21 +1,21 @@
 steps:
-    -
-        id: Build
-        name: gcr.io/cloud-builders/yarn
-        entrypoint: /bin/sh
-        args:
-          - '-c'
-          - |
-              yarn install && yarn build
-        dir: '/workspace/pwadb'
-    -   
-        id: Publish
-        name: gcr.io/cloud-builders/yarn
-        entrypoint: /bin/sh
-        args:
-        - '-c'
-        - |
-            npm config set @advance-tools:registry ${_GIT_REGISTRY} &&
-            npm config set //npm.pkg.github.com/:_authToken ${_NPM_TOKEN} &&
-            npm publish
-        dir: '/workspace/pwadb/dist/pwadb-lib'
+  -
+    id: Build
+    name: gcr.io/cloud-builders/yarn
+    entrypoint: /bin/sh
+    args:
+      - '-c'
+      - |
+          yarn install && yarn build
+    dir: '/workspace/pwadb'
+  -   
+    id: Publish
+    name: gcr.io/cloud-builders/yarn
+    entrypoint: /bin/sh
+    args:
+    - '-c'
+    - |
+        npm config set @advance-tools:registry ${_GIT_REGISTRY} &&
+        npm config set //npm.pkg.github.com/:_authToken ${_NPM_TOKEN} &&
+        npm publish
+    dir: '/workspace/pwadb/dist/pwadb-lib'

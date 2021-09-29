@@ -6,6 +6,12 @@ export type Datatype = {
     id: string;
 };
 
+export interface FileConfig {
+    fileField: string;
+    fileNameField: string;
+    fileType: string;
+}
+
 export type PwaDocType<T extends Datatype> = {
     tenantUrl: string;
     matchUrl: string;
@@ -13,7 +19,7 @@ export type PwaDocType<T extends Datatype> = {
     data: T | null;
     time: number;
     error: string | null;
-    fileFields: string[];
+    fileFields: FileConfig[];
     createdAt: number;
     updatedAt: number;
 };
@@ -26,7 +32,7 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
     title: name + '_store',
     description: `Store ${name} types of data in the collection`,
     keyCompression: false,
-    version: 2,
+    version: 3,
     type: 'object',
     properties: {
         tenantUrl: {
@@ -52,9 +58,19 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
         fileFields: {
             type: ['array'],
             default: [],
-            uniqueItems: true,
             items: {
-                type: ['string']
+                type: ['object'],
+                properties: {
+                    fileField: {
+                        type: ['string']
+                    },
+                    fileNameField: {
+                        type: ['string']
+                    },
+                    fileType: {
+                        type: ['string']
+                    }
+                }
             }
         },
         createdAt: {
@@ -65,7 +81,8 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
         }
     },
     encrypted: [
-        'data'
+        'data',
+        'fileFields'
     ],
 });
 

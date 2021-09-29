@@ -263,7 +263,15 @@ export class SyncCollectionService {
 
                     url.splice(url.length - 1, 1);
 
-                    return this.config.httpClient.post(url.join('/'), doc.data).pipe(
+                    const formData = new FormData();
+
+                    Object.keys(doc.toJSON().data).forEach(k => formData.set(k, doc.data[k]))
+
+                    doc.fileFields.forEach(k => formData.set(k.fileField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType})));
+
+                    console.log('formData', formData);
+
+                    return this.config.httpClient.post(url.join('/'), formData).pipe(
 
                         switchMap(res => doc.atomicUpdate(oldData => ({
                             ...oldData,
@@ -291,7 +299,15 @@ export class SyncCollectionService {
 
                 } else if (doc.method === 'PUT') {
 
-                    return this.config.httpClient.put(doc.tenantUrl.split('____')[1], doc.data).pipe(
+                    const formData = new FormData();
+
+                    Object.keys(doc.toJSON().data).forEach(k => formData.set(k, doc.data[k]))
+
+                    doc.fileFields.forEach(k => formData.set(k.fileField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType})));
+
+                    console.log('formData', formData);
+
+                    return this.config.httpClient.put(doc.tenantUrl.split('____')[1], formData).pipe(
 
                         switchMap(res => doc.atomicUpdate(oldData => ({
                             ...oldData,
