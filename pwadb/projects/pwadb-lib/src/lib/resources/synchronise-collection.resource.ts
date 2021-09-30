@@ -267,7 +267,12 @@ export class SyncCollectionService {
 
                     Object.keys(doc.toJSON().data).forEach(k => formData.set(k, doc.data[k]));
 
-                    doc.fileFields.forEach(k => formData.set(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType})));
+                    doc.fileFields.forEach(k => {
+
+                        if (formData.has(k.fileField)) formData.delete(k.fileField);
+
+                        formData.set(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
+                    });
 
                     console.log('formData', formData);
 
@@ -303,9 +308,12 @@ export class SyncCollectionService {
 
                     Object.keys(doc.toJSON().data).forEach(k => formData.set(k, doc.data[k]));
 
-                    doc.fileFields.forEach(k => formData.set(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType})));
+                    doc.fileFields.forEach(k => {
 
-                    console.log('formData', formData);
+                        if (formData.has(k.fileField)) formData.delete(k.fileField);
+
+                        formData.set(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
+                    });
 
                     return this.config.httpClient.put(doc.tenantUrl.split('____')[1], formData).pipe(
 
