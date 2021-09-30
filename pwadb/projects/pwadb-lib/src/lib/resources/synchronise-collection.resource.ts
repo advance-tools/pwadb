@@ -265,7 +265,17 @@ export class SyncCollectionService {
 
                     const formData = new FormData();
 
-                    Object.keys(doc.toJSON().data).forEach(k => formData.set(k, doc.data[k]));
+                    Object.keys(doc.toJSON().data).forEach(k => {
+
+                        if (doc.data[k] === null || doc.data[k] === undefined) {
+
+                            formData.set(k, '');
+
+                        } else {
+
+                            formData.set(k, doc.data[k]);
+                        }
+                    });
 
                     doc.fileFields.forEach(k => {
 
@@ -277,8 +287,6 @@ export class SyncCollectionService {
 
                         formData.set(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
                     });
-
-                    console.log('formData', formData);
 
                     return this.config.httpClient.post(url.join('/'), formData).pipe(
 
@@ -310,7 +318,17 @@ export class SyncCollectionService {
 
                     const formData = new FormData();
 
-                    Object.keys(doc.toJSON().data).forEach(k => formData.set(k, doc.data[k]));
+                    Object.keys(doc.toJSON().data).forEach(k => {
+
+                        if (doc.data[k] === null || doc.data[k] === undefined) {
+
+                            formData.set(k, '');
+
+                        } else {
+
+                            formData.set(k, doc.data[k]);
+                        }
+                    });
 
                     doc.fileFields.forEach(k => {
 
