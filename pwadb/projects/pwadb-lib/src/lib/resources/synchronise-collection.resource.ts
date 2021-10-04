@@ -279,11 +279,11 @@ export class SyncCollectionService {
 
                     doc.fileFields.forEach(k => {
 
-                        if (formData.has(k.fileField)) formData.delete(k.fileField);
+                        formData.delete(k.fileField);
 
-                        if (formData.has(k.fileNameField)) formData.delete(k.fileNameField);
+                        formData.delete(k.fileNameField);
 
-                        if (formData.has(k.fileType)) formData.delete(k.fileType);
+                        formData.delete(k.fileType);
 
                         if (k.fileKeyField && k.fileField && k.fileType) formData.set(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
                     });
@@ -332,11 +332,11 @@ export class SyncCollectionService {
 
                     doc.fileFields.forEach(k => {
 
-                        if (formData.has(k.fileField)) formData.delete(k.fileField);
+                        formData.delete(k.fileField);
 
-                        if (formData.has(k.fileNameField)) formData.delete(k.fileNameField);
+                        formData.delete(k.fileNameField);
 
-                        if (formData.has(k.fileType)) formData.delete(k.fileType);
+                        formData.delete(k.fileType);
 
                         if (k.fileKeyField && k.fileField && k.fileType) formData.set(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
                     });
