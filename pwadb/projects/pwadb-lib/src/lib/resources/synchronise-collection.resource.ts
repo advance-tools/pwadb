@@ -263,19 +263,7 @@ export class SyncCollectionService {
 
                     url.splice(url.length - 1, 1);
 
-                    const formData = new FormData();
-
-                    Object.keys(doc.toJSON().data).forEach(k => {
-
-                        if (doc.data[k] === null || doc.data[k] === undefined) {
-
-                            formData.set(k, '');
-
-                        } else {
-
-                            formData.set(k, doc.data[k]);
-                        }
-                    });
+                    const formData = createFormData(doc.toJSON().data);
 
                     doc.fileFields.forEach(k => {
 
@@ -316,19 +304,7 @@ export class SyncCollectionService {
 
                 } else if (doc.method === 'PUT') {
 
-                    const formData = new FormData();
-
-                    Object.keys(doc.toJSON().data).forEach(k => {
-
-                        if (doc.data[k] === null || doc.data[k] === undefined) {
-
-                            formData.set(k, '');
-
-                        } else {
-
-                            formData.set(k, doc.data[k]);
-                        }
-                    });
+                    const formData = createFormData(doc.toJSON().data);
 
                     doc.fileFields.forEach(k => {
 
@@ -481,4 +457,23 @@ export class SyncCollectionService {
 
         return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
     }
+}
+
+
+export function createFormData(object: Object, form?: FormData, namespace?: string): FormData {
+    const formData = form || new FormData();
+    for (let property in object) {
+        if (!object.hasOwnProperty(property) || !object[property]) {
+            continue;
+        }
+        const formKey = namespace ? `${namespace}[${property}]` : property;
+        if (object[property] instanceof Date) {
+            formData.append(formKey, object[property].toISOString());
+        } else if (typeof object[property] === 'object' && !(object[property] instanceof File)) {
+            createFormData(object[property], formData, formKey);
+        } else {
+            formData.append(formKey, object[property]);
+        }
+    }
+    return formData;
 }
