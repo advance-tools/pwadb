@@ -466,11 +466,6 @@ export function createFormData(object: Object, form?: FormData, namespace?: stri
 
     for (let property in object) {
 
-        if (!object.hasOwnProperty(property)) {
-
-            continue;
-        }
-
         const formKey = namespace ? `${namespace}[${property}]` : property;
 
         if (object[property] instanceof Date) {
