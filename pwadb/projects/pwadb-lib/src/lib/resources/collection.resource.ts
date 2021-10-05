@@ -78,7 +78,7 @@ export class RestAPI<T extends Datatype> {
         return this.cache.get(cacheKey) as Observable<T>;
     }
 
-    post(url: string, data: Partial<T>): Observable<T> {
+    post(url: string, data: Partial<T> | FormData): Observable<T> {
 
         const cacheKey = url;
 
@@ -104,7 +104,7 @@ export class RestAPI<T extends Datatype> {
         return this.cache.get(cacheKey) as Observable<T>;
     }
 
-    put(url: string, data: Partial<T>): Observable<T> {
+    put(url: string, data: Partial<T> | FormData): Observable<T> {
 
         const cacheKey = url;
 
