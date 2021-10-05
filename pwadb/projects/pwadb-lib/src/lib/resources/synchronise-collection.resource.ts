@@ -483,7 +483,7 @@ export function createFormData(object: Object, form?: FormData, namespace?: stri
 
         } else {
 
-            formData.append(formKey, object[property]);
+            formData.append(formKey, object[property] === null || object[property] === undefined ? '' : object[property]);
         }
     }
 
