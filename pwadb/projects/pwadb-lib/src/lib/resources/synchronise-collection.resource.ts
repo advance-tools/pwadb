@@ -464,7 +464,7 @@ export function createFormData(object: Object, form?: FormData, namespace?: stri
 
     const formData = form || new FormData();
 
-    for (let property in object) {
+    for (const property in object) {
 
         const formKey = namespace ? `${namespace}[${property}]` : property;
 
@@ -472,7 +472,7 @@ export function createFormData(object: Object, form?: FormData, namespace?: stri
 
             formData.append(formKey, object[property].toISOString());
 
-        } else if (typeof object[property] === 'object' && !(object[property] instanceof File)) {
+        } else if (typeof object[property] === 'object' && !(object[property] instanceof File) && object[property] !== null && object[property] !== undefined) {
 
             createFormData(object[property], formData, formKey);
 
