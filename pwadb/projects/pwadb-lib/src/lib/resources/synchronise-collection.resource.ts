@@ -460,13 +460,22 @@ export class SyncCollectionService {
 }
 
 
-export function createFormData(object: Object, form?: FormData, namespace?: string): FormData {
+export function createFormData(object: Object, form?: FormData, namespace?: string, isArray = false): FormData {
 
     const formData = form || new FormData();
 
     for (const property in object) {
 
-        const formKey = namespace ? `${namespace}[${property}]` : property;
+        let formKey = '';
+
+        if (isArray) {
+
+            formKey = namespace ? `${namespace}[${property}]` : property;
+
+        } else {
+
+            formKey = namespace ? `${namespace}.${property}` : property;
+        }
 
         if (object[property] instanceof Date) {
 
@@ -474,7 +483,7 @@ export function createFormData(object: Object, form?: FormData, namespace?: stri
 
         } else if (typeof object[property] === 'object' && !(object[property] instanceof File) && object[property] !== null && object[property] !== undefined) {
 
-            createFormData(object[property], formData, formKey);
+            createFormData(object[property], formData, formKey, typeof object[property] === 'object' && Array.isArray(object[property]));
 
         } else {
 
