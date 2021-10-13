@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, from, Observable, of, throwError } from 'rxjs';
@@ -263,20 +263,20 @@ export class SyncCollectionService {
 
                     url.splice(url.length - 1, 1);
 
-                    const formData = createFormData(doc.toJSON().data);
+                    const formData: {} = doc.toJSON().data;
 
                     doc.fileFields.forEach(k => {
 
-                        formData.delete(k.fileField);
+                        delete formData[k.fileField];
 
-                        formData.delete(k.fileNameField);
+                        delete formData[k.fileNameField];
 
-                        formData.delete(k.fileType);
+                        delete formData[k.fileType];
 
-                        if (k.fileKeyField && k.fileField && k.fileType) formData.set(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
+                        if (k.fileKeyField && k.fileField && k.fileType) formData[k.fileKeyField] = new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType});
                     });
 
-                    return this.config.httpClient.post(url.join('/'), formData).pipe(
+                    return this.config.httpClient.post(url.join('/'), formData, {headers: new HttpHeaders({'Content-Type': doc.fileFields.length ? 'multipart/form-data' : 'application/json'})}).pipe(
 
                         switchMap(res => doc.atomicUpdate(oldData => ({
                             ...oldData,
@@ -304,20 +304,20 @@ export class SyncCollectionService {
 
                 } else if (doc.method === 'PUT') {
 
-                    const formData = createFormData(doc.toJSON().data);
+                    const formData: {} = doc.toJSON().data;
 
                     doc.fileFields.forEach(k => {
 
-                        formData.delete(k.fileField);
+                        delete formData[k.fileField];
 
-                        formData.delete(k.fileNameField);
+                        delete formData[k.fileNameField];
 
-                        formData.delete(k.fileType);
+                        delete formData[k.fileType];
 
-                        if (k.fileKeyField && k.fileField && k.fileType) formData.set(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
+                        if (k.fileKeyField && k.fileField && k.fileType) formData[k.fileKeyField] = new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType});
                     });
 
-                    return this.config.httpClient.put(doc.tenantUrl.split('____')[1], formData).pipe(
+                    return this.config.httpClient.put(doc.tenantUrl.split('____')[1], formData, {headers: new HttpHeaders({'Content-Type': doc.fileFields.length ? 'multipart/form-data' : 'application/json'})}).pipe(
 
                         switchMap(res => doc.atomicUpdate(oldData => ({
                             ...oldData,
