@@ -10,6 +10,7 @@ import { enterZone } from './operators.resource';
 import { ApiProgressService } from './apiProgress.resource';
 import { SyncCollectionService } from './synchronise-collection.resource';
 import { SynchroniseDocType } from '../definitions/synchronise-document';
+import { CustomHttpParams } from './customParams.resource';
 
 
 export interface RestAPICreator {
@@ -654,7 +655,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             return of({next: res.next, previous: res.previous, results: /*res.results.map(r => r.toJSON().data)*/ []});
         }
 
-        params = params || new HttpParams();
+        params = params || new CustomHttpParams();
 
         if (ids.length > 0) {
 

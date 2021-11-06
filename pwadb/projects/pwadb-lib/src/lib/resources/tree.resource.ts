@@ -1,10 +1,11 @@
 import { HttpParams } from '@angular/common/http';
 import { BehaviorSubject, combineLatest, merge, Observable, of, Subscription } from 'rxjs';
-import { auditTime, filter, map, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { auditTime, filter, map, mergeMap, shareReplay, switchMap } from 'rxjs/operators';
 import { Datatype, PwaDocument } from '../definitions/document';
 import { Database, ReactiveDatabase, TableDataType } from './table.resource';
 import {CollectionViewer, SelectionChange, DataSource} from '@angular/cdk/collections';
 import {FlatTreeControl} from '@angular/cdk/tree';
+import { CustomHttpParams } from './customParams.resource';
 
 ///////////////////
 // Interfaces
@@ -56,7 +57,7 @@ export class TreeDatabase<T extends TableDataType> {
         this.databaseKeyMap = new Map();
         this.childTreeMap   = new Map();
 
-        this._httpParams  = new HttpParams();
+        this._httpParams  = new CustomHttpParams();
         this.queueChange  = new BehaviorSubject(true);
 
         this.dataChange = this.queueChange.asObservable().pipe(
@@ -68,7 +69,7 @@ export class TreeDatabase<T extends TableDataType> {
         );
     }
 
-    buildTree(treeInfo: TreeInformation<T>, parentDoc: PwaDocument<T> = null, parentParams = new HttpParams(), parentKey = null): Observable<TreeNode<T>[]> {
+    buildTree(treeInfo: TreeInformation<T>, parentDoc: PwaDocument<T> = null, parentParams = new CustomHttpParams(), parentKey = null): Observable<TreeNode<T>[]> {
 
         const treeNodes = Object.keys(treeInfo).map(key => {
 
@@ -82,7 +83,7 @@ export class TreeDatabase<T extends TableDataType> {
             const possibleParamKeys = parentParams.keys().filter(pk => pk && pk.includes(`${key}--`));
 
             // create new params associated to this database
-            let currentParams = new HttpParams();
+            let currentParams = new CustomHttpParams();
 
             // extract childParams
             possibleParamKeys.forEach(pk => {

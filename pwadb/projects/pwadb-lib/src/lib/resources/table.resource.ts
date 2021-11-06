@@ -5,6 +5,7 @@ import { PwaListResponse } from '../definitions/collection';
 import { switchMap, tap, shareReplay, map, filter, auditTime, distinctUntilChanged } from 'rxjs/operators';
 import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
+import { CustomHttpParams } from './customParams.resource';
 
 /////////////////////
 // Interfaces
@@ -65,7 +66,7 @@ export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
         this.queueChange        = new BehaviorSubject([]);
         this._isLoadingChange 	= new BehaviorSubject(false);
 
-        this._httpParams        = new HttpParams();
+        this._httpParams        = new CustomHttpParams();
 
         this.isLoadingChange    = this._isLoadingChange.asObservable().pipe(
 
