@@ -9,6 +9,7 @@ export * from './lib/definitions/synchronise-collection';
 export * from './lib/definitions/synchronise-document';
 
 
+export * from './lib/resources/customParams.resource';
 export * from './lib/resources/collection.resource';
 export * from './lib/resources/database.resource';
 export * from './lib/resources/filters.resource';
