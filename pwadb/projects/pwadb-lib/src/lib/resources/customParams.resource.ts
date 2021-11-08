@@ -22,7 +22,7 @@ export class CustomHttpParams extends HttpParams {
 
     constructor(options?: HttpParamsOptions) {
 
-        if (!(options && options.encoder)) options.encoder = new CustomEncoder();
+        options = {...(options || {}), encoder: new CustomEncoder()};
 
         super(options)
     }
