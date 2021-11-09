@@ -2,19 +2,19 @@ import { HttpParameterCodec, HttpParams, HttpParamsOptions } from "@angular/comm
 
 export class CustomEncoder implements HttpParameterCodec {
     encodeKey(key: string): string {
-        return encodeURIComponent(key);
+        return key; // encodeURIComponent(key);
     }
 
     encodeValue(value: string): string {
-        return encodeURIComponent(value);
+        return value; // encodeURIComponent(value);
     }
 
     decodeKey(key: string): string {
-        return decodeURIComponent(key);
+        return key; // decodeURIComponent(key);
     }
 
     decodeValue(value: string): string {
-        return decodeURIComponent(value);
+        return value; // decodeURIComponent(value);
     }
 }
 
