@@ -98,14 +98,13 @@ export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
 
                     const queryParam = q.split('=');
 
-                    this._httpParams = this.httpParams.set(queryParam[0], queryParam[1]);
+                    this._httpParams = this.httpParams.set(decodeURIComponent(queryParam[0]), decodeURIComponent(queryParam[1]));
                 });
             }
         }
 
         this._httpParams = this.httpParams.set('offset', this.offset.toString());
         this._httpParams = this.httpParams.set('limit', this.limit.toString());
-
     }
 
 }
