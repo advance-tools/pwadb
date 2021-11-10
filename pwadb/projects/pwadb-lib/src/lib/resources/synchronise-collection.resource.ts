@@ -263,7 +263,7 @@ export class SyncCollectionService {
 
                     url.splice(url.length - 1, 1);
 
-                    const formData: {} = doc.toJSON().data;
+                    const formData = createFormData(doc.toJSON().data, new FormData());
 
                     doc.fileFields.forEach(k => {
 
@@ -304,7 +304,7 @@ export class SyncCollectionService {
 
                 } else if (doc.method === 'PUT') {
 
-                    const formData: {} = doc.toJSON().data;
+                    const formData = createFormData(doc.toJSON().data, new FormData());
 
                     doc.fileFields.forEach(k => {
 
