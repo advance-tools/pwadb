@@ -263,7 +263,7 @@ export class SyncCollectionService {
 
                     url.splice(url.length - 1, 1);
 
-                    const formData = createFormData(doc.toJSON().data, new FormData());
+                    const formData = createFormData(doc.toJSON().data);
 
                     doc.fileFields.forEach(k => {
 
@@ -276,7 +276,7 @@ export class SyncCollectionService {
                         if (k.fileKeyField && k.fileField && k.fileType) formData[k.fileKeyField] = new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType});
                     });
 
-                    return this.config.httpClient.post(url.join('/'), formData, {headers: new HttpHeaders({'Content-Type': doc.fileFields.length ? 'multipart/form-data' : 'application/json'})}).pipe(
+                    return this.config.httpClient.post(url.join('/'), formData).pipe(
 
                         switchMap(res => doc.atomicUpdate(oldData => ({
                             ...oldData,
@@ -304,7 +304,7 @@ export class SyncCollectionService {
 
                 } else if (doc.method === 'PUT') {
 
-                    const formData = createFormData(doc.toJSON().data, new FormData());
+                    const formData = createFormData(doc.toJSON().data);
 
                     doc.fileFields.forEach(k => {
 
@@ -317,7 +317,7 @@ export class SyncCollectionService {
                         if (k.fileKeyField && k.fileField && k.fileType) formData[k.fileKeyField] = new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType});
                     });
 
-                    return this.config.httpClient.put(doc.tenantUrl.split('____')[1], formData, {headers: new HttpHeaders({'Content-Type': doc.fileFields.length ? 'multipart/form-data' : 'application/json'})}).pipe(
+                    return this.config.httpClient.put(doc.tenantUrl.split('____')[1], formData).pipe(
 
                         switchMap(res => doc.atomicUpdate(oldData => ({
                             ...oldData,
