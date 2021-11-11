@@ -273,7 +273,7 @@ export class SyncCollectionService {
 
                         delete formData[k.fileType];
 
-                        if (k.fileKeyField && k.fileField && k.fileType) formData[k.fileKeyField] = new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType});
+                        if (k.fileKeyField && k.fileField && k.fileType) formData.append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
                     });
 
                     return this.config.httpClient.post(url.join('/'), formData).pipe(
@@ -314,7 +314,7 @@ export class SyncCollectionService {
 
                         delete formData[k.fileType];
 
-                        if (k.fileKeyField && k.fileField && k.fileType) formData[k.fileKeyField] = new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType});
+                        if (k.fileKeyField && k.fileField && k.fileType) formData.append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
                     });
 
                     return this.config.httpClient.put(doc.tenantUrl.split('____')[1], formData).pipe(
