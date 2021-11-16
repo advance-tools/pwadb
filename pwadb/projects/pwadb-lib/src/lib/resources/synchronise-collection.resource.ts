@@ -462,7 +462,7 @@ export function createFormData(object: Object, form?: FormData, namespace?: stri
 
         } else {
 
-            formData.append(formKey, object[propertyName].toString());
+            formData.append(formKey, object[propertyName] === null || object[propertyName] === undefined ? '' : JSON.stringify(object[propertyName]));
         }
     }
 
