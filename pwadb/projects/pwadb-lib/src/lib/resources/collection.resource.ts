@@ -504,13 +504,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 if (!!doc && doc.method !== 'GET' && doc.method !== 'POST') {
 
-                    return from(doc.atomicUpdate(oldDoc => {
-
-                        oldDoc.method = 'POST';
-
-                        return oldDoc;
-
-                    }));
+                    return from(doc.atomicPatch({method:'POST'}));
                 }
 
                 return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
