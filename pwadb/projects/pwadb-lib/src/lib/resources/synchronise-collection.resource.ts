@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, from, Observable, of, throwError } from 'rxjs';
@@ -267,34 +267,27 @@ export class SyncCollectionService {
 
                     doc.fileFields.forEach(k => {
 
-                        delete formData[k.fileField];
+                        formData.delete(k.fileField);
 
-                        delete formData[k.fileNameField];
+                        formData.delete(k.fileNameField);
 
-                        delete formData[k.fileType];
+                        formData.delete(k.fileType);
 
                         if (k.fileKeyField && k.fileField && k.fileType) formData.append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
                     });
 
                     return this.config.httpClient.post(url.join('/'), formData).pipe(
 
-                        switchMap(res => doc.atomicUpdate(oldData => ({
-                            ...oldData,
+                        switchMap(res => doc.atomicPatch({
                             method: 'GET',
                             data: res,
                             error: null,
                             time: new Date().getTime()
-                        }))),
+                        })),
 
                         catchError(err => {
 
-                            return from(doc.atomicUpdate(oldDoc => {
-
-                                oldDoc.error = JSON.stringify(err);
-
-                                return oldDoc;
-
-                            })).pipe(
+                            return from(doc.atomicPatch({error: JSON.stringify(err)})).pipe(
 
                                 finalize(() => this.retryChange.next(false)),
                             );
@@ -308,34 +301,27 @@ export class SyncCollectionService {
 
                     doc.fileFields.forEach(k => {
 
-                        delete formData[k.fileField];
+                        formData.delete(k.fileField);
 
-                        delete formData[k.fileNameField];
+                        formData.delete(k.fileNameField);
 
-                        delete formData[k.fileType];
+                        formData.delete(k.fileType);
 
                         if (k.fileKeyField && k.fileField && k.fileType) formData.append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
                     });
 
                     return this.config.httpClient.put(doc.tenantUrl.split('____')[1], formData).pipe(
 
-                        switchMap(res => doc.atomicUpdate(oldData => ({
-                            ...oldData,
+                        switchMap(res => doc.atomicPatch({
                             method: 'GET',
                             data: res,
                             error: null,
                             time: new Date().getTime()
-                        }))),
+                        })),
 
                         catchError(err => {
 
-                            return from(doc.atomicUpdate(oldDoc => {
-
-                                oldDoc.error = JSON.stringify(err);
-
-                                return oldDoc;
-
-                            })).pipe(
+                            return from(doc.atomicPatch({error: JSON.stringify(err)})).pipe(
 
                                 finalize(() => this.retryChange.next(false)),
                             );
@@ -351,13 +337,7 @@ export class SyncCollectionService {
 
                         catchError(err => {
 
-                            return from(doc.atomicUpdate(oldDoc => {
-
-                                oldDoc.error = JSON.stringify(err);
-
-                                return oldDoc;
-
-                            })).pipe(
+                            return from(doc.atomicPatch({error: JSON.stringify(err)})).pipe(
 
                                 finalize(() => this.retryChange.next(false)),
                             );
@@ -436,13 +416,7 @@ export class SyncCollectionService {
 
         if (!!doc && doc.method !== 'GET' && doc.method !== 'POST') {
 
-            return from(doc.atomicUpdate(oldDoc => {
-
-                oldDoc.method = 'POST';
-
-                return oldDoc;
-
-            }));
+            return from(doc.atomicPatch({method: 'POST'}));
         }
 
         return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
@@ -474,7 +448,7 @@ export function createFormData(object: Object, form?: FormData, namespace?: stri
 
         } else if (object[propertyName] instanceof Array) {
 
-            object[propertyName].forEach((element, index) => {
+            object[propertyName].forEach((element: any, index: number) => {
 
                 const tempFormKey = `${formKey}[${index}]`;
 
