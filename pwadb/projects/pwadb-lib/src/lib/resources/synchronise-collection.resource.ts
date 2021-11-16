@@ -460,36 +460,68 @@ export class SyncCollectionService {
 }
 
 
-export function createFormData(object: Object, form?: FormData, namespace?: string, isArray = false): FormData {
+export function createFormData(object: Object, form?: FormData, namespace?: string): FormData {
 
-    const formData = form || new FormData();
+    let formData = form || new FormData();
 
-    for (const property in object) {
+    for (let propertyName in object) {
 
-        let formKey = '';
+        const formKey = namespace ? `${namespace}[${propertyName}]` : propertyName;
 
-        if (isArray) {
+        if (object[propertyName] instanceof Date) {
 
-            formKey = namespace ? `${namespace}[${property}]` : property;
+            formData.append(formKey, object[propertyName].toISOString());
+
+        } else if (object[propertyName] instanceof Array) {
+
+            object[propertyName].forEach((element, index) => {
+
+                const tempFormKey = `${formKey}[${index}]`;
+
+                createFormData(element, formData, tempFormKey);
+
+            });
+
+        } else if (typeof object[propertyName] === 'object' && !(object[propertyName] instanceof File) && object[propertyName] !== null && object[propertyName] !== undefined) {
+
+            createFormData(object[propertyName], formData, formKey);
 
         } else {
 
-            formKey = namespace ? `${namespace}.${property}` : property;
-        }
-
-        if (object[property] instanceof Date) {
-
-            formData.append(formKey, object[property].toISOString());
-
-        } else if (typeof object[property] === 'object' && !(object[property] instanceof File) && object[property] !== null && object[property] !== undefined) {
-
-            createFormData(object[property], formData, formKey, typeof object[property] === 'object' && Array.isArray(object[property]));
-
-        } else {
-
-            formData.append(formKey, object[property] === null || object[property] === undefined ? '' : object[property]);
+            formData.append(formKey, object[propertyName].toString());
         }
     }
 
     return formData;
+
+    // const formData = form || new FormData();
+
+    // for (const property in object) {
+
+    //     let formKey = '';
+
+    //     if (isArray) {
+
+    //         formKey = namespace ? `${namespace}[${property}]` : property;
+
+    //     } else {
+
+    //         formKey = namespace ? `${namespace}.${property}` : property;
+    //     }
+
+    //     if (object[property] instanceof Date) {
+
+    //         formData.append(formKey, object[property].toISOString());
+
+    //     } else if (typeof object[property] === 'object' && !(object[property] instanceof File) && object[property] !== null && object[property] !== undefined) {
+
+    //         createFormData(object[property], formData, formKey, typeof object[property] === 'object' && Array.isArray(object[property]));
+
+    //     } else {
+
+    //         formData.append(formKey, object[property] === null || object[property] === undefined ? '' : object[property]);
+    //     }
+    // }
+
+    // return formData;
 }
