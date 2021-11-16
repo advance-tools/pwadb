@@ -439,14 +439,16 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 if (doc) {
 
-                    return doc.atomicUpdate((oldData) => ({
-                        ...oldData,
-                        method: oldData.method !== 'POST' ? 'PUT' : oldData.method,
+                    const docData = doc.toJSON();
+
+                    return doc.atomicPatch({
+                        ...docData,
+                        method: docData.method !== 'POST' ? 'PUT' : docData.method,
                         data,
                         error: null,
-                        time: oldData.method === 'GET' ? new Date().getTime() : oldData.time,
+                        time: docData.method === 'GET' ? new Date().getTime() : docData.time,
                         fileFields
-                    }));
+                    });
 
                 } else {
 
@@ -478,11 +480,15 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 } else if (!!doc && (doc.method === 'PUT' || doc.method === 'DELETE')) {
 
-                    return from(doc.atomicUpdate((oldData) => ({...oldData, method: 'DELETE', error: null})));
+                    const docData = doc.toJSON();
+
+                    return from(doc.atomicPatch({...docData, method: 'DELETE', error: null}));
 
                 }  else if (!!doc) {
 
-                    return from(doc.atomicUpdate((oldData) => ({...oldData, method: 'DELETE', error: null, time: new Date().getTime()})));
+                    const docData = doc.toJSON();
+
+                    return from(doc.atomicPatch({...docData, method: 'DELETE', error: null, time: new Date().getTime()}));
 
                 } else {
 
