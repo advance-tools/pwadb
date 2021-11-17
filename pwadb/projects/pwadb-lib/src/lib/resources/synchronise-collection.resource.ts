@@ -452,7 +452,14 @@ export function createFormData(object: Object, form?: FormData, namespace?: stri
 
                 const tempFormKey = `${formKey}[${index}]`;
 
-                createFormData(element, formData, tempFormKey);
+                if (typeof element === 'object') {
+
+                    this.convertModelToFormData(element, formData, tempFormKey);
+
+                } else {
+
+                    formData.append(tempFormKey, element.toString());
+                }
 
             });
 
@@ -462,7 +469,7 @@ export function createFormData(object: Object, form?: FormData, namespace?: stri
 
         } else {
 
-            formData.append(formKey, object[propertyName] === null || object[propertyName] === undefined ? '' : object[propertyName]);
+            formData.append(formKey, object[propertyName] === null || object[propertyName] === undefined ? '' : object[propertyName].toString());
         }
     }
 
