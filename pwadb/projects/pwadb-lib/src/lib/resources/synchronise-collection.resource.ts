@@ -454,7 +454,7 @@ export function createFormData(object: Object, form?: FormData, namespace?: stri
 
                 if (typeof element === 'object') {
 
-                    this.convertModelToFormData(element, formData, tempFormKey);
+                    createFormData(element, formData, tempFormKey);
 
                 } else {
 
