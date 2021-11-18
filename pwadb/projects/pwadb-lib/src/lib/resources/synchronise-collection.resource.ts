@@ -263,18 +263,35 @@ export class SyncCollectionService {
 
                     url.splice(url.length - 1, 1);
 
-                    const formData = createFormData(doc.toJSON().data);
+                    let formData: FormData | {};
 
-                    doc.fileFields.forEach(k => {
+                    if (doc.fileFields.length) {
 
-                        formData.delete(k.fileField);
+                        //////////////////
+                        // Multipart/form
+                        //////////////////
 
-                        formData.delete(k.fileNameField);
+                        formData = createFormData(doc.toJSON().data) as FormData;
 
-                        formData.delete(k.fileType);
+                        doc.fileFields.forEach(k => {
 
-                        if (k.fileKeyField && k.fileField && k.fileType) formData.append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
-                    });
+                            (formData as FormData).delete(k.fileField);
+
+                            (formData as FormData).delete(k.fileNameField);
+
+                            (formData as FormData).delete(k.fileType);
+
+                            if (k.fileKeyField && k.fileField && k.fileType) (formData as FormData).append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
+                        });
+
+                    } else {
+
+                        ////////////////////
+                        // Application/json
+                        ////////////////////
+
+                        formData = doc.toJSON().data;
+                    }
 
                     return this.config.httpClient.post(url.join('/'), formData).pipe(
 
@@ -297,18 +314,35 @@ export class SyncCollectionService {
 
                 } else if (doc.method === 'PUT') {
 
-                    const formData = createFormData(doc.toJSON().data);
+                    let formData: FormData | {};
 
-                    doc.fileFields.forEach(k => {
+                    if (doc.fileFields.length) {
 
-                        formData.delete(k.fileField);
+                        //////////////////
+                        // Multipart/form
+                        //////////////////
 
-                        formData.delete(k.fileNameField);
+                        formData = createFormData(doc.toJSON().data) as FormData;
 
-                        formData.delete(k.fileType);
+                        doc.fileFields.forEach(k => {
 
-                        if (k.fileKeyField && k.fileField && k.fileType) formData.append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
-                    });
+                            (formData as FormData).delete(k.fileField);
+
+                            (formData as FormData).delete(k.fileNameField);
+
+                            (formData as FormData).delete(k.fileType);
+
+                            if (k.fileKeyField && k.fileField && k.fileType) (formData as FormData).append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
+                        });
+
+                    } else {
+
+                        ////////////////////
+                        // Application/json
+                        ////////////////////
+
+                        formData = doc.toJSON().data;
+                    }
 
                     return this.config.httpClient.put(doc.tenantUrl.split('____')[1], formData).pipe(
 
