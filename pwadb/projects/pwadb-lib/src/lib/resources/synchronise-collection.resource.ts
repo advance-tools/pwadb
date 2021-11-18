@@ -440,7 +440,7 @@ export function createFormData(object: Object, form?: FormData, namespace?: stri
 
     for (let propertyName in object) {
 
-        const formKey = namespace ? `${namespace}[${propertyName}]` : propertyName;
+        const formKey = namespace ? `${namespace}.${propertyName}` : propertyName;
 
         if (object[propertyName] instanceof Date) {
 
@@ -450,7 +450,7 @@ export function createFormData(object: Object, form?: FormData, namespace?: stri
 
             object[propertyName].forEach((element: any, index: number) => {
 
-                const tempFormKey = `${formKey}[${index}]`;
+                const tempFormKey = `${formKey}-${index}`;
 
                 if (typeof element === 'object') {
 
