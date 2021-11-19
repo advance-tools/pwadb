@@ -251,12 +251,7 @@ export class SyncCollectionService {
 
             map(sortedDocs => sortedDocs[0]),
 
-            tap(() => {
-
-                // retry hit on every pop if retry was false due to error
-                if (!this.retryChange.value) this.retryChange.next(true);
-            }),
-
+            shareReplay(1),
         );
 
         const hit = pop.pipe(
@@ -391,9 +386,20 @@ export class SyncCollectionService {
 
         );
 
+        const popChange = pop.pipe(
+
+            map(() => {
+
+                // retry hit on every pop if retry was false due to error
+                if (!this.retryChange.value) this.retryChange.next(true);
+
+                return false;
+            }),
+        );
+
         return this.retryChange.asObservable().pipe(
 
-            switchMap(trigger => trigger ? hit : of())
+            switchMap(trigger => trigger ? hit : popChange)
 
         ) as Observable<boolean | PwaDocument<any>>;
 
