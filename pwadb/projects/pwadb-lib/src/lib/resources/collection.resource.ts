@@ -510,10 +510,6 @@ export class CollectionAPI<T extends Datatype, Database> {
                 return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
             }),
 
-            tap(() => {
-
-                if (this.config?.synchroniseService) this.config.synchroniseService.startSync();
-            })
         );
     }
 
@@ -530,11 +526,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
             }),
-
-            tap(() => {
-
-                if (this.config?.synchroniseService) this.config.synchroniseService.startSync();
-            })
         );
     }
 }
