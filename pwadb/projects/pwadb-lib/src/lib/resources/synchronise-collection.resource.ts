@@ -251,6 +251,12 @@ export class SyncCollectionService {
 
             map(sortedDocs => sortedDocs[0]),
 
+            tap(() => {
+
+                // retry hit on every pop if retry was false due to error
+                if (!this.retryChange.value) this.retryChange.next(true);
+            }),
+
         );
 
         const hit = pop.pipe(
