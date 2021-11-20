@@ -456,6 +456,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                         method: 'PUT',
                         error: null,
                         time: new Date().getTime(),
+                        fileFields
                     };
 
                     return col.atomicUpsert(docData);
@@ -465,23 +466,40 @@ export class CollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    delete(tenant: string, url: string): Observable<boolean | PwaDocument<T>> {
+    delete(tenant: string, url: string, data?: T, fileFields: FileConfig[] = []): Observable<boolean | PwaDocument<T>> {
 
         return this.get(tenant, url).pipe(
 
             switchMap(doc => {
 
-                if (!!doc && doc.method === 'POST') {
+                if (doc && doc.method === 'POST') {
 
                     return from(doc.remove());
 
-                } else if (!!doc && (doc.method === 'PUT' || doc.method === 'DELETE')) {
+                } else if (doc && (doc.method === 'PUT' || doc.method === 'DELETE')) {
 
                     return from(doc.atomicPatch({method: 'DELETE', error: null}));
 
-                }  else if (!!doc) {
+                }  else if (doc) {
 
                     return from(doc.atomicPatch({method: 'DELETE', error: null, time: new Date().getTime()}));
+
+                } else if (data) {
+
+                    const docData: Partial<PwaDocType<T>> = {
+                        tenantUrl: this.makeTenantUrl(tenant, url),
+                        matchUrl: this.makeTenantUrl(tenant, url),
+                        data,
+                        method: 'DELETE',
+                        error: null,
+                        time: new Date().getTime(),
+                        fileFields
+                    };
+
+                    return this.collection$.pipe(
+
+                        switchMap(col => col.atomicUpsert(docData))
+                    );
 
                 } else {
 
