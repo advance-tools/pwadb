@@ -1,6 +1,6 @@
 import { Datatype, FileConfig, getSchema, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take, auditTime } from 'rxjs/operators';
+import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take, auditTime, timeout } from 'rxjs/operators';
 import { Observable, of, from, throwError, combineLatest } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -61,6 +61,8 @@ export class RestAPI<T extends Datatype> {
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
             switchMap(() => this.config.httpClient.get(cacheKey)),
+
+            timeout(7500),
 
             finalize(() => {
 
@@ -142,6 +144,8 @@ export class RestAPI<T extends Datatype> {
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
             switchMap(() => this.config.httpClient.get(cacheKey)),
+
+            timeout(7500),
 
             finalize(() => {
 
