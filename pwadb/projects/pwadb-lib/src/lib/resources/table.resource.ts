@@ -6,6 +6,7 @@ import { switchMap, tap, shareReplay, map, filter, auditTime, distinctUntilChang
 import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 import { CustomHttpParams } from './customParams.resource';
+import { flatten } from './misc.resource';
 
 /////////////////////
 // Interfaces
@@ -131,7 +132,7 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
 
             tap(res => this.lastRes = res.length > 0 ? res[res.length - 1] : null),
 
-            map(res => [].concat(...res.map(v => v.results)) as PwaDocument<T>[]),
+            map(res => flatten(res.map(v => v.results)) as PwaDocument<T>[]),
 
             tap(v => this.data = v),
 
@@ -171,7 +172,7 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
         const view = this.getView(this.httpParams);
 
         // push to queue
-        this.queueChange.next([].concat(this.queueChange.value, [view]));
+        this.queueChange.next(flatten([this.queueChange.value, view]));
     }
 
 }
@@ -199,7 +200,7 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
 
             tap(res => this.lastRes = res.length > 0 ? res[res.length - 1] : null),
 
-            map(res => [].concat(...res.map(v => v.results)) as PwaDocument<T>[]),
+            map(res => flatten(res.map(v => v.results)) as PwaDocument<T>[]),
 
             tap(v => this.data = v),
 
@@ -239,6 +240,6 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
         const view = this.getView(this.httpParams);
 
         // push to queue
-        this.queueChange.next([].concat(this.queueChange.value, [view]));
+        this.queueChange.next(flatten([this.queueChange.value, view]));
     }
 }

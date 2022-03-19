@@ -9,6 +9,7 @@ import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseColl
 import { synchroniseDocMethods, SynchroniseDocType, SynchroniseDocument } from '../definitions/synchronise-document';
 import { enterZone } from './operators.resource';
 import { PwaDatabaseService } from './database.resource';
+import { flatten } from './misc.resource';
 
 interface Extras {
     collection: PwaCollection<any>;
@@ -134,7 +135,7 @@ export class SyncCollectionService {
 
             }))),
 
-            map(v => [].concat(...v)),
+            map(v => flatten(v)),
 
             tap((v: SynchroniseDocTypeExtras[]) =>  {
 
@@ -234,7 +235,7 @@ export class SyncCollectionService {
 
             }),
 
-            map(sortedDocs => [].concat(...sortedDocs)),
+            map(sortedDocs => flatten(sortedDocs)),
 
             // tslint:disable-next-line: max-line-length
             map((sortedDocs: PwaDocument<any>[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.time - b.time : b.time - a.time)),

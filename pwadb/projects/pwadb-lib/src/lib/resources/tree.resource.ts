@@ -6,6 +6,7 @@ import { Database, ReactiveDatabase, TableDataType } from './table.resource';
 import {CollectionViewer, SelectionChange, DataSource} from '@angular/cdk/collections';
 import {FlatTreeControl} from '@angular/cdk/tree';
 import { CustomHttpParams } from './customParams.resource';
+import { flatten } from './misc.resource';
 
 ///////////////////
 // Interfaces
@@ -148,7 +149,7 @@ export class TreeDatabase<T extends TableDataType> {
 
         return combineLatest(treeNodes).pipe(
 
-            map(nodes => [].concat(...nodes)),
+            map(nodes => flatten(nodes)),
 
         );
     }
