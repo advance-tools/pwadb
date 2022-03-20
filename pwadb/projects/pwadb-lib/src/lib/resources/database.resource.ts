@@ -1,12 +1,11 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator, addPouchPlugin, getRxStoragePouch } from 'rxdb';
 import { from, Observable } from 'rxjs';
 import { map, switchMap, startWith, shareReplay, first } from 'rxjs/operators';
+import * as idb from 'pouchdb-adapter-idb';
 import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
-
-addPouchPlugin(require('pouchdb-adapter-idb'));
 
 
 export interface PwaDatabaseCreator {
@@ -24,6 +23,9 @@ export class PwaDatabaseService<T> {
     get db$(): Observable<RxDatabase<T>> {
 
         if (this._db$) { return this._db$; }
+
+        // add pouchdb plugin
+        addPouchPlugin(idb);
 
         // add encryption plugin
         addRxPlugin(RxDBEncryptionPlugin);

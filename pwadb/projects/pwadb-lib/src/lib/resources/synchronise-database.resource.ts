@@ -1,11 +1,10 @@
 import { addPouchPlugin, addRxPlugin, createRxDatabase, getRxStoragePouch, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import { from, Observable } from 'rxjs';
+import * as idb from 'pouchdb-adapter-idb';
 import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
 import { first, map, shareReplay, startWith, switchMap } from 'rxjs/operators';
-
-addPouchPlugin(require('pouchdb-adapter-idb'));
 
 
 export interface SyncDatabaseServiceCreator {
@@ -23,6 +22,9 @@ export class SyncDatabaseService {
     get db$(): Observable<RxDatabase<any>> {
 
         if (this._db$) { return this._db$; }
+
+        // add pouchdb plugin
+        addPouchPlugin(idb);
 
         // add encryption plugin
         addRxPlugin(RxDBEncryptionPlugin);
