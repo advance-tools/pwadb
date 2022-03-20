@@ -97,14 +97,13 @@ export class SyncCollectionService {
 
                     switchMap(db => {
 
-                        const collectionInfoKeyValue: {[key: string]: SynchroniseDocType} = m.collectionInfo.reduce(
-                            (cur: SynchroniseDocType, acc: {}) => {
+                        const collectionInfoKeyValue: {[key: string]: SynchroniseDocType} = m.collectionInfo.reduce((acc: {}, cur: SynchroniseDocType) => {
 
-                                acc[cur.collectionName] = cur;
+                            acc[cur.collectionName] = cur;
 
-                                return acc;
+                            return acc;
 
-                            }, {});
+                        }, {});
 
                         const collections = {};
 
