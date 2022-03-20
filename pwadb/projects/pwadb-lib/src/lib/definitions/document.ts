@@ -35,6 +35,7 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
     keyCompression: false,
     version: 4,
     type: 'object',
+    primaryKey: 'tenantUrl',
     properties: {
         tenantUrl: {
             type: 'string',

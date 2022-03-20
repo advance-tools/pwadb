@@ -16,10 +16,6 @@ export const getCollectionCreator = (
 ) => ({
         name,
         schema: getSchema(name),
-        pouchSettings: {
-            revs_limit: 0,
-            auto_compaction: true,
-        }, // (optional)
         statics: collectionMethods, // (optional) // ORM-functions for this collection
         methods: documentMethods, // (optional) ORM-functions for documents
         attachments, // (optional) ORM-functions for attachments

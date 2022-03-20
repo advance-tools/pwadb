@@ -1,10 +1,11 @@
-import { addRxPlugin, createRxDatabase, RxDatabase, RxDatabaseCreator } from 'rxdb';
+import { addPouchPlugin, addRxPlugin, createRxDatabase, getRxStoragePouch, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import { from, Observable } from 'rxjs';
-import idb from 'pouchdb-adapter-idb';
 import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
 import { first, map, shareReplay, startWith, switchMap } from 'rxjs/operators';
+
+addPouchPlugin(require('pouchdb-adapter-idb'));
 
 
 export interface SyncDatabaseServiceCreator {
@@ -23,9 +24,6 @@ export class SyncDatabaseService {
 
         if (this._db$) { return this._db$; }
 
-        // add indexeddb adapter
-        addRxPlugin(idb);
-
         // add encryption plugin
         addRxPlugin(RxDBEncryptionPlugin);
 
@@ -35,9 +33,14 @@ export class SyncDatabaseService {
         // add schema validate plugin
         addRxPlugin(RxDBValidatePlugin);
 
+        const pouchAdapter = getRxStoragePouch('idb');
+
+        pouchAdapter.pouchSettings.revs_limit       = 0,
+        pouchAdapter.pouchSettings.auto_compaction  = true;
+
         this._db$ = from(createRxDatabase({
             name: 'synchronise/pwadb',
-            adapter: 'idb',
+            storage: pouchAdapter,
             password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',
             multiInstance: true,
             eventReduce: true,

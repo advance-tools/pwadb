@@ -4,7 +4,7 @@ import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take
 import { Observable, of, from, throwError, combineLatest } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
-import { RxDatabase } from 'rxdb';
+import { RxCollectionCreator, RxDatabase } from 'rxdb';
 import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 import { ApiProgressService } from './apiProgress.resource';
@@ -241,7 +241,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                 if (this.config.name in db) { return of(db[this.config.name]); }
 
                 return combineLatest([
-                    from(db.addCollections(collectionSchema)),
+                    from(db.addCollections(collectionSchema as { [key: string]: RxCollectionCreator; })),
                     this.config.collectionEvictTime$,
                     this.config.collectionSkipDocuments$
                 ]).pipe(
@@ -255,13 +255,11 @@ export class CollectionAPI<T extends Datatype, Database> {
                             const data: SynchroniseDocType = {
                                 id: db.name + '-' + this.config.name,
                                 databaseOptions: JSON.stringify({
-                                    adapter: db.adapter,
                                     name: db.name,
                                     eventReduce: db.eventReduce,
                                     multiInstance: db.multiInstance,
                                     options: db.options,
                                     password: db.password,
-                                    pouchSettings: db.pouchSettings
                                 }),
                                 collectionEvictTime,
                                 collectionSkipDocuments,
@@ -275,7 +273,6 @@ export class CollectionAPI<T extends Datatype, Database> {
                                     methods: collections[this.config.name].methods,
                                     migrationStrategies: collections[this.config.name].migrationStrategies,
                                     options: collections[this.config.name].options,
-                                    pouchSettings: collections[this.config.name].pouchSettings,
                                     statics: collections[this.config.name].statics,
                                 })
                             };

@@ -20,6 +20,7 @@ export const getSynchroniseSchema: () => RxJsonSchema<SynchroniseDocType> = () =
     keyCompression: false,
     version: 0,
     type: 'object',
+    primaryKey: 'id',
     properties: {
         id: {
             type: 'string',
