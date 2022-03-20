@@ -47,6 +47,10 @@ export const getCollectionCreator = (
 
                 return oldDoc;
             },
+            5: (oldDoc: PwaDocType<any>) => {
+
+                return oldDoc;
+            },
             ...migrationStrategies
         }, // (optional)
         autoMigrate, // (optional)
