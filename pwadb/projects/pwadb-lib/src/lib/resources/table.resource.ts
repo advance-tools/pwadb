@@ -2,7 +2,7 @@ import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { Datatype, PwaDocument } from '../definitions/document';
 import { HttpParams } from '@angular/common/http';
 import { PwaListResponse } from '../definitions/collection';
-import { switchMap, tap, shareReplay, map, filter, auditTime, distinctUntilChanged } from 'rxjs/operators';
+import { switchMap, tap, shareReplay, map, filter, auditTime, distinctUntilChanged, debounceTime } from 'rxjs/operators';
 import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 import { CustomHttpParams } from './customParams.resource';
@@ -47,6 +47,21 @@ export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
 
     // tslint:disable-next-line: variable-name
     private _httpParams: HttpParams;
+    private _orderingFlag = false;
+
+    get orderingFlag(): boolean {
+
+        return this._orderingFlag;
+    }
+
+    set orderingFlag(v: boolean) {
+
+        if (this._orderingFlag === v) return;
+
+        this._orderingFlag = v;
+
+        this.reset();
+    }
 
     get httpParams() { return this._httpParams; }
     set httpParams(v: HttpParams) {
@@ -83,7 +98,7 @@ export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
         this._httpParams = this.httpParams.set('offset', '0');
         this._httpParams = this.httpParams.set('limit', this.limit.toString());
 
-        if (!this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at'); }
+        if (this.orderingFlag && !this.httpParams.has('ordering')) { this._httpParams = this.httpParams.set('ordering', '-created_at'); }
     }
 
     loadMore() {
@@ -119,6 +134,8 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
         super(_limit, zone);
 
         this.dataChange = this.queueChange.asObservable().pipe(
+
+            debounceTime(500),
 
             tap(v => { if (!v.length) { this.reset(); } }),
 
@@ -187,6 +204,8 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
         super(_limit, zone);
 
         this.dataChange = this.queueChange.asObservable().pipe(
+
+            debounceTime(500),
 
             tap(v => { if (!v.length) { this.reset(); } }),
 
