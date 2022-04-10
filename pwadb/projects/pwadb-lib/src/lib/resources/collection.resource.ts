@@ -1,6 +1,6 @@
 import { Datatype, FileConfig, getSchema, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take, auditTime, timeout } from 'rxjs/operators';
+import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take, auditTime, timeout, distinctUntilChanged } from 'rxjs/operators';
 import { Observable, of, from, throwError, combineLatest } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -344,6 +344,13 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 return {next, previous, results: allDocs.slice(start, end), count: allDocs.length};
             }),
+
+            distinctUntilChanged((prev, cur) => {
+
+                const output = prev?.next === cur?.next && prev?.previous === cur?.previous && prev?.count === cur?.count && prev?.results.length === cur?.results.length;
+
+                return output ? prev.results.map((p, i) => p === cur[i]).reduce((acc, cur) => acc && cur, true) : false;
+            })
 
         );
     }
