@@ -345,12 +345,12 @@ export class CollectionAPI<T extends Datatype, Database> {
                 return {next, previous, results: allDocs.slice(start, end), count: allDocs.length};
             }),
 
-            distinctUntilChanged((prev, cur) => {
+            // distinctUntilChanged((prev, cur) => {
 
-                const output = prev?.next === cur?.next && prev?.previous === cur?.previous && prev?.count === cur?.count && prev?.results.length === cur?.results.length;
+            //     const output = prev?.next === cur?.next && prev?.previous === cur?.previous && prev?.count === cur?.count && prev?.results.length === cur?.results.length;
 
-                return output ? prev.results.map((p, i) => p === cur[i]).reduce((acc, cur) => acc && cur, true) : false;
-            })
+            //     return output ? prev.results.map((p, i) => p === cur[i]).reduce((acc, cur) => acc && cur, true) : false;
+            // })
 
         );
     }

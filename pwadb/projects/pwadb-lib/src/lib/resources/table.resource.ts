@@ -181,7 +181,7 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
 
     loadMore() {
 
-        if (this.isLoading) { return; }
+        if (this.isLoading || !this.isLoadable) { return; }
 
         super.loadMore();
 
@@ -251,7 +251,7 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
 
     loadMore() {
 
-        if (this.isLoading) { return; }
+        if (this.isLoading || !this.isLoadable) { return; }
 
         super.loadMore();
 
