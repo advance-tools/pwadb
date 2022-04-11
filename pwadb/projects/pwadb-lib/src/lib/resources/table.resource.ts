@@ -135,7 +135,7 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
 
         this.dataChange = this.queueChange.asObservable().pipe(
 
-            debounceTime(500),
+            debounceTime(300),
 
             tap(v => { if (!v.length) { this.reset(); } }),
 
@@ -145,7 +145,7 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
 
             switchMap(v => combineLatest(v)),
 
-            auditTime(1000 / 60),
+            debounceTime(300),
 
             tap(res => this.lastRes = res.length > 0 ? res[res.length - 1] : null),
 
@@ -205,7 +205,7 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
 
         this.dataChange = this.queueChange.asObservable().pipe(
 
-            debounceTime(500),
+            debounceTime(300),
 
             tap(v => { if (!v.length) { this.reset(); } }),
 
@@ -215,7 +215,7 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
 
             switchMap(v => combineLatest(v)),
 
-            auditTime(1000 / 60),
+            debounceTime(300),
 
             tap(res => this.lastRes = res.length > 0 ? res[res.length - 1] : null),
 
