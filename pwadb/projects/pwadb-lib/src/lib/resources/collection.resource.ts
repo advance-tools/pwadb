@@ -16,6 +16,7 @@ import { CustomHttpParams } from './customParams.resource';
 export interface RestAPICreator {
     apiProgress?: ApiProgressService;
     httpClient?: HttpClient;
+    apiTimeoutInSeconds?: number;
 }
 
 
@@ -62,7 +63,7 @@ export class RestAPI<T extends Datatype> {
 
             switchMap(() => this.config.httpClient.get(cacheKey)),
 
-            timeout(7500),
+            timeout((this.config.apiTimeoutInSeconds || 10) * 1000),
 
             finalize(() => {
 
@@ -145,7 +146,7 @@ export class RestAPI<T extends Datatype> {
 
             switchMap(() => this.config.httpClient.get(cacheKey)),
 
-            timeout(7500),
+            timeout((this.config.apiTimeoutInSeconds || 10) * 1000),
 
             finalize(() => {
 
@@ -560,7 +561,9 @@ export class CollectionAPI<T extends Datatype, Database> {
 export class PwaCollectionAPI<T extends Datatype, Database> {
 
     private config: PwaCollectionAPICreator<Database> = {
-        restApiCreator: {},
+        restApiCreator: {
+            apiTimeoutInSeconds: 120
+        },
         collectionApiCreator: {
             name: 'no_name_pwa_collection_api',
             db$: of(),
