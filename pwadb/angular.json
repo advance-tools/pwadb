@@ -46,6 +46,5 @@
   },
   "cli": {
     "analytics": "5aad97e8-c04d-4cf9-b258-47a7ecf231fe"
-  },
-  "defaultProject": "pwadb-lib"
+  }
 }
