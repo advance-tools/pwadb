@@ -6,8 +6,8 @@ steps:
     args:
       - '-c'
       - |
-          yarn install && yarn build
-    dir: '/workspace/pwadb'
+          yarn install && yarn nx build pwadb-lib
+    dir: '/workspace/pwadb-nx'
   -   
     id: Publish
     name: gcr.io/cloud-builders/yarn
@@ -18,4 +18,4 @@ steps:
         npm config set @advance-tools:registry ${_GIT_REGISTRY} &&
         npm config set //npm.pkg.github.com/:_authToken ${_NPM_TOKEN} &&
         npm publish
-    dir: '/workspace/pwadb/dist/pwadb-lib'
+    dir: '/workspace/pwadb-nx/dist/libs/pwadb-lib'
