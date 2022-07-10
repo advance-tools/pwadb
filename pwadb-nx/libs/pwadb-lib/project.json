@@ -1,0 +1,41 @@
+{
+  "projectType": "library",
+  "sourceRoot": "libs/pwadb-lib/src",
+  "prefix": "pwadb-nx",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/angular:package",
+      "outputs": ["dist/libs/pwadb-lib"],
+      "options": {
+        "project": "libs/pwadb-lib/ng-package.json"
+      },
+      "configurations": {
+        "production": {
+          "tsConfig": "libs/pwadb-lib/tsconfig.lib.prod.json"
+        },
+        "development": {
+          "tsConfig": "libs/pwadb-lib/tsconfig.lib.json"
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/libs/pwadb-lib"],
+      "options": {
+        "jestConfig": "libs/pwadb-lib/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "options": {
+        "lintFilePatterns": [
+          "libs/pwadb-lib/**/*.ts",
+          "libs/pwadb-lib/**/*.html"
+        ]
+      }
+    }
+  },
+  "tags": []
+}
