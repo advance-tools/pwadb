@@ -15,7 +15,7 @@ steps:
     args:
     - '-c'
     - |
-        npm config set @advance-tools:registry ${_GIT_REGISTRY} &&
-        npm config set //npm.pkg.github.com/:_authToken=${_NPM_TOKEN} &&
+        npm config set @advance-tools:registry=https://npm.pkg.github.com &&
+        npm config set //npm.pkg.github.com/:_authToken=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 &&
         npm publish
     dir: '/workspace/pwadb-nx/dist/libs/pwadb-lib'
