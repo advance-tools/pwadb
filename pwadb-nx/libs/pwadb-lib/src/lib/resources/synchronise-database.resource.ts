@@ -4,7 +4,7 @@ import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
 import { getRxStoragePouch, addPouchPlugin } from 'rxdb/plugins/pouchdb';
-import { RxDBMigrationPlugin } from 'rxdb/dist/types/plugins/migration';
+import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
 import { map, shareReplay, startWith, switchMap } from 'rxjs/operators';
 
 
