@@ -6,9 +6,10 @@ import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
 import { getRxStoragePouch, addPouchPlugin } from 'rxdb/plugins/pouchdb';
+import * as idb from 'pouchdb-adapter-idb';
 
 // add pouchdb plugin
-addPouchPlugin(require('pouchdb-adapter-idb'));
+addPouchPlugin(idb);
 
 // add encryption plugin
 addRxPlugin(RxDBEncryptionPlugin);

@@ -6,10 +6,10 @@ import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
 import { getRxStoragePouch, addPouchPlugin } from 'rxdb/plugins/pouchdb';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
 import { map, shareReplay, startWith, switchMap } from 'rxjs/operators';
-
+import * as idb from 'pouchdb-adapter-idb';
 
 // add pouchdb plugin
-addPouchPlugin(require('pouchdb-adapter-idb'));
+addPouchPlugin(idb);
 
 // add encryption plugin
 addRxPlugin(RxDBEncryptionPlugin);
