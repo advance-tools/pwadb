@@ -314,7 +314,7 @@ export class CollectionAPI<T extends Datatype, Database> {
         docs: Observable<PwaDocument<T>[]>,
         url: string,
         params?: HttpParams,
-        validQueryKeys = []
+        validQueryKeys: string[] = []
     ): Observable<CollectionListResponse<T>> {
 
         return docs.pipe(
@@ -380,7 +380,7 @@ export class CollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
+    listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys: string[] = []): Observable<CollectionListResponse<T>> {
 
         const cacheKey = tenant + url;
 
@@ -402,7 +402,7 @@ export class CollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    list(tenant: string, url: string, params?: HttpParams, validQueryKeys = []): Observable<CollectionListResponse<T>> {
+    list(tenant: string, url: string, params?: HttpParams, validQueryKeys: string[] = []): Observable<CollectionListResponse<T>> {
 
         return this.listReactive(tenant, url, params, validQueryKeys).pipe(
 
@@ -726,7 +726,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         tenant: string,
         url: string,
         params?: HttpParams,
-        validQueryKeys = [],
+        validQueryKeys: string[] = [],
         indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`,
         wait = false
     ): Observable<PwaListResponse<T>> {
@@ -751,7 +751,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     }
 
-    list(tenant: string, url: string, params?: HttpParams, validQueryKeys = [], indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<PwaListResponse<T>> {
+    list(tenant: string, url: string, params?: HttpParams, validQueryKeys: string[] = [], indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<PwaListResponse<T>> {
 
         return this.listReactive(tenant, url, params, validQueryKeys, indexedbUrl, true).pipe(
 
