@@ -73,7 +73,14 @@ export class SyncCollectionService {
 
         this.collection$ = this.config.db$.pipe(
 
-            switchMap((db: RxDatabase) => this.config.name in db ? of(db[this.config.name]) : from(db.addCollections(collectionSchema))),
+            switchMap((db: RxDatabase) => {
+
+                const cacheCollections = {};
+
+                this.config.name in db ? cacheCollections[this.config.name] = db[this.config.name] : null;
+
+                return this.config.name in db ? of(cacheCollections) : from(db.addCollections(collectionSchema));
+            }),
 
             map(collections => collections[this.config.name]),
 

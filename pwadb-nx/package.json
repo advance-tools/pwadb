@@ -23,7 +23,7 @@
     "@angular/router": "~14.0.0",
     "@nrwl/angular": "14.4.2",
     "pouchdb-adapter-idb": "^7.3.0",
-    "rxdb": "^12.6.14",
+    "rxdb": "^12.7.9",
     "rxjs": "~7.4.0",
     "tslib": "^2.0.0",
     "zone.js": "~0.11.4"
