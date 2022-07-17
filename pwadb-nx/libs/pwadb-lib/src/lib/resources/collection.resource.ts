@@ -362,7 +362,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             const doc = this.collection$.pipe(
 
-                switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$.asObservable()),
+                switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
                 // shareReplay(1),
 
@@ -392,7 +392,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             const docs = this.collection$.pipe(
 
-                switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$.asObservable()),
+                switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
 
                 // shareReplay(1),
             );

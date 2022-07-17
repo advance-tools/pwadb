@@ -97,7 +97,7 @@ export class SyncCollectionService {
 
         this.storedCollections = this.collection$.pipe(
 
-            switchMap(col => col.find().$.asObservable()),
+            switchMap(col => col.find().$),
 
             map(docs => docs.map(d => d.toJSON())),
 
@@ -228,7 +228,7 @@ export class SyncCollectionService {
 
                 const sortedDocs$ = collectionsInfo.map(k => {
 
-                    return from(k.collection.find(query).$.asObservable().pipe(
+                    return from(k.collection.find(query).$.pipe(
 
                         auditTime(1000 / 60)
                     ));
