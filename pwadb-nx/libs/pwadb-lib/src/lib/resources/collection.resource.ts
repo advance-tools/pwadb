@@ -236,7 +236,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                 // if (this.config.name in db) { return of(db[this.config.name]); }
 
                 return combineLatest([
-                    from(db.addCollections(collectionSchema as { [key: string]: RxCollectionCreator; })),
+                    this.config.name in db ? of(db[this.config.name]) : from(db.addCollections(collectionSchema as { [key: string]: RxCollectionCreator; })),
                     this.config.collectionEvictTime$,
                     this.config.collectionSkipDocuments$
                 ]).pipe(
