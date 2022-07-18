@@ -366,6 +366,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 auditTime(1000 / 60),
 
+                tap(v => console.log('getReactive collectionapi', v)),
+
                 shareReplay(1),
 
                 enterZone<PwaDocument<T> | null>(this.config.ngZone),
