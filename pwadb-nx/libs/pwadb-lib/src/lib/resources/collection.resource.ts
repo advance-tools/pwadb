@@ -366,8 +366,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 auditTime(1000 / 60),
 
-                tap(v => console.log('getReactive collectionapi', v)),
-
                 shareReplay(1),
 
                 enterZone<PwaDocument<T> | null>(this.config.ngZone),
@@ -623,7 +621,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 time: new Date().getTime(),
             })),
 
-            catchError(() => of(doc)),
+            catchError((err) => {console.log(err); return of(doc);}),
         );
     }
 
@@ -694,7 +692,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return this.restAPI.list(url, params).pipe(
 
-            catchError(() => of({next: null, previous: null, results: []} as ListResponse<T>)),
+            catchError((err) => {console.log(err); return of({next: null, previous: null, results: []} as ListResponse<T>)}),
 
             switchMap(networkRes => this.collectionAPI.collection$.pipe(
 
