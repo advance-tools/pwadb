@@ -663,8 +663,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         ////////////////////////////////////////////////////////////////
 
         const ids = res.results
-            // tslint:disable-next-line: max-line-length
-            .filter(v => v?.method === 'PUT' || v?.method === 'DELETE' || (v?.method === 'GET' /*&& v.time >= (currentTime - (this.config.cacheTimeInSeconds * 1000))*/))
+            .filter(v => v?.method === 'PUT' || v?.method === 'DELETE' /*|| (v?.method === 'GET' && v.time >= (currentTime - (this.config.cacheTimeInSeconds * 1000)))*/)
             .filter(v => !!v?.data)
             .map(v => v?.data?.id);
 
@@ -681,7 +680,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             if (params.has('exclude:id.in')) {
 
                 params.delete('exclude:id.in');
-
             }
 
             params = params.append('exclude:id.in', ids.join(','));
