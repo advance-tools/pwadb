@@ -398,7 +398,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 auditTime(1000 / 60),
 
-                // shareReplay(1),
+                shareReplay(1),
             );
 
             this.cache.set(cacheKey, docs);
