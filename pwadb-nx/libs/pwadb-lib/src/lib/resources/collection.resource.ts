@@ -325,7 +325,11 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             // map(v => v.sort((a, b) => b.time - a.time)),
 
+            tap(v => console.log('before in mem filter', v)),
+
             map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
+
+            tap(v => console.log('after in mem filter', v)),
 
             map(allDocs => {
 
@@ -362,7 +366,11 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             const doc = this.collection$.pipe(
 
+                tap(v => console.log('------------ before get query -----------', v)),
+
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
+
+                tap(v => console.log('after get query', v)),
 
                 auditTime(1000 / 60),
 
@@ -394,7 +402,11 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             const docs = this.collection$.pipe(
 
+                tap(v => console.log('-------------before list query---------------', v)),
+
                 switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
+
+                tap(v => console.log('after list query', v)),
 
                 auditTime(1000 / 60),
 
@@ -638,11 +650,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 this.downloadRetrieve(doc, tenant, url, params).pipe(startWith(null))
             ),
 
-            tap(v => console.log('after downloadRetrieve')),
+            tap(v => console.log('after downloadRetrieve', v)),
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
 
-            tap(v => console.log('after getReactive')),
+            tap(v => console.log('after getReactive', v)),
         );
     }
 
@@ -747,6 +759,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     ): Observable<PwaListResponse<T>> {
 
         return this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
+
+            tap(v => console.log('before downloadlist pipe', v)),
 
             switchMap(idbRes => wait ?
                 this.downloadList(idbRes, tenant, url, params, indexedbUrl) :
