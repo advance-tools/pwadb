@@ -15,8 +15,14 @@ export function enterZone<T>(zone: NgZone | null) {
                     error: (err) => observer.error(err),
                     complete: () => observer.complete()
                 })
+            } else {
+
+                source.subscribe({
+                    next: (x) => observer.next(x),
+                    error: (e) => observer.error(e),
+                    complete: () => observer.complete(),
+                });
             }
 
-            observer.complete();
         });
 }
