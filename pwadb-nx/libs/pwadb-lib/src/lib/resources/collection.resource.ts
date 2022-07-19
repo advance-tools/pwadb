@@ -344,6 +344,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                 return {next, previous, results: allDocs.slice(start, end), count: allDocs.length} as CollectionListResponse<T>;
             }),
 
+            tap(v => console.log('end of filterdocs', v)),
+
             // distinctUntilChanged((prev, cur) => {
 
             //     const output = prev?.next === cur?.next && prev?.previous === cur?.previous && prev?.count === cur?.count && prev?.results.length === cur?.results.length;
@@ -390,6 +392,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return this.getReactive(tenant, url).pipe(
 
+            tap(v => console.log('collectionapi get take 1', v)),
+
             take(1),
         );
     }
@@ -418,6 +422,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return this.filterDocs(this.cache.get(cacheKey), url, params, validQueryKeys).pipe(
 
+            tap(v => console.log('before enterZone', v)),
+
             enterZone<CollectionListResponse<T>>(this.config.ngZone),
         );
     }
@@ -425,6 +431,8 @@ export class CollectionAPI<T extends Datatype, Database> {
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys: string[] = []): Observable<CollectionListResponse<T>> {
 
         return this.listReactive(tenant, url, params, validQueryKeys).pipe(
+
+            tap(v => console.log('collectionapi list take 1', v)),
 
             take(1)
         );
