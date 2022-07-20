@@ -325,11 +325,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             // map(v => v.sort((a, b) => b.time - a.time)),
 
-            tap(v => console.log('before in mem filter', v)),
-
             map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
-
-            tap(v => console.log('after in mem filter', v)),
 
             map(allDocs => {
 
@@ -343,8 +339,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 return {next, previous, results: allDocs.slice(start, end), count: allDocs.length} as CollectionListResponse<T>;
             }),
-
-            tap(v => console.log('end of filterdocs', v)),
 
             // distinctUntilChanged((prev, cur) => {
 
@@ -368,11 +362,9 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             const doc = this.collection$.pipe(
 
-                tap(v => console.log('------------ before get query -----------', v)),
-
                 switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
 
-                tap(v => console.log('after get query', v)),
+                tap(v => console.log('---get query ---', v.toJSON())),
 
                 auditTime(1000 / 60),
 
@@ -392,8 +384,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return this.getReactive(tenant, url).pipe(
 
-            tap(v => console.log('collectionapi get take 1', v)),
-
             take(1),
         );
     }
@@ -406,11 +396,9 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             const docs = this.collection$.pipe(
 
-                tap(v => console.log('-------------before list query---------------', v)),
-
                 switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
 
-                tap(v => console.log('after list query', v)),
+                tap(v => console.log('---list query---', v.map(v => v.toJSON()))),
 
                 auditTime(1000 / 60),
 
@@ -422,8 +410,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return this.filterDocs(this.cache.get(cacheKey), url, params, validQueryKeys).pipe(
 
-            tap(v => console.log('before enterZone', v)),
-
             enterZone<CollectionListResponse<T>>(this.config.ngZone),
         );
     }
@@ -431,8 +417,6 @@ export class CollectionAPI<T extends Datatype, Database> {
     list(tenant: string, url: string, params?: HttpParams, validQueryKeys: string[] = []): Observable<CollectionListResponse<T>> {
 
         return this.listReactive(tenant, url, params, validQueryKeys).pipe(
-
-            tap(v => console.log('collectionapi list take 1', v)),
 
             take(1)
         );
@@ -623,8 +607,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     downloadRetrieve(doc: PwaDocument<T> | null, tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T> | null> {
 
-        console.log('download retrieve', doc);
-
         if (!!doc && doc.method !== 'GET') { return of(doc); }
 
         // check if document is within cacheTime
@@ -633,8 +615,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         if (!!doc && doc.time >= (currentTime - (this.config.cacheTimeInSeconds * 1000))) { return of(doc); }
 
         return combineLatest([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
-
-            tap(v => console.log('download retrieve in pipe', v)),
 
             switchMap(([res, col]) => col.atomicUpsert({
                 tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url),
@@ -658,11 +638,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 this.downloadRetrieve(doc, tenant, url, params).pipe(startWith(null))
             ),
 
-            tap(v => console.log('after downloadRetrieve', v)),
-
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
-
-            tap(v => console.log('after getReactive', v)),
         );
     }
 
@@ -683,7 +659,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         // const currentTime = new Date().getTime();
 
-        console.log('downloadList', res);
         const limit = parseInt(params?.get('limit') || '100');
 
         ////////////////////////////////////////////////////////////////
@@ -718,13 +693,9 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return this.restAPI.list(url, params).pipe(
 
-            tap(v => console.log('in pipe', v)),
-
             catchError((err) => of({next: null, previous: null, results: []} as ListResponse<T>)),
 
             switchMap(networkRes => this.collectionAPI.collection$.pipe(
-
-                tap(v => console.log('in pipe', v)),
 
                 switchMap(col => {
 
@@ -768,17 +739,11 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
-            tap(v => console.log('before downloadlist pipe', v)),
-
             switchMap(idbRes => wait ?
                 this.downloadList(idbRes, tenant, url, params, indexedbUrl) :
                 this.downloadList(idbRes, tenant, url, params, indexedbUrl).pipe(startWith({next: null, previous: null, results: []}))),
 
-            tap(v => console.log('after downloadlist pipe', v)),
-
             switchMap((networkRes) => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
-
-                tap(v => console.log('after listReactive pipe', v)),
 
                 map(res => ({
                     next: networkRes?.next || res.next,
