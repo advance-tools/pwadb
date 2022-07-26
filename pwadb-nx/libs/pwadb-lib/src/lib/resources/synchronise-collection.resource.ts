@@ -166,7 +166,7 @@ export class SyncCollectionService {
                             );
                         });
 
-                        return from(db.addCollections(collections)).pipe(
+                        return (Object.keys(collections).length ? from(db.addCollections(collections)) : of({})).pipe(
 
                             map(v => ({...v, ...collectionsExists})),
 
