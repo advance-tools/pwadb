@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { NgZone } from '@angular/core';
-import { RxCollectionCreator, RxDatabase } from 'rxdb';
+import { RxCollection, RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, empty, from, Observable, of, throwError } from 'rxjs';
 import { auditTime, bufferCount, catchError, concatMap, delay, filter, finalize, map, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
@@ -142,8 +142,16 @@ export class SyncCollectionService {
                         }, {});
 
                         const collections: Record<string, RxCollectionCreator> = {};
+                        const collectionsExists: Record<string, RxCollection> = {};
 
                         m.collectionInfo.forEach(i => {
+
+                            if (i.collectionName in db) {
+
+                                collectionsExists[i.collectionName] = db[i.collectionName];
+
+                                return;
+                            }
 
                             const collectionOptions = JSON.parse(i.collectionOptions) as RxCollectionCreator;
 
@@ -159,6 +167,8 @@ export class SyncCollectionService {
                         });
 
                         return from(db.addCollections(collections)).pipe(
+
+                            map(v => ({...v, ...collectionsExists})),
 
                             map(v => Object.keys(v).map(k => ({
                                 collection: v[k] as PwaCollection<any>,
