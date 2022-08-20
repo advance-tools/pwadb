@@ -21,6 +21,8 @@ export type PwaDocType<T extends Datatype> = {
     time: number;
     error: string | null;
     fileFields: FileConfig[];
+    params: Record<string, string> | null,
+    headers: Record<string, string> | null,
     createdAt: number;
     updatedAt: number;
 };
@@ -33,7 +35,7 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
     title: name + '_store',
     description: `Store ${name} types of data in the collection`,
     keyCompression: false,
-    version: 0,
+    version: 1,
     type: 'object',
     primaryKey: 'tenantUrl',
     properties: {
@@ -78,6 +80,12 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
                 }
             }
         },
+        params: {
+            type: ['object', 'null']
+        },
+        headers: {
+            type: ['object', 'null']
+        },
         createdAt: {
             type: 'integer',
         },
@@ -87,7 +95,9 @@ export const getSchema: (name: string) => RxJsonSchema<PwaDocType<any>> = (name:
     },
     encrypted: [
         'data',
-        'fileFields'
+        'fileFields',
+        'params',
+        'headers'
     ],
 });
 

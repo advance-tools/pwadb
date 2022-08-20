@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollection, RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, empty, from, Observable, of, throwError } from 'rxjs';
@@ -317,7 +317,23 @@ export class SyncCollectionService {
                         formData = doc.toJSON().data;
                     }
 
-                    return (this.config.httpClient as HttpClient).post(url.join('/'), formData).pipe(
+                    const params = Object.keys(doc.params || {}).reduce((acc, cur) => {
+
+                        acc = acc.set(cur, doc.params[cur]);
+
+                        return acc;
+
+                    }, new HttpParams());
+
+                    const headers = Object.keys(doc.headers || {}).reduce((acc, cur) => {
+
+                        acc = acc.set(cur, doc.headers[cur]);
+
+                        return acc;
+
+                    }, new HttpHeaders());
+
+                    return (this.config.httpClient as HttpClient).post(url.join('/'), formData, {params, headers}).pipe(
 
                         switchMap(res => doc.atomicPatch({
                             method: 'GET',
@@ -368,7 +384,23 @@ export class SyncCollectionService {
                         formData = doc.toJSON().data;
                     }
 
-                    return (this.config.httpClient as HttpClient).put(doc.tenantUrl.split('____')[1], formData).pipe(
+                    const params = Object.keys(doc.params || {}).reduce((acc, cur) => {
+
+                        acc = acc.set(cur, doc.params[cur]);
+
+                        return acc;
+
+                    }, new HttpParams());
+
+                    const headers = Object.keys(doc.headers || {}).reduce((acc, cur) => {
+
+                        acc = acc.set(cur, doc.headers[cur]);
+
+                        return acc;
+
+                    }, new HttpHeaders());
+
+                    return (this.config.httpClient as HttpClient).put(doc.tenantUrl.split('____')[1], formData, {params, headers}).pipe(
 
                         switchMap(res => doc.atomicPatch({
                             method: 'GET',
@@ -389,7 +421,23 @@ export class SyncCollectionService {
 
                 } else if (doc.method === 'DELETE') {
 
-                    return (this.config.httpClient as HttpClient).delete(doc.tenantUrl.split('____')[1]).pipe(
+                    const params = Object.keys(doc.params || {}).reduce((acc, cur) => {
+
+                        acc = acc.set(cur, doc.params[cur]);
+
+                        return acc;
+
+                    }, new HttpParams());
+
+                    const headers = Object.keys(doc.headers || {}).reduce((acc, cur) => {
+
+                        acc = acc.set(cur, doc.headers[cur]);
+
+                        return acc;
+
+                    }, new HttpHeaders());
+
+                    return (this.config.httpClient as HttpClient).delete(doc.tenantUrl.split('____')[1], {params, headers}).pipe(
 
                         switchMap(() => doc.remove()),
 

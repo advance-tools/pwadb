@@ -2,7 +2,7 @@ import { Datatype, FileConfig, getSchema, pwaDocMethods, PwaDocType, PwaDocument
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
 import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take, auditTime, timeout } from 'rxjs/operators';
 import { Observable, of, from, throwError, combineLatest, empty } from 'rxjs';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxCollectionCreator, RxDatabase } from 'rxdb';
 import { NgZone } from '@angular/core';
@@ -51,7 +51,7 @@ export class RestAPI<T extends Datatype> {
     // CRUD
     ////////////////
 
-    get(url: string, params?: HttpParams): Observable<T> {
+    get(url: string, params?: HttpParams, headers?: HttpHeaders): Observable<T> {
 
         const paramsUrl = params?.keys().map(k => `${k}=${params.getAll(k)?.join(',')}`).join('&');
 
@@ -61,7 +61,7 @@ export class RestAPI<T extends Datatype> {
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.config?.httpClient?.get(cacheKey) as Observable<T> || empty()),
+            switchMap(() => this.config?.httpClient?.get(cacheKey, {headers}) as Observable<T> || empty()),
 
             timeout((this.config.apiTimeoutInSeconds || 10) * 1000),
 
@@ -82,7 +82,7 @@ export class RestAPI<T extends Datatype> {
         return this.cache.get(cacheKey) as Observable<T>;
     }
 
-    post(url: string, data: Partial<T> | FormData): Observable<T> {
+    post(url: string, data: Partial<T> | FormData, headers?: HttpHeaders): Observable<T> {
 
         const cacheKey = url;
 
@@ -90,7 +90,7 @@ export class RestAPI<T extends Datatype> {
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.config?.httpClient?.post(url, data) as Observable<T> || empty()),
+            switchMap(() => this.config?.httpClient?.post(url, data, {headers}) as Observable<T> || empty()),
 
             finalize(() => {
 
@@ -108,7 +108,7 @@ export class RestAPI<T extends Datatype> {
         return this.cache.get(cacheKey) as Observable<T>;
     }
 
-    put(url: string, data: Partial<T> | FormData): Observable<T> {
+    put(url: string, data: Partial<T> | FormData, headers?: HttpHeaders): Observable<T> {
 
         const cacheKey = url;
 
@@ -116,7 +116,7 @@ export class RestAPI<T extends Datatype> {
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.config?.httpClient?.put(url, data) as Observable<T> || empty()),
+            switchMap(() => this.config?.httpClient?.put(url, data, {headers}) as Observable<T> || empty()),
 
             finalize(() => {
 
@@ -134,7 +134,7 @@ export class RestAPI<T extends Datatype> {
         return this.cache.get(cacheKey) as Observable<T>;
     }
 
-    list(url: string, params?: HttpParams): Observable<ListResponse<T>> {
+    list(url: string, params?: HttpParams, headers?: HttpHeaders): Observable<ListResponse<T>> {
 
         const paramsUrl = params?.keys().map(k => `${k}=${params?.getAll(k)?.join(',')}`).join('&');
 
@@ -144,7 +144,7 @@ export class RestAPI<T extends Datatype> {
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.config?.httpClient?.get(cacheKey) as Observable<ListResponse<T>> || empty()),
+            switchMap(() => this.config?.httpClient?.get(cacheKey, {headers}) as Observable<ListResponse<T>> || empty()),
 
             timeout((this.config.apiTimeoutInSeconds || 10) * 1000),
 
@@ -164,7 +164,7 @@ export class RestAPI<T extends Datatype> {
         return this.cache.get(cacheKey) as Observable<ListResponse<T>>;
     }
 
-    delete(url: string): Observable<any> {
+    delete(url: string, headers?: HttpHeaders): Observable<any> {
 
         const cacheKey = url;
 
@@ -172,7 +172,7 @@ export class RestAPI<T extends Datatype> {
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.config?.httpClient?.delete(url) as Observable<any> || empty()),
+            switchMap(() => this.config?.httpClient?.delete(url, {headers}) as Observable<any> || empty()),
 
             finalize(() => {
 
@@ -422,7 +422,7 @@ export class CollectionAPI<T extends Datatype, Database> {
     // Actions
     /////////////
 
-    post(tenant: string, url: string, data: T, fileFields: FileConfig[] = []): Observable<PwaDocument<T>> {
+    post(tenant: string, url: string, data: T, fileFields: FileConfig[] = [], params?: HttpParams, headers?: HttpHeaders): Observable<PwaDocument<T>> {
 
         return this.collection$.pipe(
 
@@ -433,12 +433,26 @@ export class CollectionAPI<T extends Datatype, Database> {
                 data,
                 error: null,
                 time: new Date().getTime(),
-                fileFields
+                fileFields,
+                params: params.keys().reduce((acc, cur) => {
+
+                    acc[cur] = params.getAll(cur).join(',')
+
+                    return acc;
+
+                }, {}),
+                headers: headers.keys().reduce((acc, cur) => {
+
+                    acc[cur] = params.getAll(cur).join(',')
+
+                    return acc;
+
+                }, {}),
             })),
         );
     }
 
-    put(tenant: string, url: string, data: T, fileFields: FileConfig[] = []): Observable<PwaDocument<T>> {
+    put(tenant: string, url: string, data: T, fileFields: FileConfig[] = [], params?: HttpParams, headers?: HttpHeaders): Observable<PwaDocument<T>> {
 
         return combineLatest([this.get(tenant, url), this.collection$]).pipe(
 
@@ -451,7 +465,21 @@ export class CollectionAPI<T extends Datatype, Database> {
                         data,
                         error: null,
                         time: doc.method === 'GET' ? new Date().getTime() : doc.time,
-                        fileFields
+                        fileFields,
+                        params: params.keys().reduce((acc, cur) => {
+
+                            acc[cur] = params.getAll(cur).join(',')
+
+                            return acc;
+
+                        }, {}),
+                        headers: headers.keys().reduce((acc, cur) => {
+
+                            acc[cur] = params.getAll(cur).join(',')
+
+                            return acc;
+
+                        }, {}),
                     });
 
                 } else {
@@ -463,7 +491,21 @@ export class CollectionAPI<T extends Datatype, Database> {
                         method: 'PUT',
                         error: null,
                         time: new Date().getTime(),
-                        fileFields
+                        fileFields,
+                        params: params.keys().reduce((acc, cur) => {
+
+                            acc[cur] = params.getAll(cur).join(',')
+
+                            return acc;
+
+                        }, {}),
+                        headers: headers.keys().reduce((acc, cur) => {
+
+                            acc[cur] = params.getAll(cur).join(',')
+
+                            return acc;
+
+                        }, {}),
                     };
 
                     return col.atomicUpsert(docData);
@@ -473,7 +515,7 @@ export class CollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    delete(tenant: string, url: string, data?: T, fileFields: FileConfig[] = []): Observable<boolean | PwaDocument<T>> {
+    delete(tenant: string, url: string, data?: T, fileFields: FileConfig[] = [], params?: HttpParams, headers?: HttpHeaders): Observable<boolean | PwaDocument<T>> {
 
         return this.get(tenant, url).pipe(
 
@@ -500,7 +542,21 @@ export class CollectionAPI<T extends Datatype, Database> {
                         method: 'DELETE',
                         error: null,
                         time: new Date().getTime(),
-                        fileFields
+                        fileFields,
+                        params: params.keys().reduce((acc, cur) => {
+
+                            acc[cur] = params.getAll(cur).join(',')
+
+                            return acc;
+
+                        }, {}),
+                        headers: headers.keys().reduce((acc, cur) => {
+
+                            acc[cur] = params.getAll(cur).join(',')
+
+                            return acc;
+
+                        }, {}),
                     };
 
                     return this.collection$.pipe(
@@ -601,7 +657,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     // Retrieve
     //////////////
 
-    downloadRetrieve(doc: PwaDocument<T> | null, tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T> | null> {
+    downloadRetrieve(doc: PwaDocument<T> | null, tenant: string, url: string, params?: HttpParams, headers?: HttpHeaders): Observable<PwaDocument<T> | null> {
 
         if (!!doc && doc.method !== 'GET') { return of(doc); }
 
@@ -610,7 +666,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         if (!!doc && doc.time >= (currentTime - (this.config.cacheTimeInSeconds * 1000))) { return of(doc); }
 
-        return combineLatest([this.restAPI.get(url, params), this.collectionAPI.collection$]).pipe(
+        return combineLatest([this.restAPI.get(url, params, headers), this.collectionAPI.collection$]).pipe(
 
             switchMap(([res, col]) => col.atomicUpsert({
                 tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url),
@@ -625,22 +681,22 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    getReactive(tenant: string, url: string, params?: HttpParams, wait = false): Observable<PwaDocument<T> | null> {
+    getReactive(tenant: string, url: string, params?: HttpParams, headers?: HttpHeaders, wait = false): Observable<PwaDocument<T> | null> {
 
         return this.collectionAPI.get(tenant, url).pipe(
 
             switchMap(doc => wait ?
-                this.downloadRetrieve(doc, tenant, url, params) :
-                this.downloadRetrieve(doc, tenant, url, params).pipe(startWith(null))
+                this.downloadRetrieve(doc, tenant, url, params, headers) :
+                this.downloadRetrieve(doc, tenant, url, params, headers).pipe(startWith(null))
             ),
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
         );
     }
 
-    get(tenant: string, url: string, params?: HttpParams): Observable<PwaDocument<T> | null> {
+    get(tenant: string, url: string, params?: HttpParams, headers?: HttpHeaders): Observable<PwaDocument<T> | null> {
 
-        return this.getReactive(tenant, url, params, true).pipe(
+        return this.getReactive(tenant, url, params, headers, true).pipe(
 
             take(1)
         );
@@ -651,7 +707,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     //////////////
 
     // tslint:disable-next-line: max-line-length
-    downloadList(res: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<ListResponse<T>> {
+    downloadList(res: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, headers?: HttpHeaders, indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<ListResponse<T>> {
 
         // const currentTime = new Date().getTime();
 
@@ -687,7 +743,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         }
 
-        return this.restAPI.list(url, params).pipe(
+        return this.restAPI.list(url, params, headers).pipe(
 
             catchError((err) => of({next: null, previous: null, results: []} as ListResponse<T>)),
 
@@ -729,15 +785,16 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         url: string,
         params?: HttpParams,
         validQueryKeys: string[] = [],
+        headers?: HttpHeaders,
         indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`,
-        wait = false
+        wait = false,
     ): Observable<PwaListResponse<T>> {
 
         return this.collectionAPI.list(tenant, url, params, validQueryKeys).pipe(
 
             switchMap(idbRes => wait ?
-                this.downloadList(idbRes, tenant, url, params, indexedbUrl) :
-                this.downloadList(idbRes, tenant, url, params, indexedbUrl).pipe(startWith({next: null, previous: null, results: []}))),
+                this.downloadList(idbRes, tenant, url, params, headers, indexedbUrl) :
+                this.downloadList(idbRes, tenant, url, params, headers, indexedbUrl).pipe(startWith({next: null, previous: null, results: []}))),
 
             switchMap((networkRes) => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
 
@@ -753,9 +810,16 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
     }
 
-    list(tenant: string, url: string, params?: HttpParams, validQueryKeys: string[] = [], indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<PwaListResponse<T>> {
+    list(
+        tenant: string,
+        url: string,
+        params?: HttpParams,
+        validQueryKeys: string[] = [],
+        headers?: HttpHeaders,
+        indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`
+    ): Observable<PwaListResponse<T>> {
 
-        return this.listReactive(tenant, url, params, validQueryKeys, indexedbUrl, true).pipe(
+        return this.listReactive(tenant, url, params, validQueryKeys, headers, indexedbUrl, true).pipe(
 
             take(1)
         );

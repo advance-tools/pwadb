@@ -22,6 +22,13 @@ export const getCollectionCreator = (
         options, // (optional) Custom paramters that might be used in plugins
         migrationStrategies: {
             // 1 means, this transforms data from version 0 to version 1
+            1: (oldDocumentData) => {
+
+                oldDocumentData['params'] = null;
+                oldDocumentData['headers'] = null;
+
+                return oldDocumentData;
+            },
             ...migrationStrategies
         }, // (optional)
         autoMigrate, // (optional)
