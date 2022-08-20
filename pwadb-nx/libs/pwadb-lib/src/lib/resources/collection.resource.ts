@@ -434,20 +434,20 @@ export class CollectionAPI<T extends Datatype, Database> {
                 error: null,
                 time: new Date().getTime(),
                 fileFields,
-                params: params.keys().reduce((acc, cur) => {
+                params: params?.keys().reduce((acc, cur) => {
 
                     acc[cur] = params.getAll(cur).join(',')
 
                     return acc;
 
-                }, {}),
-                headers: headers.keys().reduce((acc, cur) => {
+                }, {}) || null,
+                headers: headers?.keys().reduce((acc, cur) => {
 
                     acc[cur] = params.getAll(cur).join(',')
 
                     return acc;
 
-                }, {}),
+                }, {}) || null,
             })),
         );
     }
@@ -466,20 +466,20 @@ export class CollectionAPI<T extends Datatype, Database> {
                         error: null,
                         time: doc.method === 'GET' ? new Date().getTime() : doc.time,
                         fileFields,
-                        params: params.keys().reduce((acc, cur) => {
+                        params: params?.keys().reduce((acc, cur) => {
 
                             acc[cur] = params.getAll(cur).join(',')
 
                             return acc;
 
-                        }, {}),
-                        headers: headers.keys().reduce((acc, cur) => {
+                        }, {}) || null,
+                        headers: headers?.keys().reduce((acc, cur) => {
 
                             acc[cur] = params.getAll(cur).join(',')
 
                             return acc;
 
-                        }, {}),
+                        }, {}) || null,
                     });
 
                 } else {
@@ -492,20 +492,20 @@ export class CollectionAPI<T extends Datatype, Database> {
                         error: null,
                         time: new Date().getTime(),
                         fileFields,
-                        params: params.keys().reduce((acc, cur) => {
+                        params: params?.keys().reduce((acc, cur) => {
 
                             acc[cur] = params.getAll(cur).join(',')
 
                             return acc;
 
-                        }, {}),
-                        headers: headers.keys().reduce((acc, cur) => {
+                        }, {}) || null,
+                        headers: headers?.keys().reduce((acc, cur) => {
 
                             acc[cur] = params.getAll(cur).join(',')
 
                             return acc;
 
-                        }, {}),
+                        }, {}) || null,
                     };
 
                     return col.atomicUpsert(docData);
@@ -543,20 +543,20 @@ export class CollectionAPI<T extends Datatype, Database> {
                         error: null,
                         time: new Date().getTime(),
                         fileFields,
-                        params: params.keys().reduce((acc, cur) => {
+                        params: params?.keys().reduce((acc, cur) => {
 
                             acc[cur] = params.getAll(cur).join(',')
 
                             return acc;
 
-                        }, {}),
-                        headers: headers.keys().reduce((acc, cur) => {
+                        }, {}) || null,
+                        headers: headers?.keys().reduce((acc, cur) => {
 
                             acc[cur] = params.getAll(cur).join(',')
 
                             return acc;
 
-                        }, {}),
+                        }, {}) || null,
                     };
 
                     return this.collection$.pipe(
