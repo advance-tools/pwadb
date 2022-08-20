@@ -39,6 +39,8 @@ export class TreeDatabase<T extends TableDataType> {
 
     dataChange: Observable<TreeNode<T>[]>;
 
+    buildTreeDelayGapMs = 300;
+
     private queueChange: BehaviorSubject<any>;
     private _httpParams: HttpParams;
 
@@ -144,14 +146,16 @@ export class TreeDatabase<T extends TableDataType> {
             );
         });
 
-        return from(treeNodes).pipe(
+        const delayedTreeNodes = treeNodes.map((t, i) => of(null).pipe(
 
-            delay(300),
+            delay(i * this.buildTreeDelayGapMs),
 
-            mergeMap(v => v),
+            switchMap(() => t)
+        ));
 
-            scan((acc: {item: PwaDocument<T>, children: Observable<TreeNode<any>[]>}[], cur: {item: PwaDocument<T>, children: Observable<TreeNode<any>[]>}[]) => flatten(cur, acc), [])
+        return combineLatest(delayedTreeNodes).pipe(
 
+            map(v => flatten(v))
         );
     }
 
