@@ -443,7 +443,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                 }, {}) || null,
                 headers: headers?.keys().reduce((acc, cur) => {
 
-                    acc[cur] = params.getAll(cur).join(',')
+                    acc[cur] = headers.getAll(cur).join(',')
 
                     return acc;
 
@@ -475,7 +475,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                         }, {}) || null,
                         headers: headers?.keys().reduce((acc, cur) => {
 
-                            acc[cur] = params.getAll(cur).join(',')
+                            acc[cur] = headers.getAll(cur).join(',')
 
                             return acc;
 
@@ -501,7 +501,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                         }, {}) || null,
                         headers: headers?.keys().reduce((acc, cur) => {
 
-                            acc[cur] = params.getAll(cur).join(',')
+                            acc[cur] = headers.getAll(cur).join(',')
 
                             return acc;
 
@@ -552,7 +552,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                         }, {}) || null,
                         headers: headers?.keys().reduce((acc, cur) => {
 
-                            acc[cur] = params.getAll(cur).join(',')
+                            acc[cur] = headers.getAll(cur).join(',')
 
                             return acc;
 
