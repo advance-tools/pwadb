@@ -22,7 +22,6 @@
     "@angular/platform-browser-dynamic": "14.2.4",
     "@angular/router": "14.2.4",
     "@nrwl/angular": "14.8.2",
-    "pouchdb-adapter-idb": "^7.3.0",
     "rxdb": "^13.4.2",
     "rxjs": "~7.5.0",
     "tslib": "^2.0.0",

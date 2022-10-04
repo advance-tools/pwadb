@@ -9876,31 +9876,6 @@ pouchdb-adapter-http@7.3.0:
     pouchdb-fetch "7.3.0"
     pouchdb-utils "7.3.0"
 
-pouchdb-adapter-idb@^7.3.0:
-  version "7.3.0"
-  resolved "https://registry.yarnpkg.com/pouchdb-adapter-idb/-/pouchdb-adapter-idb-7.3.0.tgz#41939b4b3d8c6a2d1ad21df16c81a7c2e124b41d"
-  integrity sha512-qMy0lrB+LyOFyFUo7Gfr5VvSM1IXyP2c9N2XwmMSSaTib/OsNnBqLj8AWrgPEnzvEkDgImBkk34e5F6MlUFRyA==
-  dependencies:
-    pouchdb-adapter-utils "7.3.0"
-    pouchdb-binary-utils "7.3.0"
-    pouchdb-collections "7.3.0"
-    pouchdb-errors "7.3.0"
-    pouchdb-json "7.3.0"
-    pouchdb-merge "7.3.0"
-    pouchdb-utils "7.3.0"
-
-pouchdb-adapter-utils@7.3.0:
-  version "7.3.0"
-  resolved "https://registry.yarnpkg.com/pouchdb-adapter-utils/-/pouchdb-adapter-utils-7.3.0.tgz#1747e4ea0b519a9d817c6eda0e2f0ebc3dc18c41"
-  integrity sha512-mU1+smcagWSpInVx/VQk7VVjjnJlyagKtusUS3OdCMFZY35L6RbXC8eIhoNVDbkBfEv3cIwqQ3t7fdvkaa1odQ==
-  dependencies:
-    pouchdb-binary-utils "7.3.0"
-    pouchdb-collections "7.3.0"
-    pouchdb-errors "7.3.0"
-    pouchdb-md5 "7.3.0"
-    pouchdb-merge "7.3.0"
-    pouchdb-utils "7.3.0"
-
 pouchdb-all-dbs@1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/pouchdb-all-dbs/-/pouchdb-all-dbs-1.1.1.tgz#85f04a39cafda52497ec49abf1c93bb5e72813f6"
@@ -9996,13 +9971,6 @@ pouchdb-generate-replication-id@7.3.0:
   dependencies:
     pouchdb-collate "7.3.0"
     pouchdb-md5 "7.3.0"
-
-pouchdb-json@7.3.0:
-  version "7.3.0"
-  resolved "https://registry.yarnpkg.com/pouchdb-json/-/pouchdb-json-7.3.0.tgz#94c2d876202c6879cb525db05e7633b926346e5d"
-  integrity sha512-D4wyi20ltyiFpuziQeMk3CbXs/Q58VoGTYTJQY8MWBw37OidtHGQAt1Kh5yJ435wJqDzJZyxMA5RxGZxEOBDVg==
-  dependencies:
-    vuvuzela "1.0.3"
 
 pouchdb-mapreduce-utils@7.3.0:
   version "7.3.0"
@@ -11862,11 +11830,6 @@ verror@1.10.0:
     assert-plus "^1.0.0"
     core-util-is "1.0.2"
     extsprintf "^1.2.0"
-
-vuvuzela@1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/vuvuzela/-/vuvuzela-1.0.3.tgz#3be145e58271c73ca55279dd851f12a682114b0b"
-  integrity sha512-Tm7jR1xTzBbPW+6y1tknKiEhz04Wf/1iZkcTJjSFcpNko43+dFW6+OOeQe9taJIug3NdfUAjFKgUSyQrIKaDvQ==
 
 w3c-hr-time@^1.0.2:
   version "1.0.2"
