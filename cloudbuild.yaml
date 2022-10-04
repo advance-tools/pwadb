@@ -6,7 +6,7 @@ steps:
     args:
       - '-c'
       - |
-          yarn install && yarn nx build pwadb-lib
+          yarn install && yarn nx build pwadb-lib --skip-nx-cache
     dir: '/workspace/pwadb-nx'
   -   
     id: Publish
