@@ -1,28 +1,38 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import { from, Observable } from 'rxjs';
 import { map, switchMap, startWith, shareReplay } from 'rxjs/operators';
-import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
+// import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
-import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
+// import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
-import { getRxStoragePouch, addPouchPlugin } from 'rxdb/plugins/pouchdb';
-import * as idb from 'pouchdb-adapter-idb';
+import { isDevMode } from '@angular/core';
+import { wrappedKeyEncryptionStorage } from 'rxdb/dist/types/plugins/encryption';
+import { getRxStorageDexie } from 'rxdb/dist/types/plugins/dexie';
+// import { getRxStoragePouch, addPouchPlugin } from 'rxdb/plugins/pouchdb';
+// import * as idb from 'pouchdb-adapter-idb';
 
 // add pouchdb plugin
-addPouchPlugin(idb);
+// addPouchPlugin(idb);
 
 // add encryption plugin
-addRxPlugin(RxDBEncryptionPlugin);
+// addRxPlugin(RxDBEncryptionPlugin);
 
 // add leader election plugin
 addRxPlugin(RxDBLeaderElectionPlugin);
 
 // add schema validate plugin
-addRxPlugin(RxDBValidatePlugin);
+// addRxPlugin(RxDBValidatePlugin);
 
 // add migration plugin
 addRxPlugin(RxDBMigrationPlugin);
 
+
+if (isDevMode()) {
+
+    await import('rxdb/plugins/dev-mode').then(
+        module => addRxPlugin(module as any)
+    );
+}
 
 export interface PwaDatabaseCreator {
     dbCreator: Partial<RxDatabaseCreator>;
@@ -35,14 +45,18 @@ export class PwaDatabaseService<T> {
 
     constructor(private _config: PwaDatabaseCreator) {
 
-        const pouchAdapter = getRxStoragePouch('idb');
+        const encryptedDexieStorage = wrappedKeyEncryptionStorage({
+            storage: getRxStorageDexie(),
+        });
 
-        pouchAdapter.pouchSettings.revs_limit       = 0,
-        pouchAdapter.pouchSettings.auto_compaction  = true;
+        // const pouchAdapter = getRxStoragePouch('idb');
+
+        // pouchAdapter.pouchSettings.revs_limit       = 0,
+        // pouchAdapter.pouchSettings.auto_compaction  = true;
 
         this.db$ = from(createRxDatabase({
             name: 'pwadb',
-            storage: pouchAdapter,
+            storage: encryptedDexieStorage,
             password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',
             multiInstance: true,
             eventReduce: true,

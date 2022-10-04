@@ -1,27 +1,36 @@
 import { addRxPlugin, createRxDatabase, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import { from, Observable } from 'rxjs';
-import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
-import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
-import { getRxStoragePouch, addPouchPlugin } from 'rxdb/plugins/pouchdb';
+// import { getRxStoragePouch, addPouchPlugin } from 'rxdb/plugins/pouchdb';
+import { wrappedKeyEncryptionStorage } from 'rxdb/plugins/encryption';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
 import { map, shareReplay, startWith, switchMap } from 'rxjs/operators';
-import * as idb from 'pouchdb-adapter-idb';
+import { getRxStorageDexie } from 'rxdb/plugins/dexie';
+import { isDevMode } from '@angular/core';
 
-// add pouchdb plugin
-addPouchPlugin(idb);
+
+// // add pouchdb plugin
+// addPouchPlugin(idb);
 
 // add encryption plugin
-addRxPlugin(RxDBEncryptionPlugin);
+// addRxPlugin(RxDBEncryptionPlugin);
 
 // add leader election plugin
 addRxPlugin(RxDBLeaderElectionPlugin);
 
 // add schema validate plugin
-addRxPlugin(RxDBValidatePlugin);
+// addRxPlugin(RxDBValidatePlugin);
 
 // add migration plugin
 addRxPlugin(RxDBMigrationPlugin);
+
+
+if (isDevMode()) {
+
+    await import('rxdb/plugins/dev-mode').then(
+        module => addRxPlugin(module as any)
+    );
+}
 
 
 export interface SyncDatabaseServiceCreator {
@@ -36,14 +45,16 @@ export class SyncDatabaseService {
 
     constructor(private _config: SyncDatabaseServiceCreator) {
 
-        const pouchAdapter = getRxStoragePouch('idb');
+        const encryptedDexieStorage = wrappedKeyEncryptionStorage({
+            storage: getRxStorageDexie(),
+        });
 
-        pouchAdapter.pouchSettings.revs_limit       = 0,
-        pouchAdapter.pouchSettings.auto_compaction  = true;
+        // pouchAdapter.pouchSettings.revs_limit       = 0,
+        // pouchAdapter.pouchSettings.auto_compaction  = true;
 
         this.db$ = from(createRxDatabase({
             name: 'synchronise/pwadb',
-            storage: pouchAdapter,
+            storage: encryptedDexieStorage,
             password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',
             multiInstance: true,
             eventReduce: true,
