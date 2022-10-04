@@ -6,7 +6,6 @@ import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
 import { map, shareReplay, startWith, switchMap } from 'rxjs/operators';
 import { wrappedKeyEncryptionStorage } from 'rxdb/plugins/encryption';
 import { getRxStorageDexie } from 'rxdb/plugins/dexie';
-import { isDevMode } from '@angular/core';
 
 
 // // add pouchdb plugin
@@ -44,26 +43,14 @@ export class SyncDatabaseService {
         // pouchAdapter.pouchSettings.revs_limit       = 0,
         // pouchAdapter.pouchSettings.auto_compaction  = true;
 
-        this.db$ = of(isDevMode()).pipe(
-
-            switchMap(v => {
-
-                if (v) {
-
-                    return from(import('rxdb/plugins/dev-mode').then(module => addRxPlugin(module as any)))
-                }
-
-                return of(null);
-            }),
-
-            switchMap(() => from(createRxDatabase({
-                name: 'synchronise/pwadb',
-                storage: encryptedDexieStorage,
-                password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',
-                multiInstance: true,
-                eventReduce: true,
-                ...this._config.dbCreator
-            }))),
+        this.db$ = from(createRxDatabase({
+            name: 'synchronise/pwadb',
+            storage: encryptedDexieStorage,
+            password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',
+            multiInstance: true,
+            eventReduce: true,
+            ...this._config.dbCreator
+        })).pipe(
 
             switchMap((db: any) => from(db.waitForLeadership()).pipe(
 
