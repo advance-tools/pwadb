@@ -1,5 +1,5 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
-import { from, Observable } from 'rxjs';
+import { from, Observable, of } from 'rxjs';
 import { map, switchMap, startWith, shareReplay } from 'rxjs/operators';
 // import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
@@ -27,13 +27,6 @@ addRxPlugin(RxDBLeaderElectionPlugin);
 addRxPlugin(RxDBMigrationPlugin);
 
 
-if (isDevMode()) {
-
-    await import('rxdb/plugins/dev-mode').then(
-        module => addRxPlugin(module as any)
-    );
-}
-
 export interface PwaDatabaseCreator {
     dbCreator: Partial<RxDatabaseCreator>;
 }
@@ -54,14 +47,26 @@ export class PwaDatabaseService<T> {
         // pouchAdapter.pouchSettings.revs_limit       = 0,
         // pouchAdapter.pouchSettings.auto_compaction  = true;
 
-        this.db$ = from(createRxDatabase({
-            name: 'pwadb',
-            storage: encryptedDexieStorage,
-            password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',
-            multiInstance: true,
-            eventReduce: true,
-            ...this._config.dbCreator
-        })).pipe(
+        this.db$ = of(isDevMode()).pipe(
+
+            switchMap(v => {
+
+                if (v) {
+
+                    return from(import('rxdb/plugins/dev-mode').then(module => addRxPlugin(module as any)))
+                }
+
+                return of(null);
+            }),
+
+            switchMap(() => from(createRxDatabase({
+                name: 'pwadb',
+                storage: encryptedDexieStorage,
+                password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',
+                multiInstance: true,
+                eventReduce: true,
+                ...this._config.dbCreator
+            }))),
 
             switchMap((db: any) => from(db.waitForLeadership()).pipe(
 
@@ -71,7 +76,6 @@ export class PwaDatabaseService<T> {
             )),
 
             shareReplay(1),
-
         );
     }
 
