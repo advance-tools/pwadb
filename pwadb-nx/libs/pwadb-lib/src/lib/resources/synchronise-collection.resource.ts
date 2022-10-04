@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollection, RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, empty, from, Observable, of, throwError } from 'rxjs';
-import { auditTime, bufferCount, catchError, concatMap, delay, filter, finalize, map, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { auditTime, bufferCount, catchError, concatMap, debounceTime, delay, filter, finalize, map, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
@@ -31,6 +31,8 @@ export interface SyncCollectionServiceCreator {
 
 
 export class SyncCollectionService {
+
+    synchroniseDebounceTime = 500;
 
     collection$: Observable<SynchroniseCollection>;
     retryChange: BehaviorSubject<boolean>;
@@ -279,6 +281,8 @@ export class SyncCollectionService {
 
         const hit = pop.pipe(
 
+            debounceTime(this.synchroniseDebounceTime),
+
             concatMap(doc => {
 
                 if (doc.method === 'POST') {
@@ -305,7 +309,12 @@ export class SyncCollectionService {
 
                             (formData as FormData).delete(k.fileType);
 
-                            if (k.fileKeyField && k.fileField && k.fileType) (formData as FormData).append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
+                            if (k.fileKeyField && k.fileField && k.fileType) {
+
+                                (formData as FormData).delete(k.fileKeyField);
+
+                                (formData as FormData).append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
+                            }
                         });
 
                     } else {
@@ -372,7 +381,12 @@ export class SyncCollectionService {
 
                             (formData as FormData).delete(k.fileType);
 
-                            if (k.fileKeyField && k.fileField && k.fileType) (formData as FormData).append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
+                            if (k.fileKeyField && k.fileField && k.fileType) {
+
+                                (formData as FormData).delete(k.fileKeyField);
+
+                                (formData as FormData).append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
+                            }
                         });
 
                     } else {
