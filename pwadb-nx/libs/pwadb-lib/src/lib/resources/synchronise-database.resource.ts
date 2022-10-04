@@ -2,9 +2,9 @@ import { addRxPlugin, createRxDatabase, RxDatabase, RxDatabaseCreator } from 'rx
 import { from, Observable, of } from 'rxjs';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 // import { getRxStoragePouch, addPouchPlugin } from 'rxdb/plugins/pouchdb';
-import { wrappedKeyEncryptionStorage } from 'rxdb/plugins/encryption';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
 import { map, shareReplay, startWith, switchMap } from 'rxjs/operators';
+import { wrappedKeyEncryptionStorage } from 'rxdb/plugins/encryption';
 import { getRxStorageDexie } from 'rxdb/plugins/dexie';
 import { isDevMode } from '@angular/core';
 

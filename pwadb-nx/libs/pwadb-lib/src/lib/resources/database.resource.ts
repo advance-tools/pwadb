@@ -6,8 +6,8 @@ import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 // import { RxDBValidatePlugin } from 'rxdb/plugins/validate';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
 import { isDevMode } from '@angular/core';
-import { wrappedKeyEncryptionStorage } from 'rxdb/dist/types/plugins/encryption';
-import { getRxStorageDexie } from 'rxdb/dist/types/plugins/dexie';
+import { wrappedKeyEncryptionStorage } from 'rxdb/plugins/encryption';
+import { getRxStorageDexie } from 'rxdb/plugins/dexie';
 // import { getRxStoragePouch, addPouchPlugin } from 'rxdb/plugins/pouchdb';
 // import * as idb from 'pouchdb-adapter-idb';
 
