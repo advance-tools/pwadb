@@ -2,7 +2,7 @@ import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { Datatype, PwaDocument } from '../definitions/document';
 import { HttpParams } from '@angular/common/http';
 import { PwaListResponse } from '../definitions/collection';
-import { switchMap, tap, shareReplay, map, filter, auditTime, distinctUntilChanged, debounceTime, finalize } from 'rxjs/operators';
+import { switchMap, tap, shareReplay, map, filter, auditTime, distinctUntilChanged, debounceTime } from 'rxjs/operators';
 import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 import { CustomHttpParams } from './customParams.resource';
@@ -34,8 +34,7 @@ export interface TableDataType extends Datatype {
 
 export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
 
-    queue: Observable<PwaListResponse<T>>[] = []
-    queueChange: BehaviorSubject<boolean>;
+    queueChange: BehaviorSubject<Observable<PwaListResponse<T>>[]>;
     data: PwaDocument<T>[];
 
     _isLoadingChange: BehaviorSubject<boolean>;
@@ -76,7 +75,7 @@ export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
     constructor(private __limit: number, private __zone: NgZone) {
 
         this.data               = [];
-        this.queueChange        = new BehaviorSubject<boolean>(false);
+        this.queueChange        = new BehaviorSubject<Observable<PwaListResponse<T>>[]>([]);
         this._isLoadingChange 	= new BehaviorSubject<boolean>(false);
 
         this._httpParams        = new CustomHttpParams();
@@ -124,8 +123,6 @@ export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
 
 export class Database<T extends TableDataType> extends BaseDatabase<T> {
 
-    loadMoreTrigger = new BehaviorSubject<boolean>(false);
-
     dataChange: Observable<PwaDocument<T>[]>;
 
     constructor(private apiService: TableDatabase<T>, private zone: NgZone, private _limit = 20) {
@@ -135,21 +132,6 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
         this.dataChange = this.queueChange.asObservable().pipe(
 
             debounceTime(300),
-
-            map(() => {
-
-                super.loadMore();
-
-                // make view
-                const view = this.getView(this.httpParams);
-
-                // push to queue
-                this.queue = [...this.queue, view];
-
-                return this.queue;
-            }),
-
-            tap(v => console.log('database', v)),
 
             tap(v => { if (!v.length) { this.reset(); } }),
 
@@ -190,16 +172,20 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
         const view = this.getView(this.httpParams);
 
         // push to queue
-        this.queue = [view];
-
-        this.queueChange.next(true);
+        this.queueChange.next([view]);
     }
 
     override loadMore() {
 
         if (this.isLoading || !this.isLoadable) { return; }
 
-        this.queueChange.next(true);
+        super.loadMore();
+
+        // make view
+        const view = this.getView(this.httpParams);
+
+        // push to queue
+        this.queueChange.next(flatten([this.queueChange.value, view]));
     }
 
 }
@@ -216,21 +202,6 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
         this.dataChange = this.queueChange.asObservable().pipe(
 
             debounceTime(300),
-
-            map(() => {
-
-                super.loadMore();
-
-                // make view
-                const view = this.getView(this.httpParams);
-
-                // push to queue
-                this.queue = [...this.queue, view];
-
-                return this.queue;
-            }),
-
-            tap(v => console.log('reactive database', v)),
 
             tap(v => { if (!v.length) { this.reset(); } }),
 
@@ -271,15 +242,19 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
         const view = this.getView(this.httpParams);
 
         // push to queue
-        this.queue = [view];
-
-        this.queueChange.next(true);
+        this.queueChange.next([view]);
     }
 
     override loadMore() {
 
         if (this.isLoading || !this.isLoadable) { return; }
 
-        this.queueChange.next(true);
+        super.loadMore();
+
+        // make view
+        const view = this.getView(this.httpParams);
+
+        // push to queue
+        this.queueChange.next(flatten([this.queueChange.value, view]));
     }
 }
