@@ -34,7 +34,7 @@ export interface TableDataType extends Datatype {
 
 export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
 
-    queueChange: BehaviorSubject<Observable<PwaListResponse<T>>[]>;
+    queueChange: BehaviorSubject<Observable<PwaListResponse<T> & {toString: () => string}>[]>;
     data: PwaDocument<T>[];
 
     _isLoadingChange: BehaviorSubject<boolean>;
@@ -75,7 +75,7 @@ export class BaseDatabase<T extends TableDataType> implements IBaseDatabase {
     constructor(private __limit: number, private __zone: NgZone) {
 
         this.data               = [];
-        this.queueChange        = new BehaviorSubject<Observable<PwaListResponse<T>>[]>([]);
+        this.queueChange        = new BehaviorSubject<Observable<PwaListResponse<T> & {toString: () => string}>[]>([]);
         this._isLoadingChange 	= new BehaviorSubject<boolean>(false);
 
         this._httpParams        = new CustomHttpParams();
@@ -156,12 +156,14 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
         ) as Observable<PwaDocument<T>[]>;
     }
 
-    getView(httpParams: HttpParams): Observable<PwaListResponse<T>> {
+    getView(httpParams: HttpParams): Observable<PwaListResponse<T>> & {toString: () => string} {
 
-        return this.apiService.fetch(httpParams).pipe(
+        const view = this.apiService.fetch(httpParams).pipe(
 
             shareReplay(1)
         );
+
+        return Object.assign(view, {toString: () => httpParams.toString()});
     }
 
     override reset() {
@@ -183,6 +185,14 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
 
         // make view
         const view = this.getView(this.httpParams);
+
+        // check previous request
+        const prevReqParams = this.queueChange.value[this.queueChange.value.length - 1].toString();
+        const curReqParams = view.toString();
+
+        console.log('database', prevReqParams, curReqParams);
+
+        if (prevReqParams === curReqParams) return;
 
         // push to queue
         this.queueChange.next(flatten([this.queueChange.value, view]));
@@ -226,12 +236,14 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
         ) as Observable<PwaDocument<T>[]>;
     }
 
-    getView(httpParams: HttpParams): Observable<PwaListResponse<T>> {
+    getView(httpParams: HttpParams): Observable<PwaListResponse<T>> & {toString: () => string} {
 
-        return this.apiService.fetchReactive(httpParams).pipe(
+        const view = this.apiService.fetchReactive(httpParams).pipe(
 
             shareReplay(1)
         );
+
+        return Object.assign(view, {toString: () => httpParams.toString()});
     }
 
     override reset() {
@@ -253,6 +265,14 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
 
         // make view
         const view = this.getView(this.httpParams);
+
+        // check previous request
+        const prevReqParams = this.queueChange.value[this.queueChange.value.length - 1].toString();
+        const curReqParams = view.toString();
+
+        console.log('reactive database', prevReqParams, curReqParams);
+
+        if (prevReqParams === curReqParams) return;
 
         // push to queue
         this.queueChange.next(flatten([this.queueChange.value, view]));
