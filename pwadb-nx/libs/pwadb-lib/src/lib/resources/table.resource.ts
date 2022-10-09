@@ -190,8 +190,6 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
         const prevReqParams = this.queueChange.value[this.queueChange.value.length - 1].toString();
         const curReqParams = view.toString();
 
-        console.log('database', prevReqParams, curReqParams);
-
         if (prevReqParams === curReqParams) return;
 
         // push to queue
@@ -269,8 +267,6 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
         // check previous request
         const prevReqParams = this.queueChange.value[this.queueChange.value.length - 1].toString();
         const curReqParams = view.toString();
-
-        console.log('reactive database', prevReqParams, curReqParams);
 
         if (prevReqParams === curReqParams) return;
 
