@@ -134,8 +134,6 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
 
         this.dataChange = this.queueChange.asObservable().pipe(
 
-            filter(() => !this.isLoading && this.isLoadable),
-
             debounceTime(300),
 
             map(() => {
@@ -150,6 +148,8 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
 
                 return this.queue;
             }),
+
+            tap(v => console.log('database', v)),
 
             tap(v => { if (!v.length) { this.reset(); } }),
 
@@ -197,6 +197,8 @@ export class Database<T extends TableDataType> extends BaseDatabase<T> {
 
     override loadMore() {
 
+        if (this.isLoading || !this.isLoadable) { return; }
+
         this.queueChange.next(true);
     }
 
@@ -213,8 +215,6 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
 
         this.dataChange = this.queueChange.asObservable().pipe(
 
-            filter(() => !this.isLoading && this.isLoadable),
-
             debounceTime(300),
 
             map(() => {
@@ -229,6 +229,8 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
 
                 return this.queue;
             }),
+
+            tap(v => console.log('reactive database', v)),
 
             tap(v => { if (!v.length) { this.reset(); } }),
 
@@ -275,6 +277,8 @@ export class ReactiveDatabase<T extends TableDataType> extends BaseDatabase<T> {
     }
 
     override loadMore() {
+
+        if (this.isLoading || !this.isLoadable) { return; }
 
         this.queueChange.next(true);
     }
