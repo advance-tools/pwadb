@@ -31,9 +31,6 @@ export interface SyncCollectionServiceCreator {
 
 
 export class SyncCollectionService {
-
-    synchroniseDebounceTime = 500;
-
     collection$: Observable<SynchroniseCollection>;
     retryChange: BehaviorSubject<boolean>;
 
@@ -81,7 +78,7 @@ export class SyncCollectionService {
 
                 this.config.name in db ? cacheCollections[this.config.name] = db[this.config.name] : null;
 
-                return this.config.name in db ? of(cacheCollections) : from(db.addCollections(collectionSchema));
+                return this.config.name in db ? of(cacheCollections) : db.addCollections(collectionSchema);
             }),
 
             map(collections => collections[this.config.name]),
@@ -240,15 +237,10 @@ export class SyncCollectionService {
 
                 const sortedDocs$ = collectionsInfo.map(k => {
 
-                    return from(k.collection.find(query).$.pipe(
-
-                        auditTime(1000 / 60)
-                    ));
+                    return k.collection.find(query).$;
                 });
 
                 return from(sortedDocs$).pipe(
-
-                    delay(1000/60),
 
                     mergeMap(docs$ => docs$),
 
@@ -257,21 +249,23 @@ export class SyncCollectionService {
 
             }),
 
+            auditTime(1000/60),
+
             map(sortedDocs => flatten(sortedDocs)),
 
             map((sortedDocs: PwaDocument<any>[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.time - b.time : b.time - a.time)),
 
-            shareReplay(1),
-
             enterZone<PwaDocument<any>[]>(this.config.ngZone),
+
+            shareReplay(1),
         );
     }
 
-    synchronise(tenant: string): Observable<PwaDocument<any> | boolean> {
+    synchronise(tenant: string, unsynchronised$: Observable<PwaDocument<any>[]> = this.unsynchronised(tenant, 'asc')): Observable<PwaDocument<any> | boolean> {
 
         if (!this.config.httpClient) return empty();
 
-        const pop: Observable<PwaDocument<any>> = this.unsynchronised(tenant, 'asc').pipe(
+        const pop: Observable<PwaDocument<any>> = unsynchronised$.pipe(
 
             filter(sortedDocs => sortedDocs.length > 0),
 
@@ -280,8 +274,6 @@ export class SyncCollectionService {
         );
 
         const hit = pop.pipe(
-
-            debounceTime(this.synchroniseDebounceTime),
 
             concatMap(doc => {
 
