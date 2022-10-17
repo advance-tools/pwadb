@@ -5,7 +5,7 @@
     "targets": {
         "build": {
             "executor": "@nrwl/angular:package",
-            "outputs": ["dist/libs/pwadb-lib"],
+            "outputs": ["{workspaceRoot}/dist/libs/pwadb-lib"],
             "options": {
                 "project": "libs/pwadb-lib/ng-package.json"
             },
@@ -21,7 +21,7 @@
         },
         "test": {
             "executor": "@nrwl/jest:jest",
-            "outputs": ["coverage/libs/pwadb-lib"],
+            "outputs": ["{workspaceRoot}/coverage/libs/pwadb-lib"],
             "options": {
                 "jestConfig": "libs/pwadb-lib/jest.config.ts",
                 "passWithNoTests": true

@@ -235,10 +235,7 @@ export class SyncCollectionService {
                     }
                 };
 
-                const sortedDocs$ = collectionsInfo.map(k => {
-
-                    return k.collection.find(query).$;
-                });
+                const sortedDocs$ = collectionsInfo.map(k => k.collection.find(query).$);
 
                 return from(sortedDocs$).pipe(
 

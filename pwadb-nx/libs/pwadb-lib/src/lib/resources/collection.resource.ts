@@ -691,6 +691,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
             ),
 
             switchMap(() => this.collectionAPI.getReactive(tenant, url)),
+
+            auditTime(1000/60),
         );
     }
 
@@ -797,6 +799,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 this.downloadList(idbRes, tenant, url, params, headers, indexedbUrl).pipe(startWith({next: null, previous: null, results: []}))),
 
             switchMap((networkRes) => this.collectionAPI.listReactive(tenant, url, params, validQueryKeys).pipe(
+
+                auditTime(1000/60),
 
                 map(res => ({
                     next: networkRes?.next || res.next,
