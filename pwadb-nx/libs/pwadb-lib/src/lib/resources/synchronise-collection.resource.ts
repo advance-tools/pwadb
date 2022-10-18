@@ -235,7 +235,7 @@ export class SyncCollectionService {
                     }
                 };
 
-                const sortedDocs$ = collectionsInfo.map(k => k.collection.find(query).$);
+                const sortedDocs$ = collectionsInfo.map(k => k.collection.find(query).$.pipe(auditTime(1000/60)));
 
                 return from(sortedDocs$).pipe(
 
@@ -250,7 +250,7 @@ export class SyncCollectionService {
 
             map(sortedDocs => flatten(sortedDocs)),
 
-            map((sortedDocs: PwaDocument<any>[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.time - b.time : b.time - a.time)),
+            map((sortedDocs: PwaDocument<any>[]) => sortedDocs.filter(doc => doc.method !== 'GET').sort((a, b) => order === 'asc' ? a.time - b.time : b.time - a.time)),
 
             enterZone<PwaDocument<any>[]>(this.config.ngZone),
 
@@ -455,7 +455,9 @@ export class SyncCollectionService {
                     );
                 }
 
-                return throwError(`Document doesn\'t have valid method. Document: ${JSON.stringify(doc?.toJSON())}`);
+                console.error(`Document doesn\'t have valid method. Document: ${JSON.stringify(doc?.toJSON())}`);
+
+                return empty();
             }),
 
         );
