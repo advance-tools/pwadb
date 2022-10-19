@@ -250,7 +250,7 @@ export class SyncCollectionService {
 
             map(sortedDocs => flatten(sortedDocs)),
 
-            map((sortedDocs: PwaDocument<any>[]) => sortedDocs.filter(doc => doc.method !== 'GET').sort((a, b) => order === 'asc' ? a.time - b.time : b.time - a.time)),
+            map((sortedDocs: PwaDocument<any>[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.time - b.time : b.time - a.time)),
 
             enterZone<PwaDocument<any>[]>(this.config.ngZone),
 
@@ -262,15 +262,13 @@ export class SyncCollectionService {
 
         if (!this.config.httpClient) return empty();
 
-        const pop: Observable<PwaDocument<any>> = unsynchronised$.pipe(
+        const hit = unsynchronised$.pipe(
+
+            map(sortedDocs => sortedDocs.filter(doc => doc.method !== 'GET')),
 
             filter(sortedDocs => sortedDocs.length > 0),
 
             map(sortedDocs => sortedDocs[0]),
-
-        );
-
-        const hit = pop.pipe(
 
             concatMap(doc => {
 
