@@ -1,24 +1,14 @@
 import { addRxPlugin, createRxDatabase, RxDatabase, RxDatabaseCreator } from 'rxdb';
-import { from, Observable, of } from 'rxjs';
+import { from, Observable } from 'rxjs';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
-// import { getRxStoragePouch, addPouchPlugin } from 'rxdb/plugins/pouchdb';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
 import { map, shareReplay, startWith, switchMap } from 'rxjs/operators';
 import { wrappedKeyEncryptionStorage } from 'rxdb/plugins/encryption';
-import { getRxStorageDexie } from 'rxdb/plugins/dexie';
+import { dexieWorker } from '../definitions/webworker';
 
-
-// // add pouchdb plugin
-// addPouchPlugin(idb);
-
-// add encryption plugin
-// addRxPlugin(RxDBEncryptionPlugin);
 
 // add leader election plugin
 addRxPlugin(RxDBLeaderElectionPlugin);
-
-// add schema validate plugin
-// addRxPlugin(RxDBValidatePlugin);
 
 // add migration plugin
 addRxPlugin(RxDBMigrationPlugin);
@@ -37,11 +27,8 @@ export class SyncDatabaseService {
     constructor(private _config: SyncDatabaseServiceCreator) {
 
         const encryptedDexieStorage = wrappedKeyEncryptionStorage({
-            storage: getRxStorageDexie(),
+            storage: dexieWorker,
         });
-
-        // pouchAdapter.pouchSettings.revs_limit       = 0,
-        // pouchAdapter.pouchSettings.auto_compaction  = true;
 
         this.db$ = from(createRxDatabase({
             name: 'synchronise/pwadb',
