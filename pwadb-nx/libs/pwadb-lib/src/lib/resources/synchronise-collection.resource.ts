@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollection, RxCollectionCreator, RxDatabase } from 'rxdb';
-import { BehaviorSubject, combineLatest, empty, from, Observable, of, throwError } from 'rxjs';
+import { BehaviorSubject, combineLatest, empty, from, interval, Observable, of, throwError } from 'rxjs';
 import { auditTime, bufferCount, catchError, concatMap, debounceTime, delay, filter, finalize, map, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
@@ -226,7 +226,12 @@ export class SyncCollectionService {
 
         return this.storedCollections.pipe(
 
-            switchMap((collectionsInfo) => {
+            switchMap(v => interval(5000).pipe(
+
+                map(() => v),
+            )),
+
+            switchMap(collectionsInfo => {
 
                 const query = {
                     selector: {
@@ -250,7 +255,7 @@ export class SyncCollectionService {
 
             map(sortedDocs => flatten(sortedDocs)),
 
-            map((sortedDocs: PwaDocument<any>[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.time - b.time : b.time - a.time)),
+            map((sortedDocs: PwaDocument<any>[]) => sortedDocs.filter(doc => doc.method !== 'GET').sort((a, b) => order === 'asc' ? a.time - b.time : b.time - a.time)),
 
             enterZone<PwaDocument<any>[]>(this.config.ngZone),
 
