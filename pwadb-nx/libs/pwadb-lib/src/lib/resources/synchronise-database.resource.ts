@@ -43,7 +43,7 @@ export class SyncDatabaseService {
 
                 startWith(null),
 
-                map(v => v ? v : db),
+                map(() => db),
             )),
 
             shareReplay(1),
