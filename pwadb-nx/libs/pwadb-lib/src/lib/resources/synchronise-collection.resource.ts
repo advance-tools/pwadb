@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollection, RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, empty, from, interval, Observable, of, throwError } from 'rxjs';
-import { auditTime, bufferCount, catchError, concatMap, filter, finalize, map, mergeMap, shareReplay, startWith, switchMap, tap } from 'rxjs/operators';
+import { auditTime, bufferCount, catchError, concatMap, filter, finalize, map, mergeMap, shareReplay, startWith, switchMap, take, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
@@ -483,6 +483,8 @@ export class SyncCollectionService {
 
         return this.storedCollections.pipe(
 
+            take(1),
+
             switchMap(collectionInfo => {
 
                 const evicts = collectionInfo.map(k => {
@@ -505,6 +507,8 @@ export class SyncCollectionService {
     skipTrim(): Observable<any> {
 
         return this.storedCollections.pipe(
+
+            take(1),
 
             switchMap((collectionInfo) => {
 
