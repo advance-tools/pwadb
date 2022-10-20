@@ -1,16 +1,17 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { auditTime, distinctUntilChanged, map } from 'rxjs/operators';
+import { enterZone } from './operators.resource';
 
 @Injectable({
-    providedIn: 'platform'
+    providedIn: 'root'
 })
 export class ApiProgressService {
 
     isProgressing$: Observable<boolean>;
     private progress: BehaviorSubject<boolean[]>;
 
-    constructor() {
+    constructor(private zone: NgZone) {
 
         this.progress = new BehaviorSubject<boolean[]>([]);
 
@@ -21,6 +22,8 @@ export class ApiProgressService {
             distinctUntilChanged(),
 
             auditTime(1000 / 60),
+
+            enterZone(zone)
         );
     }
 

@@ -41,7 +41,7 @@ export class PwaDatabaseService<T> {
 
                 startWith(null),
 
-                map(() => db),
+                map(v => v ? v : db),
             )),
 
             shareReplay(1),
