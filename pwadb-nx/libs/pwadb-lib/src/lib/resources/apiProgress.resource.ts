@@ -4,7 +4,7 @@ import { auditTime, distinctUntilChanged, map } from 'rxjs/operators';
 import { enterZone } from './operators.resource';
 
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'platform'
 })
 export class ApiProgressService {
 
