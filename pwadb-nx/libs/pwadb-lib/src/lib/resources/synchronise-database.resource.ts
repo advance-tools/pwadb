@@ -2,7 +2,7 @@ import { addRxPlugin, createRxDatabase, RxDatabase, RxDatabaseCreator } from 'rx
 import { from, Observable } from 'rxjs';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
-import { map, shareReplay, startWith, switchMap } from 'rxjs/operators';
+import { map, shareReplay } from 'rxjs/operators';
 import { wrappedKeyEncryptionStorage } from 'rxdb/plugins/encryption';
 import { dexieWorker } from '../definitions/webworker';
 
@@ -39,12 +39,14 @@ export class SyncDatabaseService {
             ...this._config.dbCreator
         })).pipe(
 
-            switchMap((db: any) => from(db.waitForLeadership()).pipe(
+            // switchMap((db: any) => from(db.waitForLeadership()).pipe(
 
-                startWith(null),
+            //     startWith(null),
 
-                map(() => db),
-            )),
+            //     map(() => db),
+            // )),
+
+            map((db: RxDatabase<any>) => db),
 
             shareReplay(1),
         );

@@ -1,6 +1,6 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import { from, Observable, of } from 'rxjs';
-import { map, switchMap, startWith, shareReplay } from 'rxjs/operators';
+import { map, shareReplay } from 'rxjs/operators';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
 import { wrappedKeyEncryptionStorage } from 'rxdb/plugins/encryption';
@@ -37,12 +37,14 @@ export class PwaDatabaseService<T> {
             ...this._config.dbCreator
         })).pipe(
 
-            switchMap((db: any) => from(db.waitForLeadership()).pipe(
+            // switchMap((db: any) => from(db.waitForLeadership()).pipe(
 
-                startWith(null),
+            //     startWith(null),
 
-                map(() => db),
-            )),
+            //     map(() => db),
+            // )),
+
+            map((db: RxDatabase<any>) => db),
 
             shareReplay(1),
         );
