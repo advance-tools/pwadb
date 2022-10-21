@@ -226,7 +226,7 @@ export class SyncCollectionService {
 
         return this.storedCollections.pipe(
 
-            switchMap(v => interval(5000).pipe(
+            switchMap(v => interval(3000).pipe(
 
                 startWith(null),
 
