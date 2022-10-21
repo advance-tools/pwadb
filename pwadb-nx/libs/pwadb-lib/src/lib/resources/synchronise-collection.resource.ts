@@ -269,7 +269,7 @@ export class SyncCollectionService {
 
         if (!this.config.httpClient) return empty();
 
-        const hit = unsynchronised$.pipe(
+        const hit = () => unsynchronised$.pipe(
 
             map(sortedDocs => sortedDocs.filter(doc => doc.method !== 'GET')),
 
@@ -480,7 +480,7 @@ export class SyncCollectionService {
 
             auditTime(1000/60),
 
-            switchMap(trigger => trigger ? hit : empty()),
+            switchMap(trigger => trigger ? hit() : empty()),
 
         ) as Observable<boolean | PwaDocument<any>>;
 
