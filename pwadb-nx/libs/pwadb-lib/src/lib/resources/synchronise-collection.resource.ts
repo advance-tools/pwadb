@@ -467,11 +467,20 @@ export class SyncCollectionService {
                 return empty();
             }),
 
+            catchError(err => {
+
+                console.error(err);
+
+                return empty();
+            })
+
         );
 
         return this.retryChange.asObservable().pipe(
 
-            switchMap(trigger => trigger ? hit : of())
+            auditTime(1000/60),
+
+            switchMap(trigger => trigger ? hit : empty()),
 
         ) as Observable<boolean | PwaDocument<any>>;
 
