@@ -356,7 +356,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     getReactive(tenant: string, url: string): Observable<PwaDocument<T> | null> {
 
-        const cacheKey = tenant + url;
+        const cacheKey = 'get__' + tenant + url;
 
         if (!this.cache.has(cacheKey)) {
 
@@ -388,7 +388,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys: string[] = []): Observable<CollectionListResponse<T>> {
 
-        const cacheKey = tenant + url;
+        const cacheKey = 'list__' + tenant + url;
 
         if (!this.cache.has(cacheKey)) {
 
@@ -459,8 +459,6 @@ export class CollectionAPI<T extends Datatype, Database> {
             switchMap(([doc, col]) => {
 
                 if (doc) {
-
-                    console.log(doc);
 
                     return doc.atomicPatch({
                         method: doc.method !== 'POST' ? 'PUT' : doc.method,
