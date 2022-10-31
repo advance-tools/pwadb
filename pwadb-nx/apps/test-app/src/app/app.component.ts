@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { FetchLogService } from './local/fetch-log.service';
 import { Guid } from 'guid-typescript';
+import { concat } from 'rxjs';
 
 
 @Component({
@@ -17,7 +18,11 @@ export class AppComponent {
     console.log('Testing CollectionAPI service');
 
     // hit the create
-    this.fetchLogService.create({id: 'testUrl', hash: Guid.create().toString()}).subscribe({
+    const createOp = this.fetchLogService.create({id: 'testUrl', hash: Guid.create().toString()});
+    const updateOp = this.fetchLogService.update({id: 'testUrl', hash: Guid.create().toString()});
+    const deleteOp = this.fetchLogService.delete('testUrl');
+
+    concat(createOp, updateOp, deleteOp).subscribe({
         next: v => console.log('emitted value', v)
     });
   }
