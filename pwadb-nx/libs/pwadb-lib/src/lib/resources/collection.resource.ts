@@ -460,6 +460,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 if (doc) {
 
+                    console.log(doc);
+
                     return doc.atomicPatch({
                         method: doc.method !== 'POST' ? 'PUT' : doc.method,
                         data,

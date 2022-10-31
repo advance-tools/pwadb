@@ -242,7 +242,7 @@ export class SyncCollectionService {
                     }
                 };
 
-                const sortedDocs$ = collectionsInfo.map(k => k.collection.find(query).$.pipe(auditTime(1000/60)));
+                const sortedDocs$ = collectionsInfo.map(k => from(k.collection.find(query).exec()));
 
                 return from(sortedDocs$).pipe(
 
