@@ -277,15 +277,7 @@ export class SyncCollectionService {
 
             map(sortedDocs => sortedDocs[0]),
 
-            switchMap(doc => doc.$.pipe(
-
-                filter(doc => !!doc),
-
-                debounceTime(1000),
-
-                take(1),
-
-            )),
+            debounceTime(1000),
 
             concatMap((doc: PwaDocument<any>) => {
 
