@@ -277,9 +277,17 @@ export class SyncCollectionService {
 
             map(sortedDocs => sortedDocs[0]),
 
-            debounceTime(500),
+            switchMap(doc => doc.$.pipe(
 
-            concatMap(doc => {
+                filter(doc => !!doc),
+
+                debounceTime(1000),
+
+                take(1),
+
+            )),
+
+            concatMap((doc: PwaDocument<any>) => {
 
                 if (doc.method === 'POST') {
 
@@ -462,16 +470,16 @@ export class SyncCollectionService {
                     );
                 }
 
-                console.error(`Document doesn\'t have valid method. Document: ${JSON.stringify(doc?.toJSON())}`);
+                // console.error(`Document doesn\'t have valid method. Document: ${JSON.stringify(doc?.toJSON())}`);
 
-                return empty();
+                return of(null);
             }),
 
             catchError(err => {
 
-                console.error(err);
+                // console.error(err);
 
-                return empty();
+                return of(null);
             })
 
         );
