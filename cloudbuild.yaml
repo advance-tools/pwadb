@@ -1,7 +1,7 @@
 steps:
   -
     id: Build
-    name: gcr.io/cloud-builders/yarn
+    name: node:16
     entrypoint: /bin/sh
     args:
       - '-c'
@@ -10,7 +10,7 @@ steps:
     dir: '/workspace/pwadb-nx'
   -   
     id: Publish
-    name: gcr.io/cloud-builders/yarn
+    name: node:16
     entrypoint: /bin/sh
     args:
     - '-c'
