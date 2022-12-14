@@ -222,18 +222,18 @@ export class SyncCollectionService {
         this.retryChange.next(false);
     }
 
-    unsynchronised(tenant: string, order: 'desc' | 'asc' = 'asc'): Observable<PwaDocument<any>[]> {
+    unsynchronised(tenant: string, order: 'desc' | 'asc' = 'asc', checkIntervalTime=1000): Observable<PwaDocument<any>[]> {
 
         return this.storedCollections.pipe(
 
-            switchMap(v => interval(3000).pipe(
+            switchMap(v => interval(checkIntervalTime).pipe(
 
                 startWith(null),
 
                 map(() => v),
             )),
 
-            switchMap(collectionsInfo => {
+            concatMap(collectionsInfo => {
 
                 const query = {
                     selector: {
@@ -257,7 +257,7 @@ export class SyncCollectionService {
 
             map(sortedDocs => flatten(sortedDocs)),
 
-            map((sortedDocs: PwaDocument<any>[]) => sortedDocs.filter(doc => doc.method !== 'GET').sort((a, b) => order === 'asc' ? a.time - b.time : b.time - a.time)),
+            map((sortedDocs: PwaDocument<any>[]) => sortedDocs.sort((a, b) => order === 'asc' ? a.time - b.time : b.time - a.time)),
 
             enterZone<PwaDocument<any>[]>(this.config.ngZone),
 
@@ -271,7 +271,7 @@ export class SyncCollectionService {
 
         const hit = () => unsynchronised$.pipe(
 
-            map(sortedDocs => sortedDocs.filter(doc => doc.method !== 'GET')),
+            map(sortedDocs => sortedDocs),
 
             filter(sortedDocs => sortedDocs.length > 0),
 
