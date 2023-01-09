@@ -366,7 +366,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 auditTime(1000 / 60),
 
-                shareReplay(1),
+                // shareReplay(1),
 
                 enterZone<PwaDocument<T> | null>(this.config.ngZone),
 
@@ -398,7 +398,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 auditTime(1000 / 60),
 
-                shareReplay(1),
+                // shareReplay(1),
             );
 
             this.cache.set(cacheKey, docs);
