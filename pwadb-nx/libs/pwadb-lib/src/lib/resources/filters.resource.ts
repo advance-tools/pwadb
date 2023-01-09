@@ -1,5 +1,6 @@
 import { PwaDocument } from '../definitions/document';
 import { HttpParams } from '@angular/common/http';
+import trigramSimilarity from 'trigram-similarity';
 
 ////////////////
 // Types
@@ -239,7 +240,7 @@ export function queryFilter(validQueryKeys: string[], params?: HttpParams, docs:
 
                 const query = getQuery(k, params?.getAll(k)?.join(',') || '');
 
-                if (query.queryType === 'search_query') { docs = filter(query.fields[0], query.inputValue || '', docs, 'icontains'); }
+                if (query.queryType === 'search_query') { docs = searchQuery(query.fields[0], query.inputValue || '', docs); }
             }
         });
 
@@ -288,6 +289,22 @@ export function queryFilter(validQueryKeys: string[], params?: HttpParams, docs:
     }
 
     return docs;
+}
+
+export function searchQuery(field: string, inputValue, docs: PwaDocument<any>[]): PwaDocument<any>[] {
+
+    return docs.map(doc => {
+
+        // Ex. "'+91239898343':2A '395008':8B 'custom':10A 'gujarat':7B 'india':9B 'nanpura':4B,5B 'surat':6B 'testcustom':1A 'testcustomer2@gmail.com':3A"
+        const lexems = doc.data[field].split(' ').map(v => v.split(':')[0].replaceAll("'",' ')).join('');
+
+        const similarity = trigramSimilarity(inputValue, lexems);
+
+        return {doc, similarity};
+    })
+    .filter(v => v.similarity > 0.3)
+    .sort((a, b) => a.similarity - b.similarity)
+    .map(v => v.doc);
 }
 
 export function filter(field: string, inputValue: string, docs: PwaDocument<any>[], lookup?: Lookup, isExclude = false): PwaDocument<any>[] {

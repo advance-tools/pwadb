@@ -25,6 +25,7 @@
     "guid-typescript": "^1.0.9",
     "rxdb": "^13.17.1",
     "rxjs": "~7.5.0",
+    "trigram-similarity": "^1.0.7",
     "tslib": "^2.0.0",
     "zone.js": "~0.11.4"
   },

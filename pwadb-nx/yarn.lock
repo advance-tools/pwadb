@@ -1608,7 +1608,7 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@babel/runtime@7.20.7":
+"@babel/runtime@7.20.7", "@babel/runtime@^7.15.4":
   version "7.20.7"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.20.7.tgz#fcb41a5a70550e04a7b708037c7c32f7f356d8fd"
   integrity sha512-UF0tvkUtxwAgZ5W/KrkHf0Rn0fdnLDU9ScxBrEVNUprE/MzirjK4MJUX1/BVDv00Sv8cljtukVK1aky++X1SjQ==
@@ -1876,6 +1876,11 @@
   version "0.5.7"
   resolved "https://registry.yarnpkg.com/@discoveryjs/json-ext/-/json-ext-0.5.7.tgz#1d572bfbbe14b7704e0ba0f39b74815b84870d70"
   integrity sha512-dBVuXR082gk3jsFp7Rd/JI4kytwGHecnCoTtXFb7DB6CNHp4rg5k1bhg0nWdLGLnOV71lmDzGQaLMy8iPLY0pw==
+
+"@drorgl/n-gram@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@drorgl/n-gram/-/n-gram-1.1.2.tgz#bd70de60bc61fad1a20daca8faca91f3986bdb78"
+  integrity sha512-iwRGal8Nzsbuwkgo+FGEX0/30u4yC8L7PXpuXGppCQMR9nenEnJ656ZWUSYoIwXdoRevl/whbPHJsyTOHQKnmA==
 
 "@esbuild/android-arm@0.15.10":
   version "0.15.10"
@@ -12158,6 +12163,14 @@ tree-kill@1.2.2:
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/tree-kill/-/tree-kill-1.2.2.tgz#4ca09a9092c88b73a7cdc5e8a01b507b0790a0cc"
   integrity sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==
+
+trigram-similarity@^1.0.7:
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/trigram-similarity/-/trigram-similarity-1.0.7.tgz#8452ea9414152e4fd06de61a5618fa8e14f5b4d1"
+  integrity sha512-QyHPS3gYpjlF1WpoKYmxagwS3Iu1axZlHu2bochB8rrYzL7mbK8EvEFm+FHNsWbOVY7s87BTa9RCp2Bm+fdNhA==
+  dependencies:
+    "@babel/runtime" "^7.15.4"
+    "@drorgl/n-gram" "^1.1.2"
 
 ts-jest@28.0.8, ts-jest@^28.0.0:
   version "28.0.8"
