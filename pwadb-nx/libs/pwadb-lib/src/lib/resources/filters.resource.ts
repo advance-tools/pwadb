@@ -303,7 +303,7 @@ export function searchQuery(field: string, inputValue, docs: PwaDocument<any>[])
         return {doc, similarity};
     })
     .filter(v => v.similarity >= 0.07)
-    .sort((a, b) => a.similarity - b.similarity)
+    .sort((a, b) => b.similarity - a.similarity)
     .map(v => v.doc);
 }
 
