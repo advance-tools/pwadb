@@ -7,7 +7,7 @@ import { HttpParams } from '@angular/common/http';
 // tslint:disable-next-line: max-line-length
 export type Lookup = 'gte' | 'lte' | 'gt' | 'lt' | 'eq' | 'startswith' | 'endswith' | 'range' | 'isnull' | 'iexact' | 'exact' | 'icontains' | 'contains' | 'in';
 
-export type Query = 'filter' | 'distinct' | 'exclude' | 'ordering' | 'only';
+export type Query = 'filter' | 'distinct' | 'exclude' | 'ordering' | 'only' | 'search_query';
 
 export type FieldDataType = string | number | boolean | null;
 
@@ -193,6 +193,13 @@ export function getQuery(key: string, value: string): {queryType: Query, fields:
         // tslint:disable-next-line: max-line-length
         return {queryType: 'filter', fields: [fieldAndLookup[0]], lookup: fieldAndLookup.length > 1 ? fieldAndLookup[1] as Lookup : 'eq', inputValue: value};
 
+    } else if (key.includes('search_query')) {
+
+        const fieldAndLookup = key.split(':')[1].split('.');
+
+        // tslint:disable-next-line: max-line-length
+        return {queryType: 'search_query', fields: [fieldAndLookup[0]], lookup: fieldAndLookup.length > 1 ? fieldAndLookup[1] as Lookup : 'eq', inputValue: value};
+
     } else {
 
         const fieldAndLookup = key.split('.');
@@ -223,8 +230,21 @@ export function queryFilter(validQueryKeys: string[], params?: HttpParams, docs:
             }
         });
 
+        ///////////////////
+        // SearchQuery (2)
+        ///////////////////
+        keys.forEach(k => {
+
+            if (validQueryKeys.indexOf(k) > -1) {
+
+                const query = getQuery(k, params?.getAll(k)?.join(',') || '');
+
+                if (query.queryType === 'search_query') { docs = filter(query.fields[0], query.inputValue || '', docs, 'icontains'); }
+            }
+        });
+
         ///////////////
-        // Exclude (2)
+        // Exclude (3)
         ///////////////
 
         keys.forEach(k => {
@@ -238,7 +258,7 @@ export function queryFilter(validQueryKeys: string[], params?: HttpParams, docs:
         });
 
         ////////////////
-        // Order By (3)
+        // Order By (4)
         ////////////////
 
         keys.forEach(k => {
@@ -252,7 +272,7 @@ export function queryFilter(validQueryKeys: string[], params?: HttpParams, docs:
         });
 
         ////////////////
-        // Distinct (4)
+        // Distinct (5)
         ////////////////
 
         keys.forEach(k => {
