@@ -19,6 +19,7 @@ export * from './lib/resources/apiProgress.resource';
 export * from './lib/resources/table.resource';
 export * from './lib/resources/tree.resource';
 export * from './lib/resources/misc.resource';
+export * from './lib/resources/websocket.resource';
 
 export * from './lib/resources/synchronise-collection.resource';
 export * from './lib/resources/synchronise-database.resource';
