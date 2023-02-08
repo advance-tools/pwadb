@@ -1,17 +1,16 @@
 import { Datatype, FileConfig, getSchema, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
 import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take, auditTime, timeout } from 'rxjs/operators';
-import { Observable, of, from, throwError, combineLatest, empty, Subscription } from 'rxjs';
+import { Observable, of, from, throwError, combineLatest, empty } from 'rxjs';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
 import { RxCollectionCreator, RxDatabase } from 'rxdb';
-import { NgZone, OnDestroy } from '@angular/core';
+import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 import { ApiProgressService } from './apiProgress.resource';
 import { SyncCollectionService } from './synchronise-collection.resource';
 import { SynchroniseDocType } from '../definitions/synchronise-document';
 import { CustomHttpParams } from './customParams.resource';
-import { WebsocketService } from './websocket.resource';
 
 
 export interface RestAPICreator {
@@ -35,10 +34,9 @@ export interface CollectionAPICreator<Database> {
 }
 
 
-export interface PwaCollectionAPICreator<Database, WebsocketEvent> {
+export interface PwaCollectionAPICreator<Database> {
     collectionApiCreator: Partial<CollectionAPICreator<Database>>;
     restApiCreator: Partial<RestAPICreator>;
-    websocketCreator?: {entityName: string, websocketService: WebsocketService<WebsocketEvent>};
     cacheTimeInSeconds: number;
 }
 
@@ -614,9 +612,9 @@ export class CollectionAPI<T extends Datatype, Database> {
 }
 
 
-export class PwaCollectionAPI<T extends Datatype, Database, WebsocketEvent={}> implements OnDestroy {
+export class PwaCollectionAPI<T extends Datatype, Database> {
 
-    private config: PwaCollectionAPICreator<Database, WebsocketEvent> = {
+    private config: PwaCollectionAPICreator<Database> = {
         restApiCreator: {
             apiTimeoutInSeconds: 120
         },
@@ -636,11 +634,7 @@ export class PwaCollectionAPI<T extends Datatype, Database, WebsocketEvent={}> i
     collectionAPI: CollectionAPI<T, Database>;
     restAPI: RestAPI<T>;
 
-    websocketService: WebsocketService<WebsocketEvent>;
-
-    subs = new Subscription();
-
-    constructor(private _config: Partial<PwaCollectionAPICreator<Database, WebsocketEvent>>, ) {
+    constructor(private _config: Partial<PwaCollectionAPICreator<Database>>, ) {
 
         this.config = {
             ...this.config,
@@ -652,25 +646,11 @@ export class PwaCollectionAPI<T extends Datatype, Database, WebsocketEvent={}> i
             collectionApiCreator: {
                 ...this.config.collectionApiCreator,
                 ...this._config.collectionApiCreator
-            },
-            websocketCreator: this._config.websocketCreator ? {...this._config.websocketCreator} : null,
+            }
         };
 
         this.restAPI        = new RestAPI(this.config.restApiCreator);
         this.collectionAPI  = new CollectionAPI(this.config.collectionApiCreator);
-
-        ///////////////
-        // Websocket
-        ///////////////
-
-        if (this.config.websocketCreator?.entityName) {
-
-            this.websocketService = this.config.websocketCreator.websocketService;
-
-            const subs = this.websocketService.getEntityMessage(this.config.websocketCreator.entityName).subscribe();
-
-            this.subs.add(subs);
-        }
     }
 
     //////////////
@@ -848,13 +828,5 @@ export class PwaCollectionAPI<T extends Datatype, Database, WebsocketEvent={}> i
             take(1)
         );
 
-    }
-
-    //////////////
-    // Hooks
-    //////////////
-    ngOnDestroy() {
-
-        this.subs.unsubscribe();
     }
 }

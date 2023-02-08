@@ -1,13 +1,86 @@
-import { OnDestroy } from "@angular/core";
-import { Observable, Subscription } from "rxjs";
+import { HttpParams } from "@angular/common/http";
+import { distinctUntilChanged, filter, Observable, Subscription, switchMap } from "rxjs";
 import { WebSocketSubject } from "rxjs/webSocket";
+import { Datatype, PwaDocument } from "../definitions/document";
+import { PwaCollectionAPI } from "./collection.resource";
 
+export interface WebsocketNotification {
+    record_id: string,
+    entity: string,
+    operation: 'CREATE' | 'UPDATE' | 'DELETE',
+}
 
-export abstract class WebsocketService<WebsocketEvent> implements OnDestroy {
+//////////////////
+// Socket Service
+//////////////////
 
-    socket: WebSocketSubject<WebsocketEvent>;
-    private subs: Subscription;
+export abstract class WebsocketNotificationService {
+    socket: WebSocketSubject<WebsocketNotification>;
+    getEntityMessage: (entity: string) => Observable<WebsocketNotification>;
+}
 
-    getEntityMessage: (entity: string) => Observable<WebsocketEvent>;
-    ngOnDestroy: () => any;
+/////////////////
+// Socket Op
+/////////////////
+export interface WebsocketService<T extends Datatype, Database> extends PwaCollectionAPI<T, Database> {
+    retrieve: (id: string, params?: HttpParams) => Observable<PwaDocument<any>>,
+    retrieveReactive: (id: string, params?: HttpParams) => Observable<PwaDocument<any>>,
+}
+
+export class SocketOperation<T extends Datatype, Database> {
+
+    private subs = new Subscription();
+
+    constructor(
+        public entity: string,
+        public apiService: WebsocketService<T, Database>,
+        public websocketNotificationService: WebsocketNotificationService
+    ) {
+
+        const subs = websocketNotificationService.getEntityMessage(entity).pipe(
+
+            // emit distinct output when record_id and operation changes
+            distinctUntilChanged((prev, cur) => prev.record_id === cur.record_id && prev.operation === cur.operation),
+
+            switchMap(v => {
+
+                return apiService.collectionAPI.collection$.pipe(
+
+                    // find the data in collection
+                    switchMap(col => col.findOne({selector: {id: {eq: v.record_id}}}).exec()),
+
+                    // filter out emit if data is not present
+                    filter(doc => !!doc),
+
+                    switchMap(doc => {
+
+                        console.log('filtered emit', v, doc.toMutableJSON().data)
+
+                        switch (v.operation) {
+
+                            case 'DELETE': {
+
+                                // remove document if exists
+                                return doc.remove();
+                            }
+
+                            default: {
+
+                                // retrieve data for latest changes
+                                return apiService.retrieve(doc.data.id);
+                            }
+                        }
+                    })
+                );
+            }),
+
+        ).subscribe();
+
+        this.subs.add(subs);
+    }
+
+    unsubscribe() {
+
+        this.subs.unsubscribe();
+    }
 }
