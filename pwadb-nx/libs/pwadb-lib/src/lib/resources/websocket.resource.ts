@@ -106,7 +106,7 @@ export class SocketOperationWithoutId<T extends Datatype, Database> {
         const subs = websocketNotificationService.getEntityMessage(entity).pipe(
 
             // emit distinct output when record_id and operation changes
-            distinctUntilChanged((prev, cur) => prev.record_id === cur.record_id && prev.operation === cur.operation),
+            distinctUntilChanged((prev, cur) => prev?.record_id === cur.record_id && prev?.operation === cur.operation),
 
             switchMap(v => {
 
