@@ -39,15 +39,19 @@ export class SocketOperation<T extends Datatype, Database> {
 
         const subs = websocketNotificationService.getEntityMessage(entity).pipe(
 
+            tap(v => console.log('socket operation before distinctUntilChanged', v)),
+
             // emit distinct output when record_id and operation changes
             distinctUntilChanged((prev, cur) => prev?.record_id === cur.record_id && prev?.operation === cur.operation),
+
+            tap(v => console.log('socket operation after distinctUntilChanged', v)),
 
             switchMap(v => {
 
                 return apiService.collectionAPI.collection$.pipe(
 
                     // find the data in collection
-                    switchMap(col => col.findOne({selector: {id: {eq: v.record_id}}}).exec()),
+                    switchMap(col => col.findOne({selector: {id: {$eq: v.record_id}}}).exec()),
 
                     // filter out emit if data is not present
                     filter(doc => !!doc),
