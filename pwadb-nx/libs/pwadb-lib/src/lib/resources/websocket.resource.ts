@@ -1,5 +1,5 @@
 import { HttpParams } from "@angular/common/http";
-import { BehaviorSubject, distinctUntilChanged, filter, Observable, Subscription, switchMap } from "rxjs";
+import { BehaviorSubject, distinctUntilChanged, filter, Observable, Subscription, switchMap, tap } from "rxjs";
 import { WebSocketSubject } from "rxjs/webSocket";
 import { Datatype, PwaDocument } from "../definitions/document";
 import { PwaCollectionAPI } from "./collection.resource";
@@ -105,8 +105,12 @@ export class SocketOperationWithoutId<T extends Datatype, Database> {
 
         const subs = websocketNotificationService.getEntityMessage(entity).pipe(
 
+            tap(v => console.log('socket operation before distinctUntilChanged', v)),
+
             // emit distinct output when record_id and operation changes
             distinctUntilChanged((prev, cur) => prev?.record_id === cur.record_id && prev?.operation === cur.operation),
+
+            tap(v => console.log('socket operation after distinctUntilChanged', v)),
 
             switchMap(v => {
 
