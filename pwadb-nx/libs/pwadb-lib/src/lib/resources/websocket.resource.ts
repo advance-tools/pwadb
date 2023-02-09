@@ -1,6 +1,7 @@
 import { HttpParams } from "@angular/common/http";
-import { BehaviorSubject, concatMap, distinctUntilChanged, filter, Observable, Subscription, switchMap, take, tap } from "rxjs";
+import { BehaviorSubject, buffer, concat, concatMap, debounceTime, distinctUntilChanged, filter, Observable, shareReplay, Subscription, switchMap, take } from "rxjs";
 import { WebSocketSubject } from "rxjs/webSocket";
+import { PwaListResponse } from "../definitions/collection";
 import { Datatype, PwaDocument } from "../definitions/document";
 import { PwaCollectionAPI } from "./collection.resource";
 
@@ -25,10 +26,13 @@ export abstract class WebsocketNotificationService {
 export interface WebsocketService<T extends Datatype, Database> extends PwaCollectionAPI<T, Database> {
     retrieve: (id: string, params?: HttpParams) => Observable<PwaDocument<any>>,
     retrieveReactive: (id: string, params?: HttpParams) => Observable<PwaDocument<any>>,
+    fetch: (params?: HttpParams) => Observable<PwaListResponse<any>>,
+    fetchReactive: (params?: HttpParams) => Observable<PwaListResponse<any>>,
 }
 
 export class SocketOperation<T extends Datatype, Database> {
 
+    fetchIds = new BehaviorSubject<string[]>([]);
     private subs = new Subscription();
 
     constructor(
@@ -37,14 +41,15 @@ export class SocketOperation<T extends Datatype, Database> {
         public websocketNotificationService: WebsocketNotificationService
     ) {
 
-        const subs = websocketNotificationService.getEntityMessage(entity).pipe(
+        const entityMessage = websocketNotificationService.getEntityMessage(entity).pipe(
 
-            tap(v => console.log('socket operation before distinctUntilChanged', v)),
+            shareReplay(1),
+        );
 
-            // emit distinct output when record_id and operation changes
-            distinctUntilChanged((prev, cur) => prev?.record_id === cur.record_id && prev?.operation === cur.operation),
+        const subs = entityMessage.pipe(
 
-            tap(v => console.log('socket operation after distinctUntilChanged', v)),
+            // buffer until
+            buffer(entityMessage.pipe(debounceTime(3000))),
 
             concatMap(v => {
 
@@ -52,35 +57,19 @@ export class SocketOperation<T extends Datatype, Database> {
 
                     take(1),
 
-                    // find the data in collection
-                    switchMap(col => col.findOne({selector: { tenantUrl: {$regex: new RegExp(`.*${v.record_id}`)}}}).exec()),
+                    switchMap(col => {
 
-                    tap(v => console.log('findOne emit', v?.toMutableJSON().data || null)),
+                        // delete observables
+                        const deleteOps = v.filter(o => o.operation === 'DELETE')
+                                            .map(o => col.find({selector: {tenantUrl: {$regex: new RegExp(`.*${o.record_id}`)}}}).remove());
 
-                    // filter out emit if data is not present
-                    filter(doc => !!doc),
+                        // fetch observables
+                        const fetchOps  = apiService.fetch(new HttpParams().set('id.in', v.filter(o => o.operation !== 'DELETE').map(o => o.record_id).join(',')));
 
-                    switchMap(doc => {
-
-                        console.log('filtered emit', v, doc.toMutableJSON().data)
-
-                        switch (v.operation) {
-
-                            case 'DELETE': {
-
-                                // remove document if exists
-                                return doc.remove();
-                            }
-
-                            default: {
-
-                                // retrieve data for latest changes
-                                return apiService.retrieve(doc.data.id);
-                            }
-                        }
-                    })
+                        return concat(...[].concat(deleteOps, [fetchOps]));
+                    }),
                 );
-            }),
+            })
 
         ).subscribe();
 
@@ -113,13 +102,6 @@ export class SocketOperationWithoutId<T extends Datatype, Database> {
 
         const subs = websocketNotificationService.getEntityMessage(entity).pipe(
 
-            tap(v => console.log('socket operation before distinctUntilChanged', v)),
-
-            // emit distinct output when record_id and operation changes
-            distinctUntilChanged((prev, cur) => prev?.record_id === cur.record_id && prev?.operation === cur.operation),
-
-            tap(v => console.log('socket operation after distinctUntilChanged', v)),
-
             concatMap(v => {
 
                 return apiService.collectionAPI.collection$.pipe(
@@ -129,14 +111,10 @@ export class SocketOperationWithoutId<T extends Datatype, Database> {
                     // find the data in collection
                     switchMap(col => col.findOne({selector: { tenantUrl: {$regex: new RegExp(`.*${v.record_id}`)}}}).exec()),
 
-                    tap(v => console.log('findOne emit', v?.toMutableJSON().data || null)),
-
                     // filter out emit if data is not present
                     filter(doc => !!doc),
 
                     switchMap(doc => {
-
-                        console.log('filtered emit', v, doc.toMutableJSON().data)
 
                         switch (v.operation) {
 
