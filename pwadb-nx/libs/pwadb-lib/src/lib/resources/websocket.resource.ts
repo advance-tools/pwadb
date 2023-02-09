@@ -117,7 +117,7 @@ export class SocketOperationWithoutId<T extends Datatype, Database> {
                 return apiService.collectionAPI.collection$.pipe(
 
                     // find the data in collection
-                    switchMap(col => col.findOne({selector: {id: {eq: v.record_id}}}).exec()),
+                    switchMap(col => col.findOne({selector: {id: {$eq: v.record_id}}}).exec()),
 
                     // filter out emit if data is not present
                     filter(doc => !!doc),
