@@ -1,5 +1,5 @@
 import { HttpParams } from "@angular/common/http";
-import { BehaviorSubject, distinctUntilChanged, filter, Observable, Subscription, switchMap, tap } from "rxjs";
+import { BehaviorSubject, concatMap, distinctUntilChanged, filter, Observable, Subscription, switchMap, take, tap } from "rxjs";
 import { WebSocketSubject } from "rxjs/webSocket";
 import { Datatype, PwaDocument } from "../definitions/document";
 import { PwaCollectionAPI } from "./collection.resource";
@@ -46,12 +46,14 @@ export class SocketOperation<T extends Datatype, Database> {
 
             tap(v => console.log('socket operation after distinctUntilChanged', v)),
 
-            switchMap(v => {
+            concatMap(v => {
 
                 return apiService.collectionAPI.collection$.pipe(
 
+                    take(1),
+
                     // find the data in collection
-                    switchMap(col => col.findOne({selector: { tenantUrl: {$regex: new RegExp(`.*${v.record_id}.*`)}}}).exec()),
+                    switchMap(col => col.findOne({selector: { tenantUrl: {$regex: new RegExp(`.*${v.record_id}`)}}}).exec()),
 
                     tap(v => console.log('findOne emit', v?.toMutableJSON().data || null)),
 
@@ -118,12 +120,14 @@ export class SocketOperationWithoutId<T extends Datatype, Database> {
 
             tap(v => console.log('socket operation after distinctUntilChanged', v)),
 
-            switchMap(v => {
+            concatMap(v => {
 
                 return apiService.collectionAPI.collection$.pipe(
 
+                    take(1),
+
                     // find the data in collection
-                    switchMap(col => col.findOne({selector: { tenantUrl: {$regex: new RegExp(`.*${v.record_id}.*`)}}}).exec()),
+                    switchMap(col => col.findOne({selector: { tenantUrl: {$regex: new RegExp(`.*${v.record_id}`)}}}).exec()),
 
                     tap(v => console.log('findOne emit', v?.toMutableJSON().data || null)),
 
