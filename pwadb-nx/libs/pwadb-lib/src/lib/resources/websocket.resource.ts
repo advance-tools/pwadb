@@ -1,5 +1,5 @@
 import { HttpParams } from "@angular/common/http";
-import { distinctUntilChanged, filter, Observable, Subscription, switchMap } from "rxjs";
+import { BehaviorSubject, distinctUntilChanged, filter, Observable, Subscription, switchMap } from "rxjs";
 import { WebSocketSubject } from "rxjs/webSocket";
 import { Datatype, PwaDocument } from "../definitions/document";
 import { PwaCollectionAPI } from "./collection.resource";
@@ -15,7 +15,7 @@ export interface WebsocketNotification {
 //////////////////
 
 export abstract class WebsocketNotificationService {
-    socket: WebSocketSubject<WebsocketNotification>;
+    socketChange: BehaviorSubject<WebSocketSubject<WebsocketNotification>>;
     getEntityMessage: (entity: string) => Observable<WebsocketNotification>;
 }
 
