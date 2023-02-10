@@ -65,9 +65,9 @@ export class SocketOperation<T extends Datatype, Database> {
 
                         // fetch observables
                         const ids = v.filter(o => o.operation !== 'DELETE').map(o => o.record_id);
-                        const fetchOps  = ids.length > 0 ? apiService.fetch(new HttpParams().set('id.in', ids.join(','))) : apiService.fetch();
+                        const fetchOps = apiService.fetch(new HttpParams().set('id.in', ids.join(',')));
 
-                        return concat(...[].concat(deleteOps, [fetchOps]));
+                        return concat(...[].concat(deleteOps, ids.length > 0 ? [fetchOps] : []));
                     }),
                 );
             })
