@@ -47,11 +47,25 @@ export class RestAPI<T extends Datatype> {
 
     constructor(private config: RestAPICreator) {}
 
+    convertParams(params?: HttpParams): CustomHttpParams {
+
+        const customHttpParams = new CustomHttpParams();
+
+        params?.keys().forEach(k => {
+
+            customHttpParams.set(k, params.getAll(k)?.join(','));
+        });
+
+        return customHttpParams;
+    }
+
     ////////////////
     // CRUD
     ////////////////
 
     get(url: string, params?: HttpParams, headers?: HttpHeaders): Observable<T> {
+
+        params = this.convertParams(params);
 
         const paramsUrl = params?.keys().map(k => `${k}=${params.getAll(k)?.join(',')}`).join('&');
 
