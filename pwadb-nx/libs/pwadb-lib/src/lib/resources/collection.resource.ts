@@ -67,9 +67,7 @@ export class RestAPI<T extends Datatype> {
 
         params = this.convertParams(params);
 
-
         const paramsUrl = params?.keys().map(k => `${k}=${params.getAll(k)?.join(',')}`).join('&');
-        console.log('GET URL', params, paramsUrl);
 
         const cacheKey = `${url}${paramsUrl ? '?' + paramsUrl : ''}`;
 
@@ -151,6 +149,8 @@ export class RestAPI<T extends Datatype> {
     }
 
     list(url: string, params?: HttpParams, headers?: HttpHeaders): Observable<ListResponse<T>> {
+
+        params = this.convertParams(params);
 
         const paramsUrl = params?.keys().map(k => `${k}=${params?.getAll(k)?.join(',')}`).join('&');
 
