@@ -51,13 +51,9 @@ export class RestAPI<T extends Datatype> {
 
         let customHttpParams = new CustomHttpParams();
 
-        console.log(params, params?.keys());
-
         params?.keys().forEach(k => {
 
             customHttpParams = customHttpParams.set(k, params.getAll(k)?.join(','));
-
-            console.log(k, params.getAll(k)?.join(','));
         });
 
         return customHttpParams;
@@ -74,8 +70,6 @@ export class RestAPI<T extends Datatype> {
         const paramsUrl = params?.keys().map(k => `${k}=${params.getAll(k)?.join(',')}`).join('&');
 
         const cacheKey = `${url}${paramsUrl ? '?' + paramsUrl : ''}`;
-
-        console.log('Get URL', cacheKey, params);
 
         const req = of(true).pipe(
 
@@ -162,8 +156,6 @@ export class RestAPI<T extends Datatype> {
         const paramsUrl = params?.keys().map(k => `${k}=${params?.getAll(k)?.join(',')}`).join('&');
 
         const cacheKey = `${url}${paramsUrl ? '?' + paramsUrl : ''}`;
-
-        console.log('List URL', cacheKey, params);
 
         const req = of(true).pipe(
 
