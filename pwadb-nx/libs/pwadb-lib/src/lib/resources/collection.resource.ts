@@ -71,11 +71,14 @@ export class RestAPI<T extends Datatype> {
 
         const cacheKey = `${url}${paramsUrl ? '?' + paramsUrl : ''}`;
 
+        console.log('Get URL', cacheKey, params);
+
         const req = of(true).pipe(
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.config?.httpClient?.get(cacheKey, {headers}) as Observable<T> || empty()),
+            // switchMap(() => this.config?.httpClient?.get(cacheKey, {headers}) as Observable<T> || empty()),
+            switchMap(() => this.config?.httpClient?.get(url, {headers, params}) as Observable<T> || empty()),
 
             timeout((this.config.apiTimeoutInSeconds || 10) * 1000),
 
@@ -156,11 +159,14 @@ export class RestAPI<T extends Datatype> {
 
         const cacheKey = `${url}${paramsUrl ? '?' + paramsUrl : ''}`;
 
+        console.log('List URL', cacheKey, params);
+
         const req = of(true).pipe(
 
             tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
-            switchMap(() => this.config?.httpClient?.get(cacheKey, {headers}) as Observable<ListResponse<T>> || empty()),
+            // switchMap(() => this.config?.httpClient?.get(cacheKey, {headers}) as Observable<ListResponse<T>> || empty()),
+            switchMap(() => this.config?.httpClient?.get(url, {headers, params}) as Observable<ListResponse<T>> || empty()),
 
             timeout((this.config.apiTimeoutInSeconds || 10) * 1000),
 
