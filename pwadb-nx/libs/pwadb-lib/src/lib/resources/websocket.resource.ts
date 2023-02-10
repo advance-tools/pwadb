@@ -64,7 +64,8 @@ export class SocketOperation<T extends Datatype, Database> {
                                             .map(o => col.find({selector: {tenantUrl: {$regex: new RegExp(`.*${o.record_id}`)}}}).remove());
 
                         // fetch observables
-                        const fetchOps  = apiService.fetch(new HttpParams().set('id.in', v.filter(o => o.operation !== 'DELETE').map(o => o.record_id).join(',')));
+                        const ids = v.filter(o => o.operation !== 'DELETE').map(o => o.record_id);
+                        const fetchOps  = ids.length > 0 ? apiService.fetch(new HttpParams().set('id.in', ids.join(','))) : apiService.fetch();
 
                         return concat(...[].concat(deleteOps, [fetchOps]));
                     }),
