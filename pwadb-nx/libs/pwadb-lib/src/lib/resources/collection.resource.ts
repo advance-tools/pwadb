@@ -51,9 +51,13 @@ export class RestAPI<T extends Datatype> {
 
         const customHttpParams = new CustomHttpParams();
 
+        console.log(params, params?.keys());
+
         params?.keys().forEach(k => {
 
             customHttpParams.set(k, params.getAll(k)?.join(','));
+
+            console.log(k, params.getAll(k)?.join(','));
         });
 
         return customHttpParams;
