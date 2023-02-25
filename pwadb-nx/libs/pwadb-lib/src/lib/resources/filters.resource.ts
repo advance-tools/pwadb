@@ -51,6 +51,9 @@ export function parseBoolean(fieldValue: FieldDataType, inputValue: string): {pa
 // tslint:disable-next-line: max-line-length
 export const eq: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
+    // add data in results if field doesn't exist
+    if (!(field in v.data)) return true;
+
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
 
     if (isDate) { return isDate.parsedFieldValue === isDate.parsedInputValue; }
@@ -73,6 +76,9 @@ export const eq: (v: PwaDocument<any>, field: string, inputValue: string) => boo
 // tslint:disable-next-line: max-line-length
 export const gte: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
+    // add data in results if field doesn't exist
+    if (!(field in v.data)) return true;
+
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
 
     if (isDate) { return isDate.parsedFieldValue >= isDate.parsedInputValue; }
@@ -86,6 +92,9 @@ export const gte: (v: PwaDocument<any>, field: string, inputValue: string) => bo
 
 // tslint:disable-next-line: max-line-length
 export const lte: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
+
+    // add data in results if field doesn't exist
+    if (!(field in v.data)) return true;
 
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
 
@@ -101,6 +110,9 @@ export const lte: (v: PwaDocument<any>, field: string, inputValue: string) => bo
 // tslint:disable-next-line: max-line-length
 export const gt: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
+    // add data in results if field doesn't exist
+    if (!(field in v.data)) return true;
+
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
 
     if (isDate) { return isDate.parsedFieldValue > isDate.parsedInputValue; }
@@ -115,6 +127,9 @@ export const gt: (v: PwaDocument<any>, field: string, inputValue: string) => boo
 // tslint:disable-next-line: max-line-length
 export const lt: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
 
+    // add data in results if field doesn't exist
+    if (!(field in v.data)) return true;
+
     const isDate = parseDate(v.data[field] as FieldDataType, inputValue);
 
     if (isDate) { return isDate.parsedFieldValue < isDate.parsedInputValue; }
@@ -128,6 +143,9 @@ export const lt: (v: PwaDocument<any>, field: string, inputValue: string) => boo
 
 // tslint:disable-next-line: max-line-length
 export const range: (v: PwaDocument<any>, field: string, inputValue: string) => boolean = (v: PwaDocument<any>, field: string, inputValue: string) => {
+
+    // add data in results if field doesn't exist
+    if (!(field in v.data)) return true;
 
     const values = inputValue.toString().split(',');
 
@@ -152,18 +170,66 @@ export const range: (v: PwaDocument<any>, field: string, inputValue: string) => 
 // Lookup Filters (string)
 ///////////////////////////////////////////////
 
-export const startswith: (v: PwaDocument<any>, field: string, inputValue: string) => boolean | undefined = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType)?.toString().startsWith(inputValue);
-export const endswith: (v: PwaDocument<any>, field: string, inputValue: string) => boolean | undefined   = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType)?.toString().endsWith(inputValue);
-export const iexact: (v: PwaDocument<any>, field: string, inputValue: string) => boolean                 = (v: PwaDocument<any>, field: string, inputValue: string) => !!(v.data[field] as FieldDataType)?.toString().match(new RegExp(`^${inputValue}$`, 'i'));
-export const exact: (v: PwaDocument<any>, field: string, inputValue: string) => boolean                  = (v: PwaDocument<any>, field: string, inputValue: string) => !!(v.data[field] as FieldDataType)?.toString().match(new RegExp(`^${inputValue}$`));
-export const icontains: (v: PwaDocument<any>, field: string, inputValue: string) => boolean | undefined  = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType)?.toString().toLowerCase().includes(inputValue?.toLowerCase() || '');
-export const contains: (v: PwaDocument<any>, field: string, inputValue: string) => boolean | undefined   = (v: PwaDocument<any>, field: string, inputValue: string) => (v.data[field] as FieldDataType)?.toString().includes(inputValue);
+export const startswith: (v: PwaDocument<any>, field: string, inputValue: string) => boolean | undefined = (v: PwaDocument<any>, field: string, inputValue: string) => {
+
+    // add data in results if field doesn't exist
+    if (!(field in v.data)) return true;
+
+    return (v.data[field] as FieldDataType)?.toString().startsWith(inputValue);
+}
+
+export const endswith: (v: PwaDocument<any>, field: string, inputValue: string) => boolean | undefined   = (v: PwaDocument<any>, field: string, inputValue: string) => {
+
+    // add data in results if field doesn't exist
+    if (!(field in v.data)) return true;
+
+    return (v.data[field] as FieldDataType)?.toString().endsWith(inputValue);
+}
+
+export const iexact: (v: PwaDocument<any>, field: string, inputValue: string) => boolean                 = (v: PwaDocument<any>, field: string, inputValue: string) => {
+
+    // add data in results if field doesn't exist
+    if (!(field in v.data)) return true;
+
+    return !!(v.data[field] as FieldDataType)?.toString().match(new RegExp(`^${inputValue}$`, 'i'));
+}
+
+export const exact: (v: PwaDocument<any>, field: string, inputValue: string) => boolean                  = (v: PwaDocument<any>, field: string, inputValue: string) => {
+
+    // add data in results if field doesn't exist
+    if (!(field in v.data)) return true;
+
+    return !!(v.data[field] as FieldDataType)?.toString().match(new RegExp(`^${inputValue}$`));
+}
+
+export const icontains: (v: PwaDocument<any>, field: string, inputValue: string) => boolean | undefined  = (v: PwaDocument<any>, field: string, inputValue: string) => {
+
+    // add data in results if field doesn't exist
+    if (!(field in v.data)) return true;
+
+    return (v.data[field] as FieldDataType)?.toString().toLowerCase().includes(inputValue?.toLowerCase() || '');
+}
+
+export const contains: (v: PwaDocument<any>, field: string, inputValue: string) => boolean | undefined   = (v: PwaDocument<any>, field: string, inputValue: string) => {
+
+    // add data in results if field doesn't exist
+    if (!(field in v.data)) return true;
+
+    return (v.data[field] as FieldDataType)?.toString().includes(inputValue);
+}
+
 
 ///////////////////////////////////////////////
 // Lookup Filters (boolean)
 ///////////////////////////////////////////////
 // tslint:disable-next-line: max-line-length
-export const isnull: (v: PwaDocument<any>, field: string, inputValue: string) => boolean     = (v: PwaDocument<any>, field: string, inputValue: string) => inputValue?.toLowerCase() === 'true' ? v.data[field] === null : v.data[field] !== null;
+export const isnull: (v: PwaDocument<any>, field: string, inputValue: string) => boolean     = (v: PwaDocument<any>, field: string, inputValue: string) => {
+
+    // add data in results if field doesn't exist
+    if (!(field in v.data)) return true;
+
+    return inputValue?.toLowerCase() === 'true' ? v.data[field] === null : v.data[field] !== null;
+}
 
 
 export function getQuery(key: string, value: string): {queryType: Query, fields: string[], lookup?: Lookup, inputValue?: string} {
