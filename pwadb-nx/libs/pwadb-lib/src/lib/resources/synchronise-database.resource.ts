@@ -15,9 +15,7 @@ addRxPlugin(RxDBLeaderElectionPlugin);
 addRxPlugin(RxDBMigrationPlugin);
 
 if (isDevMode()){
-    await import('rxdb/plugins/dev-mode').then(
-        module => addRxPlugin(module as any)
-    );
+    from(import('rxdb/plugins/dev-mode')).subscribe(module => addRxPlugin(module as any));
 }
 
 
