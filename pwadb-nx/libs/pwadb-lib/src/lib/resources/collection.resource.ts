@@ -341,8 +341,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return docs.pipe(
 
-            tap(v => console.log('allDocs', v)),
-
             // map(v => v.sort((a, b) => b.time - a.time)),
 
             map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
@@ -417,6 +415,8 @@ export class CollectionAPI<T extends Datatype, Database> {
                 switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
 
                 auditTime(1000 / 60),
+
+                tap(v => console.log('allDocs', v, this.makeTenantUrl(tenant, url))),
 
                 // shareReplay(1),
             );
