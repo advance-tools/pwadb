@@ -416,8 +416,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 auditTime(1000 / 60),
 
-                tap(v => console.log('allDocs', v, this.makeTenantUrl(tenant, url))),
-
                 // shareReplay(1),
             );
 

@@ -14,10 +14,6 @@ addRxPlugin(RxDBLeaderElectionPlugin);
 // add migration plugin
 addRxPlugin(RxDBMigrationPlugin);
 
-if (isDevMode()){
-    from(import('rxdb/plugins/dev-mode')).subscribe(module => addRxPlugin(module as any));
-}
-
 
 export interface PwaDatabaseCreator {
     dbCreator: Partial<RxDatabaseCreator>;
