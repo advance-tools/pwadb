@@ -1,16 +1,24 @@
-import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator } from 'rxdb';
-import { from, Observable, of } from 'rxjs';
+import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator, RxStorage } from 'rxdb';
+import { from, Observable } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
-import { wrappedKeyEncryptionStorage } from 'rxdb/plugins/encryption';
-import { dexieWorker } from '../definitions/webworker';
+import { wrappedKeyEncryptionCryptoJsStorage } from 'rxdb/plugins/encryption-crypto-js';
+import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
+import { isDevMode } from '@angular/core';
+
 
 // add leader election plugin
 addRxPlugin(RxDBLeaderElectionPlugin);
 
 // add migration plugin
 addRxPlugin(RxDBMigrationPlugin);
+
+if (isDevMode()){
+    await import('rxdb/plugins/dev-mode').then(
+        module => addRxPlugin(module as any)
+    );
+}
 
 
 export interface PwaDatabaseCreator {
@@ -24,9 +32,9 @@ export class PwaDatabaseService<T> {
 
     constructor(private _config: PwaDatabaseCreator) {
 
-        const encryptedDexieStorage = wrappedKeyEncryptionStorage({
-            storage: dexieWorker,
-        });
+        const encryptedDexieStorage = wrappedKeyEncryptionCryptoJsStorage({
+            storage: getRxStorageDexie(),
+        }) as RxStorage<any, any>;
 
         this.db$ = from(createRxDatabase({
             name: 'pwadb',

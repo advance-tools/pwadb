@@ -8,7 +8,7 @@ export * from './lib/definitions/document';
 export * from './lib/definitions/synchronise-collection';
 export * from './lib/definitions/synchronise-document';
 
-export * from './lib/definitions/webworker';
+// export * from './lib/definitions/webworker';
 
 export * from './lib/resources/customParams.resource';
 export * from './lib/resources/collection.resource';
