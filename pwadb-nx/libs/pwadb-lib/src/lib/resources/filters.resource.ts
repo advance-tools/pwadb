@@ -375,6 +375,8 @@ export function searchQuery(field: string, inputValue, docs: PwaDocument<any>[])
 
 export function filter(field: string, inputValue: string, docs: PwaDocument<any>[], lookup?: Lookup, isExclude = false): PwaDocument<any>[] {
 
+    console.log(docs, field, inputValue, lookup);
+
     // in lookup would same as eq with OR values
     let f = (v: PwaDocument<any>) => inputValue.split(',').reduce((acc, cur) => acc || eq(v, field, cur), false);
 
