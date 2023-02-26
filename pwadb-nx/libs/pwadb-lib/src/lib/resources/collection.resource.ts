@@ -341,6 +341,8 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return docs.pipe(
 
+            tap(v => console.log('allDocs', v)),
+
             // map(v => v.sort((a, b) => b.time - a.time)),
 
             map(allDocs => queryFilter(validQueryKeys, params, allDocs)),
