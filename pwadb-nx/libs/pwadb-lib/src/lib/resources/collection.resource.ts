@@ -4,7 +4,7 @@ import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take
 import { Observable, of, from, throwError, combineLatest, empty } from 'rxjs';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
-import { RxCollectionCreator, RxDatabase } from 'rxdb';
+import { MangoQuery, RxCollectionCreator, RxDatabase } from 'rxdb';
 import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 import { ApiProgressService } from './apiProgress.resource';
@@ -380,7 +380,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             const doc = this.collection$.pipe(
 
-                switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}}).$),
+                switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}} as MangoQuery<PwaDocType<T>>).$),
 
                 auditTime(1000 / 60),
 
@@ -412,7 +412,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             const docs = this.collection$.pipe(
 
-                switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} }).$),
+                switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} } as MangoQuery<PwaDocType<T>>).$),
 
                 auditTime(1000 / 60),
 
@@ -446,7 +446,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
         return this.collection$.pipe(
 
-            switchMap(col => col.atomicUpsert({
+            switchMap(col => col.incrementalUpsert({
                 tenantUrl: `${this.makeTenantUrl(tenant, url)}/${data.id}`,
                 matchUrl: `${this.makeTenantUrl(tenant, url)}/${data.id}`,
                 method: 'POST',
@@ -480,7 +480,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 if (doc) {
 
-                    return doc.atomicPatch({
+                    return doc.incrementalPatch({
                         method: doc.method !== 'POST' ? 'PUT' : doc.method,
                         data,
                         error: null,
@@ -528,14 +528,14 @@ export class CollectionAPI<T extends Datatype, Database> {
                         }, {}) || null,
                     };
 
-                    return col.atomicUpsert(docData);
+                    return col.incrementalUpsert(docData);
                 }
 
             }),
         );
     }
 
-    delete(tenant: string, url: string, data?: T, fileFields: FileConfig[] = [], params?: HttpParams, headers?: HttpHeaders): Observable<boolean | PwaDocument<T>> {
+    delete(tenant: string, url: string, data?: T, fileFields: FileConfig[] = [], params?: HttpParams, headers?: HttpHeaders): Observable<PwaDocument<T>> {
 
         return this.get(tenant, url).pipe(
 
@@ -543,15 +543,15 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 if (doc && doc.method === 'POST') {
 
-                    return from(doc.remove());
+                    return from(doc.incrementalRemove());
 
                 } else if (doc && (doc.method === 'PUT' || doc.method === 'DELETE')) {
 
-                    return from(doc.atomicPatch({method: 'DELETE', error: null}));
+                    return from(doc.incrementalPatch({method: 'DELETE', error: null}));
 
                 }  else if (doc) {
 
-                    return from(doc.atomicPatch({method: 'DELETE', error: null, time: new Date().getTime()}));
+                    return from(doc.incrementalPatch({method: 'DELETE', error: null, time: new Date().getTime()}));
 
                 } else if (data) {
 
@@ -581,7 +581,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                     return this.collection$.pipe(
 
-                        switchMap(col => col.atomicUpsert(docData))
+                        switchMap(col => col.incrementalUpsert(docData))
                     );
 
                 } else {
@@ -605,7 +605,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 if (!!doc && doc.method !== 'GET' && doc.method !== 'POST') {
 
-                    return from(doc.atomicPatch({method:'POST'}));
+                    return from(doc.incrementalPatch({method:'POST'}));
                 }
 
                 return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
@@ -614,7 +614,7 @@ export class CollectionAPI<T extends Datatype, Database> {
         );
     }
 
-    deleteConflict(tenant: string, url: string): Observable<boolean> {
+    deleteConflict(tenant: string, url: string): Observable<PwaDocument<any>> {
 
         return this.get(tenant, url).pipe(
 
@@ -622,7 +622,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 if (!!doc && doc.method !== 'GET') {
 
-                    return from(doc.remove());
+                    return from(doc.incrementalRemove());
                 }
 
                 return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
@@ -688,7 +688,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return combineLatest([this.restAPI.get(url, params, headers), this.collectionAPI.collection$]).pipe(
 
-            switchMap(([res, col]) => col.atomicUpsert({
+            switchMap(([res, col]) => col.incrementalUpsert({
                 tenantUrl: this.collectionAPI.makeTenantUrl(tenant, url),
                 matchUrl: this.collectionAPI.makeTenantUrl(tenant, url),
                 data: res,

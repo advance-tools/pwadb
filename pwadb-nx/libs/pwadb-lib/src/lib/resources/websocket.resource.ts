@@ -1,8 +1,9 @@
 import { HttpParams } from "@angular/common/http";
+import { MangoQuery } from "rxdb";
 import { BehaviorSubject, buffer, concat, concatMap, debounceTime, filter, Observable, shareReplay, Subscription, switchMap, take } from "rxjs";
 import { WebSocketSubject } from "rxjs/webSocket";
 import { PwaListResponse } from "../definitions/collection";
-import { Datatype, PwaDocument } from "../definitions/document";
+import { Datatype, PwaDocType, PwaDocument } from "../definitions/document";
 import { PwaCollectionAPI } from "./collection.resource";
 
 export interface WebsocketNotification {
@@ -61,7 +62,7 @@ export class SocketOperation<T extends Datatype, Database> {
 
                         // delete observables
                         const deleteOps = v.filter(o => o.operation === 'DELETE')
-                                            .map(o => col.find({selector: {tenantUrl: {$regex: new RegExp(`.*${o.record_id}`)}}}).remove());
+                                            .map(o => col.find({selector: {tenantUrl: {$regex: new RegExp(`.*${o.record_id}`)}}} as MangoQuery<PwaDocType<T>>).remove());
 
                         // fetch observables
                         const ids = v.filter(o => o.operation !== 'DELETE').map(o => o.record_id);
@@ -110,7 +111,7 @@ export class SocketOperationWithoutId<T extends Datatype, Database> {
                     take(1),
 
                     // find the data in collection
-                    switchMap(col => col.findOne({selector: { tenantUrl: {$regex: new RegExp(`.*${v.record_id}`)}}}).exec()),
+                    switchMap(col => col.findOne({selector: { tenantUrl: {$regex: new RegExp(`.*${v.record_id}`)}}} as MangoQuery<PwaDocType<T>>).exec()),
 
                     // filter out emit if data is not present
                     filter(doc => !!doc),
@@ -122,7 +123,7 @@ export class SocketOperationWithoutId<T extends Datatype, Database> {
                             case 'DELETE': {
 
                                 // remove document if exists
-                                return doc.remove();
+                                return doc.incrementalRemove();
                             }
 
                             default: {

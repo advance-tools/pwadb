@@ -204,7 +204,7 @@ export class SyncCollectionService {
 
         return this.collection$.pipe(
 
-            switchMap(col => col.atomicUpsert(data))
+            switchMap(col => col.incrementalUpsert(data))
         );
     }
 
@@ -340,7 +340,7 @@ export class SyncCollectionService {
 
                     return (this.config.httpClient as HttpClient).post(url.join('/'), formData, {params, headers}).pipe(
 
-                        switchMap(res => doc.atomicPatch({
+                        switchMap(res => doc.incrementalPatch({
                             method: 'GET',
                             data: res,
                             error: null,
@@ -349,7 +349,7 @@ export class SyncCollectionService {
 
                         catchError(err => {
 
-                            return from(doc.atomicPatch({error: JSON.stringify(err)})).pipe(
+                            return from(doc.incrementalPatch({error: JSON.stringify(err)})).pipe(
 
                                 finalize(() => this.retryChange.next(false)),
                             );
@@ -412,7 +412,7 @@ export class SyncCollectionService {
 
                     return (this.config.httpClient as HttpClient).put(doc.tenantUrl.split('____')[1], formData, {params, headers}).pipe(
 
-                        switchMap(res => doc.atomicPatch({
+                        switchMap(res => doc.incrementalPatch({
                             method: 'GET',
                             data: res,
                             error: null,
@@ -421,7 +421,7 @@ export class SyncCollectionService {
 
                         catchError(err => {
 
-                            return from(doc.atomicPatch({error: JSON.stringify(err)})).pipe(
+                            return from(doc.incrementalPatch({error: JSON.stringify(err)})).pipe(
 
                                 finalize(() => this.retryChange.next(false)),
                             );
@@ -449,11 +449,11 @@ export class SyncCollectionService {
 
                     return (this.config.httpClient as HttpClient).delete(doc.tenantUrl.split('____')[1], {params, headers}).pipe(
 
-                        switchMap(() => doc.remove()),
+                        switchMap(() => doc.incrementalRemove()),
 
                         catchError(err => {
 
-                            return from(doc.atomicPatch({error: JSON.stringify(err)})).pipe(
+                            return from(doc.incrementalPatch({error: JSON.stringify(err)})).pipe(
 
                                 finalize(() => this.retryChange.next(false)),
                             );
@@ -544,17 +544,17 @@ export class SyncCollectionService {
 
         if (!!doc && doc.method !== 'GET' && doc.method !== 'POST') {
 
-            return from(doc.atomicPatch({method: 'POST'}));
+            return from(doc.incrementalPatch({method: 'POST'}));
         }
 
         return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
     }
 
-    deleteConflict(doc: PwaDocument<any>): Observable<boolean> {
+    deleteConflict(doc: PwaDocument<any>): Observable<PwaDocument<any>> {
 
         if (!!doc && doc.method !== 'GET') {
 
-            return from(doc.remove());
+            return from(doc.incrementalRemove());
         }
 
         return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
