@@ -226,12 +226,12 @@ export class SyncCollectionService {
 
         return this.storedCollections.pipe(
 
-            switchMap(v => interval(checkIntervalTime).pipe(
+            // switchMap(v => interval(checkIntervalTime).pipe(
 
-                startWith(null),
+            //     startWith(null),
 
-                map(() => v),
-            )),
+            //     map(() => v),
+            // )),
 
             concatMap(collectionsInfo => {
 
@@ -242,7 +242,7 @@ export class SyncCollectionService {
                     }
                 };
 
-                const sortedDocs$ = collectionsInfo.map(k => from(k.collection.find(query).exec()));
+                const sortedDocs$ = collectionsInfo.map(k => from(k.collection.find(query).$));
 
                 return from(sortedDocs$).pipe(
 
