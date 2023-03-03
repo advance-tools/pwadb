@@ -226,12 +226,12 @@ export class SyncCollectionService {
 
         return this.storedCollections.pipe(
 
-            // switchMap(v => interval(checkIntervalTime).pipe(
+            switchMap(v => interval(checkIntervalTime).pipe(
 
-            //     startWith(null),
+                startWith(null),
 
-            //     map(() => v),
-            // )),
+                map(() => v),
+            )),
 
             concatMap(collectionsInfo => {
 
@@ -242,7 +242,7 @@ export class SyncCollectionService {
                     }
                 };
 
-                const sortedDocs$ = collectionsInfo.map(k => from(k.collection.find(query).$));
+                const sortedDocs$ = collectionsInfo.map(k => from(k.collection.find(query).exec()));
 
                 return from(sortedDocs$).pipe(
 
@@ -253,7 +253,7 @@ export class SyncCollectionService {
 
             }),
 
-            auditTime(1000/60),
+            // auditTime(1000/60),
 
             map(sortedDocs => flatten(sortedDocs)),
 
@@ -277,7 +277,7 @@ export class SyncCollectionService {
 
             map(sortedDocs => sortedDocs[0]),
 
-            debounceTime(1000),
+            // debounceTime(1000),
 
             concatMap((doc: PwaDocument<any>) => {
 
