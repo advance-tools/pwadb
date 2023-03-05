@@ -279,8 +279,6 @@ export class SyncCollectionService {
 
             distinctUntilChanged(),
 
-            tap(v => console.log('hitting document', v.data.id)),
-
             // debounceTime(1000),
 
             concatMap((doc: PwaDocument<any>) => {
