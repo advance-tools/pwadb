@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollection, RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, empty, from, interval, Observable, of, throwError } from 'rxjs';
-import { auditTime, bufferCount, catchError, concatMap, debounceTime, filter, finalize, map, mergeMap, shareReplay, startWith, switchMap, take, tap } from 'rxjs/operators';
+import { auditTime, bufferCount, catchError, concatMap, debounceTime, distinctUntilChanged, filter, finalize, map, mergeMap, shareReplay, startWith, switchMap, take, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
@@ -277,6 +277,10 @@ export class SyncCollectionService {
 
             map(sortedDocs => sortedDocs[0]),
 
+            distinctUntilChanged(),
+
+            tap(v => console.log('hitting document', v.data.id)),
+
             // debounceTime(1000),
 
             concatMap((doc: PwaDocument<any>) => {
@@ -477,8 +481,6 @@ export class SyncCollectionService {
         );
 
         return this.retryChange.asObservable().pipe(
-
-            auditTime(1000/60),
 
             switchMap(trigger => trigger ? hit() : empty()),
 
