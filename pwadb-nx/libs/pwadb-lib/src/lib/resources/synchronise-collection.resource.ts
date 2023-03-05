@@ -279,7 +279,7 @@ export class SyncCollectionService {
 
             distinctUntilChanged(),
 
-            // debounceTime(1000),
+            debounceTime(1000),
 
             concatMap((doc: PwaDocument<any>) => {
 
