@@ -277,7 +277,7 @@ export class SyncCollectionService {
 
             map(sortedDocs => sortedDocs[0]),
 
-            distinctUntilChanged(),
+            distinctUntilChanged((prev, cur) => prev.tenantUrl === cur.tenantUrl),
 
             debounceTime(1000),
 
