@@ -85,7 +85,6 @@ export class RestAPI<T extends Datatype> {
                 if (!!this.config.apiProgress) { this.config.apiProgress.remove(); }
 
                 if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
-
             }),
 
             shareReplay(1),
@@ -738,9 +737,6 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 .filter(v => v?.method === 'GET')
                 .map(v => v.time >= (currentTime - (this.config.cacheTimeInSeconds * 1000)))
                 .reduce((acc, cur) => acc || cur, true);
-
-        console.log('inCacheTime', inCacheTime);
-        if (inCacheTime) console.table(res.results);
 
         if (inCacheTime) return of(res) as Observable<ListResponse<any>>;
 
