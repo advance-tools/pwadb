@@ -651,6 +651,8 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     collectionAPI: CollectionAPI<T, Database>;
     restAPI: RestAPI<T>;
 
+    listCacheTime: Map<string, number> = new Map();
+
     constructor(private _config: Partial<PwaCollectionAPICreator<Database>>, ) {
 
         this.config = {
@@ -731,14 +733,19 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         /////////////////////////////////////////
         // check if document is within cacheTime
         /////////////////////////////////////////
-        const currentTime = new Date().getTime();
+        const urlWithParams = url + (params?.toString() || '');
 
-        const inCacheTime = res.results
-                .filter(v => v?.method === 'GET')
-                .map(v => v.time >= (currentTime - (this.config.cacheTimeInSeconds * 1000)))
-                .reduce((acc, cur) => acc || cur, true);
+        if (this.listCacheTime.has(urlWithParams)) {
 
-        if (inCacheTime) return of(res) as Observable<ListResponse<any>>;
+            const cacheTime = this.listCacheTime.get(urlWithParams);
+
+            if (cacheTime >= (new Date().getTime() - (this.config.cacheTimeInSeconds * 1000))) {
+
+                return of(res) as Observable<ListResponse<any>>;
+            }
+        }
+
+        this.listCacheTime.set(urlWithParams, new Date().getTime());
 
         ////////////////////////////////////////////////////////////////
         // /*Exclude recents or*/ locally unsynced data in the api results
