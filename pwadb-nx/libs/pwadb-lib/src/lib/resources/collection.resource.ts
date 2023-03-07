@@ -729,13 +729,25 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
     // tslint:disable-next-line: max-line-length
     downloadList(res: CollectionListResponse<T>, tenant: string, url: string, params?: HttpParams, headers?: HttpHeaders, indexedbUrl = (data: T, tenantUrl: string) => `${tenantUrl}/${data.id}`): Observable<ListResponse<T>> {
 
-        // const currentTime = new Date().getTime();
+        /////////////////////////////////////////
+        // check if document is within cacheTime
+        /////////////////////////////////////////
+        const currentTime = new Date().getTime();
 
-        const limit = parseInt(params?.get('limit') || '100');
+        const inCacheTime = res.results
+                .filter(v => v?.method === 'GET')
+                .map(v => v.time >= (currentTime - (this.config.cacheTimeInSeconds * 1000)))
+                .reduce((acc, cur) => acc || cur, true);
+
+        console.log('inCacheTime', inCacheTime);
+        if (inCacheTime) console.table(res.results);
+
+        if (inCacheTime) return of(res) as Observable<ListResponse<any>>;
 
         ////////////////////////////////////////////////////////////////
         // /*Exclude recents or*/ locally unsynced data in the api results
         ////////////////////////////////////////////////////////////////
+        const limit = parseInt(params?.get('limit') || '100');
 
         const ids = res.results
             .filter(v => v?.method === 'PUT' || v?.method === 'DELETE' /*|| (v?.method === 'GET' && v.time >= (currentTime - (this.config.cacheTimeInSeconds * 1000)))*/)
