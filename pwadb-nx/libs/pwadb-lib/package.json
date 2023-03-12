@@ -1,6 +1,6 @@
 {
   "name": "@advance-tools/pwadb-lib",
-  "version": "0.8.77",
+  "version": "0.8.78",
   "peerDependencies": {
     "@angular/common": "^14.0.0",
     "@angular/core": "^14.0.0"

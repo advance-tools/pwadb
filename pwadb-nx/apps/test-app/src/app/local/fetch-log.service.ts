@@ -58,12 +58,12 @@ export class FetchLogService extends CollectionAPI<FetchLog, CRMAuthDatabase> {
         return this.put('root', `${this.hostURL}/${data.id}`, data);
     }
 
-    override delete(id: string): Observable<boolean | PwaDocument<FetchLog>> {
+    override delete(id: string): Observable<PwaDocument<FetchLog>> {
 
         return super.delete('root', `${this.hostURL}/${id}`);
     }
 
-    override deleteConflict(id: string): Observable<boolean> {
+    override deleteConflict(id: string): Observable<PwaDocument<FetchLog>> {
 
         return super.deleteConflict('root', `${this.hostURL}/${id}`);
     }
