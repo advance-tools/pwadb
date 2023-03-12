@@ -68,6 +68,8 @@ export class SocketOperation<T extends Datatype, Database> {
                         const ids = v.filter(o => o.operation !== 'DELETE').map(o => o.record_id);
                         const fetchOps = apiService.fetch(new HttpParams().set('id.in', ids.join(',')));
 
+                        console.log('entity', v, deleteOps, fetchOps);
+
                         return concat(...[].concat(deleteOps, ids.length > 0 ? [fetchOps] : []));
                     }),
                 );
