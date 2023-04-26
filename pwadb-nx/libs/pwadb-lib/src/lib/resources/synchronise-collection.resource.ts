@@ -329,7 +329,7 @@ export class SyncCollectionService {
                             formData = doc.toJSON().data;
                         }
 
-                        const params = Object.keys(doc.params || {}).reduce((acc, cur) => {
+                        const params = Object.keys(doc.toMutableJSON().params || {}).reduce((acc, cur) => {
 
                             acc = acc.set(cur, doc.params[cur]);
 
@@ -337,7 +337,7 @@ export class SyncCollectionService {
 
                         }, new HttpParams());
 
-                        const headers = Object.keys(doc.headers || {}).reduce((acc, cur) => {
+                        const headers = Object.keys(doc.toMutableJSON().headers || {}).reduce((acc, cur) => {
 
                             acc = acc.set(cur, doc.headers[cur]);
 
@@ -401,7 +401,7 @@ export class SyncCollectionService {
                             formData = doc.toJSON().data;
                         }
 
-                        const params = Object.keys(doc.params || {}).reduce((acc, cur) => {
+                        const params = Object.keys(doc.toMutableJSON().params || {}).reduce((acc, cur) => {
 
                             acc = acc.set(cur, doc.params[cur]);
 
@@ -409,7 +409,7 @@ export class SyncCollectionService {
 
                         }, new HttpParams());
 
-                        const headers = Object.keys(doc.headers || {}).reduce((acc, cur) => {
+                        const headers = Object.keys(doc.toMutableJSON().headers || {}).reduce((acc, cur) => {
 
                             acc = acc.set(cur, doc.headers[cur]);
 
@@ -438,7 +438,7 @@ export class SyncCollectionService {
 
                     } else if (doc.method === 'DELETE') {
 
-                        const params = Object.keys(doc.params || {}).reduce((acc, cur) => {
+                        const params = Object.keys(doc.toMutableJSON().params || {}).reduce((acc, cur) => {
 
                             acc = acc.set(cur, doc.params[cur]);
 
@@ -446,7 +446,7 @@ export class SyncCollectionService {
 
                         }, new HttpParams());
 
-                        const headers = Object.keys(doc.headers || {}).reduce((acc, cur) => {
+                        const headers = Object.keys(doc.toMutableJSON().headers || {}).reduce((acc, cur) => {
 
                             acc = acc.set(cur, doc.headers[cur]);
 
