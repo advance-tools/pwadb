@@ -277,10 +277,12 @@ export class SyncCollectionService {
 
             map(sortedDocs => sortedDocs[0]),
 
+            tap(doc => console.log('sorted pop', doc.toMutableJSON())),
+
             distinctUntilChanged((prev, cur) => prev.tenantUrl === cur.tenantUrl),
 
             // debounceTime(1000),
-            tap(doc => console.log(doc.toMutableJSON())),
+            tap(doc => console.log('after distinctUntilChanged', doc.toMutableJSON())),
 
             concatMap((doc: PwaDocument<any>) => {
 
