@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollection, RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, empty, from, interval, Observable, of, throwError } from 'rxjs';
-import { auditTime, bufferCount, catchError, concatMap, debounceTime, distinctUntilChanged, filter, finalize, map, mergeMap, shareReplay, startWith, switchMap, take, tap } from 'rxjs/operators';
+import { bufferCount, catchError, concatMap, distinctUntilChanged, filter, finalize, map, mergeMap, shareReplay, startWith, switchMap, take, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
@@ -286,185 +286,192 @@ export class SyncCollectionService {
 
             concatMap((doc: PwaDocument<any>) => {
 
-                if (doc.method === 'POST') {
+                try {
 
-                    const url = doc.tenantUrl.split('____')[1].split('/');
+                    if (doc.method === 'POST') {
 
-                    url.splice(url.length - 1, 1);
+                        const url = doc.tenantUrl.split('____')[1].split('/');
 
-                    let formData: FormData | {};
+                        url.splice(url.length - 1, 1);
 
-                    if (doc.fileFields.length) {
+                        let formData: FormData | {};
 
-                        //////////////////
-                        // Multipart/form
-                        //////////////////
+                        if (doc.fileFields.length) {
 
-                        formData = createFormData(doc.toJSON().data) as FormData;
+                            //////////////////
+                            // Multipart/form
+                            //////////////////
 
-                        doc.fileFields.forEach(k => {
+                            formData = createFormData(doc.toJSON().data) as FormData;
 
-                            (formData as FormData).delete(k.fileField);
+                            doc.fileFields.forEach(k => {
 
-                            (formData as FormData).delete(k.fileNameField);
+                                (formData as FormData).delete(k.fileField);
 
-                            (formData as FormData).delete(k.fileType);
+                                (formData as FormData).delete(k.fileNameField);
 
-                            if (k.fileKeyField && k.fileField && k.fileType) {
+                                (formData as FormData).delete(k.fileType);
 
-                                (formData as FormData).delete(k.fileKeyField);
+                                if (k.fileKeyField && k.fileField && k.fileType) {
 
-                                (formData as FormData).append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
-                            }
-                        });
+                                    (formData as FormData).delete(k.fileKeyField);
 
-                    } else {
+                                    (formData as FormData).append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
+                                }
+                            });
 
-                        ////////////////////
-                        // Application/json
-                        ////////////////////
+                        } else {
 
-                        formData = doc.toJSON().data;
+                            ////////////////////
+                            // Application/json
+                            ////////////////////
+
+                            formData = doc.toJSON().data;
+                        }
+
+                        const params = Object.keys(doc.params || {}).reduce((acc, cur) => {
+
+                            acc = acc.set(cur, doc.params[cur]);
+
+                            return acc;
+
+                        }, new HttpParams());
+
+                        const headers = Object.keys(doc.headers || {}).reduce((acc, cur) => {
+
+                            acc = acc.set(cur, doc.headers[cur]);
+
+                            return acc;
+
+                        }, new HttpHeaders());
+
+                        return (this.config.httpClient as HttpClient).post(url.join('/'), formData, {params, headers}).pipe(
+
+                            switchMap(res => doc.incrementalPatch({
+                                method: 'GET',
+                                data: res,
+                                error: null,
+                                time: new Date().getTime()
+                            })),
+
+                            catchError(err => {
+
+                                return from(doc.incrementalPatch({error: JSON.stringify(err)})).pipe(
+
+                                    finalize(() => this.retryChange.next(false)),
+                                );
+                            }),
+
+                        );
+
+                    } else if (doc.method === 'PUT') {
+
+                        let formData: FormData | {};
+
+                        if (doc.fileFields.length) {
+
+                            //////////////////
+                            // Multipart/form
+                            //////////////////
+
+                            formData = createFormData(doc.toJSON().data) as FormData;
+
+                            doc.fileFields.forEach(k => {
+
+                                (formData as FormData).delete(k.fileField);
+
+                                (formData as FormData).delete(k.fileNameField);
+
+                                (formData as FormData).delete(k.fileType);
+
+                                if (k.fileKeyField && k.fileField && k.fileType) {
+
+                                    (formData as FormData).delete(k.fileKeyField);
+
+                                    (formData as FormData).append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
+                                }
+                            });
+
+                        } else {
+
+                            ////////////////////
+                            // Application/json
+                            ////////////////////
+
+                            formData = doc.toJSON().data;
+                        }
+
+                        const params = Object.keys(doc.params || {}).reduce((acc, cur) => {
+
+                            acc = acc.set(cur, doc.params[cur]);
+
+                            return acc;
+
+                        }, new HttpParams());
+
+                        const headers = Object.keys(doc.headers || {}).reduce((acc, cur) => {
+
+                            acc = acc.set(cur, doc.headers[cur]);
+
+                            return acc;
+
+                        }, new HttpHeaders());
+
+                        return (this.config.httpClient as HttpClient).put(doc.tenantUrl.split('____')[1], formData, {params, headers}).pipe(
+
+                            switchMap(res => doc.incrementalPatch({
+                                method: 'GET',
+                                data: res,
+                                error: null,
+                                time: new Date().getTime()
+                            })),
+
+                            catchError(err => {
+
+                                return from(doc.incrementalPatch({error: JSON.stringify(err)})).pipe(
+
+                                    finalize(() => this.retryChange.next(false)),
+                                );
+                            }),
+
+                        );
+
+                    } else if (doc.method === 'DELETE') {
+
+                        const params = Object.keys(doc.params || {}).reduce((acc, cur) => {
+
+                            acc = acc.set(cur, doc.params[cur]);
+
+                            return acc;
+
+                        }, new HttpParams());
+
+                        const headers = Object.keys(doc.headers || {}).reduce((acc, cur) => {
+
+                            acc = acc.set(cur, doc.headers[cur]);
+
+                            return acc;
+
+                        }, new HttpHeaders());
+
+                        return (this.config.httpClient as HttpClient).delete(doc.tenantUrl.split('____')[1], {params, headers}).pipe(
+
+                            switchMap(() => doc.incrementalRemove()),
+
+                            catchError(err => {
+
+                                return from(doc.incrementalPatch({error: JSON.stringify(err)})).pipe(
+
+                                    finalize(() => this.retryChange.next(false)),
+                                );
+                            }),
+
+                        );
                     }
 
-                    const params = Object.keys(doc.params || {}).reduce((acc, cur) => {
+                } catch(e) {
 
-                        acc = acc.set(cur, doc.params[cur]);
-
-                        return acc;
-
-                    }, new HttpParams());
-
-                    const headers = Object.keys(doc.headers || {}).reduce((acc, cur) => {
-
-                        acc = acc.set(cur, doc.headers[cur]);
-
-                        return acc;
-
-                    }, new HttpHeaders());
-
-                    return (this.config.httpClient as HttpClient).post(url.join('/'), formData, {params, headers}).pipe(
-
-                        switchMap(res => doc.incrementalPatch({
-                            method: 'GET',
-                            data: res,
-                            error: null,
-                            time: new Date().getTime()
-                        })),
-
-                        catchError(err => {
-
-                            return from(doc.incrementalPatch({error: JSON.stringify(err)})).pipe(
-
-                                finalize(() => this.retryChange.next(false)),
-                            );
-                        }),
-
-                    );
-
-                } else if (doc.method === 'PUT') {
-
-                    let formData: FormData | {};
-
-                    if (doc.fileFields.length) {
-
-                        //////////////////
-                        // Multipart/form
-                        //////////////////
-
-                        formData = createFormData(doc.toJSON().data) as FormData;
-
-                        doc.fileFields.forEach(k => {
-
-                            (formData as FormData).delete(k.fileField);
-
-                            (formData as FormData).delete(k.fileNameField);
-
-                            (formData as FormData).delete(k.fileType);
-
-                            if (k.fileKeyField && k.fileField && k.fileType) {
-
-                                (formData as FormData).delete(k.fileKeyField);
-
-                                (formData as FormData).append(k.fileKeyField, new File([new Uint8Array(JSON.parse(doc.data[k.fileField])).buffer], k.fileNameField || 'Unknown', {type: k.fileType}));
-                            }
-                        });
-
-                    } else {
-
-                        ////////////////////
-                        // Application/json
-                        ////////////////////
-
-                        formData = doc.toJSON().data;
-                    }
-
-                    const params = Object.keys(doc.params || {}).reduce((acc, cur) => {
-
-                        acc = acc.set(cur, doc.params[cur]);
-
-                        return acc;
-
-                    }, new HttpParams());
-
-                    const headers = Object.keys(doc.headers || {}).reduce((acc, cur) => {
-
-                        acc = acc.set(cur, doc.headers[cur]);
-
-                        return acc;
-
-                    }, new HttpHeaders());
-
-                    return (this.config.httpClient as HttpClient).put(doc.tenantUrl.split('____')[1], formData, {params, headers}).pipe(
-
-                        switchMap(res => doc.incrementalPatch({
-                            method: 'GET',
-                            data: res,
-                            error: null,
-                            time: new Date().getTime()
-                        })),
-
-                        catchError(err => {
-
-                            return from(doc.incrementalPatch({error: JSON.stringify(err)})).pipe(
-
-                                finalize(() => this.retryChange.next(false)),
-                            );
-                        }),
-
-                    );
-
-                } else if (doc.method === 'DELETE') {
-
-                    const params = Object.keys(doc.params || {}).reduce((acc, cur) => {
-
-                        acc = acc.set(cur, doc.params[cur]);
-
-                        return acc;
-
-                    }, new HttpParams());
-
-                    const headers = Object.keys(doc.headers || {}).reduce((acc, cur) => {
-
-                        acc = acc.set(cur, doc.headers[cur]);
-
-                        return acc;
-
-                    }, new HttpHeaders());
-
-                    return (this.config.httpClient as HttpClient).delete(doc.tenantUrl.split('____')[1], {params, headers}).pipe(
-
-                        switchMap(() => doc.incrementalRemove()),
-
-                        catchError(err => {
-
-                            return from(doc.incrementalPatch({error: JSON.stringify(err)})).pipe(
-
-                                finalize(() => this.retryChange.next(false)),
-                            );
-                        }),
-
-                    );
+                    console.log(e);
                 }
 
                 // console.error(`Document doesn\'t have valid method. Document: ${JSON.stringify(doc?.toJSON())}`);
