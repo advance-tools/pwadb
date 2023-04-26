@@ -279,7 +279,8 @@ export class SyncCollectionService {
 
             distinctUntilChanged((prev, cur) => prev.tenantUrl === cur.tenantUrl),
 
-            debounceTime(1000),
+            // debounceTime(1000),
+            tap(doc => console.log(doc.toMutableJSON())),
 
             concatMap((doc: PwaDocument<any>) => {
 
