@@ -544,11 +544,46 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 } else if (doc && (doc.method === 'PUT' || doc.method === 'DELETE')) {
 
-                    return from(doc.incrementalPatch({method: 'DELETE', error: null}));
+                    return from(doc.incrementalPatch({
+                        method: 'DELETE',
+                        error: null,
+                        params: params?.keys().reduce((acc, cur) => {
+
+                            acc[cur] = params.getAll(cur).join(',')
+
+                            return acc;
+
+                        }, {}) || null,
+                        headers: headers?.keys().reduce((acc, cur) => {
+
+                            acc[cur] = headers.getAll(cur).join(',')
+
+                            return acc;
+
+                        }, {}) || null
+                    }));
 
                 }  else if (doc) {
 
-                    return from(doc.incrementalPatch({method: 'DELETE', error: null, time: new Date().getTime()}));
+                    return from(doc.incrementalPatch({
+                        method: 'DELETE',
+                        error: null,
+                        time: new Date().getTime(),
+                        params: params?.keys().reduce((acc, cur) => {
+
+                            acc[cur] = params.getAll(cur).join(',')
+
+                            return acc;
+
+                        }, {}) || null,
+                        headers: headers?.keys().reduce((acc, cur) => {
+
+                            acc[cur] = headers.getAll(cur).join(',')
+
+                            return acc;
+
+                        }, {}) || null
+                    }));
 
                 } else if (data) {
 
