@@ -280,7 +280,6 @@ export class SyncCollectionService {
             distinctUntilChanged((prev, cur) => prev.tenantUrl === cur.tenantUrl),
 
             // debounceTime(1000),
-            tap(doc => console.log('after distinctUntilChanged', doc.toMutableJSON())),
 
             concatMap((doc: PwaDocument<any>) => {
 
@@ -552,7 +551,7 @@ export class SyncCollectionService {
 
         if (!!doc && doc.method !== 'GET' && doc.method !== 'POST') {
 
-            return from(doc.incrementalPatch({method: 'POST'}));
+            return from(doc.incrementalPatch({method: 'POST', error: null}));
         }
 
         return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
@@ -562,7 +561,10 @@ export class SyncCollectionService {
 
         if (!!doc && doc.method !== 'GET') {
 
-            return from(doc.incrementalRemove());
+            return from(doc.incrementalPatch({error: null})).pipe(
+
+                switchMap(() => from(doc.incrementalRemove())),
+            );
         }
 
         return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
