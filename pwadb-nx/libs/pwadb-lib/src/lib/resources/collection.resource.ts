@@ -373,7 +373,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     getReactive(tenant: string, url: string): Observable<PwaDocument<T> | null> {
 
-        const cacheKey = 'get__' + tenant + url;
+        const cacheKey = 'getReactive__' + tenant + url;
 
         if (!this.cache.has(cacheKey)) {
 
@@ -387,8 +387,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 enterZone<PwaDocument<T> | null>(this.config.ngZone),
 
-                finalize(() => this.cache.delete(cacheKey)),
-
             ) as Observable<PwaDocument<T> | null>;
 
             this.cache.set(cacheKey, doc);
@@ -399,10 +397,26 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     get(tenant: string, url: string): Observable<PwaDocument<T> | null> {
 
-        return this.getReactive(tenant, url).pipe(
+        const cacheKey = 'get__' + tenant + url;
 
-            take(1),
-        );
+        if (!this.cache.has(cacheKey)) {
+
+            const doc = this.collection$.pipe(
+
+                switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}} as MangoQuery<PwaDocType<T>>).exec()),
+
+                auditTime(1000 / 60),
+
+                // shareReplay(1),
+
+                enterZone<PwaDocument<T> | null>(this.config.ngZone),
+
+            ) as Observable<PwaDocument<T> | null>;
+
+            this.cache.set(cacheKey, doc);
+        }
+
+        return this.cache.get(cacheKey);
     }
 
     listReactive(tenant: string, url: string, params?: HttpParams, validQueryKeys: string[] = []): Observable<CollectionListResponse<T>> {
@@ -416,8 +430,6 @@ export class CollectionAPI<T extends Datatype, Database> {
                 switchMap(col => col.find({ selector: {matchUrl: {$regex: new RegExp(`^${this.makeTenantUrl(tenant, url)}.*`)}} } as MangoQuery<PwaDocType<T>>).$),
 
                 auditTime(1000 / 60),
-
-                finalize(() => this.cache.delete(cacheKey)),
 
                 // shareReplay(1),
             );
