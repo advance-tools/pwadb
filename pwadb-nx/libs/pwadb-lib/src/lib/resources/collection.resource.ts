@@ -4,7 +4,7 @@ import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take
 import { Observable, of, from, throwError, combineLatest, empty } from 'rxjs';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
-import { MangoQuery, RxCollectionCreator, RxDatabase } from 'rxdb';
+import { MangoQuery, RxCollectionCreator, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 import { ApiProgressService } from './apiProgress.resource';
@@ -272,11 +272,13 @@ export class CollectionAPI<T extends Datatype, Database> {
                                 id: db.name + '-' + this.config.name,
                                 databaseOptions: JSON.stringify({
                                     name: db.name,
+                                    ignoreDuplicate: true,
                                     eventReduce: db.eventReduce,
                                     multiInstance: db.multiInstance,
                                     options: db.options,
                                     password: db.password,
-                                }),
+                                    allowSlowCount: db.allowSlowCount,
+                                } as RxDatabaseCreator),
                                 collectionEvictTime,
                                 collectionSkipDocuments,
                                 collectionName: this.config.name,
