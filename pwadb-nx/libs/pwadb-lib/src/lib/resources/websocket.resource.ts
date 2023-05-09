@@ -25,10 +25,10 @@ export abstract class WebsocketNotificationService {
 // Socket Op
 /////////////////
 export interface WebsocketService<T extends Datatype, Database> extends PwaCollectionAPI<T, Database> {
-    retrieve: (id: string, params?: HttpParams) => Observable<PwaDocument<any>>,
-    retrieveReactive: (id: string, params?: HttpParams) => Observable<PwaDocument<any>>,
+    // retrieve: (id: string, params?: HttpParams) => Observable<PwaDocument<any>>,
+    // retrieveReactive: (id: string, params?: HttpParams) => Observable<PwaDocument<any>>,
     fetch: (params?: HttpParams) => Observable<PwaListResponse<any>>,
-    fetchReactive: (params?: HttpParams) => Observable<PwaListResponse<any>>,
+    // fetchReactive: (params?: HttpParams) => Observable<PwaListResponse<any>>,
 }
 
 export class SocketOperation<T extends Datatype, Database> {
@@ -89,7 +89,7 @@ export class SocketOperation<T extends Datatype, Database> {
 //////////////////////////
 export interface WebsocketWithoutIdService<T extends Datatype, Database> extends PwaCollectionAPI<T, Database> {
     retrieve: (params?: HttpParams) => Observable<PwaDocument<any>>,
-    retrieveReactive: (params?: HttpParams) => Observable<PwaDocument<any>>,
+    // retrieveReactive: (params?: HttpParams) => Observable<PwaDocument<any>>,
 }
 
 export class SocketOperationWithoutId<T extends Datatype, Database> {
