@@ -1,6 +1,6 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxDatabaseCreator, RxStorage } from 'rxdb';
 import { from, Observable } from 'rxjs';
-import { map, shareReplay } from 'rxjs/operators';
+import { finalize, map, shareReplay, tap } from 'rxjs/operators';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
 import { wrappedKeyEncryptionCryptoJsStorage } from 'rxdb/plugins/encryption-crypto-js';
@@ -22,6 +22,7 @@ export interface PwaDatabaseCreator {
 
 export class PwaDatabaseService<T> {
 
+    db: RxDatabase<T>;
     db$: Observable<RxDatabase<T>>;
 
     constructor(private _config: PwaDatabaseCreator) {
@@ -47,6 +48,10 @@ export class PwaDatabaseService<T> {
             // )),
 
             map((db: RxDatabase<any>) => db),
+
+            tap((db: RxDatabase<any>) => this.db = db),
+
+            finalize(() => !!this.db ? this.db.destroy() : null),
 
             shareReplay(1),
         );

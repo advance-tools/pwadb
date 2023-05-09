@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollection, RxCollectionCreator, RxDatabase } from 'rxdb';
-import { BehaviorSubject, combineLatest, empty, from, interval, Observable, of, throwError } from 'rxjs';
+import { BehaviorSubject, combineLatest, empty, from, Observable, of, throwError } from 'rxjs';
 import { bufferCount, catchError, concatMap, distinctUntilChanged, filter, finalize, map, mergeMap, shareReplay, startWith, switchMap, take, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
@@ -46,6 +46,7 @@ export class SyncCollectionService {
     };
 
     storedCollections: Observable<SynchroniseDocTypeExtras[]>;
+    databasesMap: {pwaDatabaseService: PwaDatabaseService<any>, collectionInfo: SynchroniseDocType[]}[] = [];
 
     constructor(private _config: Partial<SyncCollectionServiceCreator>) {
 
@@ -113,24 +114,23 @@ export class SyncCollectionService {
                 });
 
                 // map RxDatabase and collectionNames
-
-                const databasesMap: {database: Observable<RxDatabase>, collectionInfo: SynchroniseDocType[]}[] = [];
+                this.databasesMap = [];
 
                 Object.keys(databasesSchema).forEach(schema => {
 
                     const pwaDatabaseService = new PwaDatabaseService<any>({dbCreator: {...JSON.parse(schema)}});
 
-                    databasesMap.push({database: pwaDatabaseService.db$, collectionInfo: databasesSchema[schema]});
+                    this.databasesMap.push({pwaDatabaseService: pwaDatabaseService, collectionInfo: databasesSchema[schema]});
                 });
 
-                return databasesMap;
+                return this.databasesMap;
             }),
 
             switchMap(databasesMap => combineLatest(databasesMap.map(m => {
 
-                return m.database.pipe(
+                return m.pwaDatabaseService.db$.pipe(
 
-                    switchMap(db => {
+                    switchMap((db: RxDatabase) => {
 
                         const collectionInfoKeyValue: {[key: string]: SynchroniseDocType} = m.collectionInfo.reduce((acc: Record<string, SynchroniseDocType>, cur: SynchroniseDocType) => {
 

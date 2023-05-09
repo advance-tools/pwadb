@@ -389,8 +389,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 enterZone<PwaDocument<T> | null>(this.config.ngZone),
 
-                finalize(() => this.cache.has(cacheKey) ? this.cache.delete(cacheKey) : null),
-
             ) as Observable<PwaDocument<T> | null>;
 
             this.cache.set(cacheKey, doc);
@@ -422,7 +420,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                 // shareReplay(1),
 
-                finalize(() => this.cache.has(cacheKey) ? this.cache.delete(cacheKey) : null),
             );
 
             this.cache.set(cacheKey, docs);

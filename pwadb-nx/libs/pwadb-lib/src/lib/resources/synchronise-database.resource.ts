@@ -2,7 +2,7 @@ import { addRxPlugin, createRxDatabase, RxDatabase, RxDatabaseCreator, RxStorage
 import { from, Observable } from 'rxjs';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
-import { map, shareReplay } from 'rxjs/operators';
+import { finalize, map, shareReplay, tap } from 'rxjs/operators';
 import { wrappedKeyEncryptionCryptoJsStorage } from 'rxdb/plugins/encryption-crypto-js';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { isDevMode } from '@angular/core';
@@ -22,6 +22,7 @@ export interface SyncDatabaseServiceCreator {
 
 export class SyncDatabaseService {
 
+    db: RxDatabase;
     // tslint:disable-next-line: variable-name
     db$: Observable<RxDatabase>;
 
@@ -48,6 +49,10 @@ export class SyncDatabaseService {
             // )),
 
             map((db: RxDatabase<any>) => db),
+
+            tap((db: RxDatabase<any>) => this.db = db),
+
+            finalize(() => !!this.db ? this.db.destroy() : null),
 
             shareReplay(1),
         );
