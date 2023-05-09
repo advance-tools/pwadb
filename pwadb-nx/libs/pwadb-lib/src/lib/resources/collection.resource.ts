@@ -373,38 +373,27 @@ export class CollectionAPI<T extends Datatype, Database> {
 
     getReactive(tenant: string, url: string): Observable<PwaDocument<T> | null> {
 
-        // const cacheKey = 'get__' + tenant + url;
+        const cacheKey = 'get__' + tenant + url;
 
-        // if (!this.cache.has(cacheKey)) {
+        if (!this.cache.has(cacheKey)) {
 
-        //     const doc = this.collection$.pipe(
+            const doc = this.collection$.pipe(
 
-        //         switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}} as MangoQuery<PwaDocType<T>>).$),
+                switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}} as MangoQuery<PwaDocType<T>>).$),
 
-        //         auditTime(1000 / 60),
+                auditTime(1000 / 60),
 
-        //         // shareReplay(1),
+                // shareReplay(1),
 
-        //         enterZone<PwaDocument<T> | null>(this.config.ngZone),
+                enterZone<PwaDocument<T> | null>(this.config.ngZone),
 
-        //     ) as Observable<PwaDocument<T> | null>;
+            ) as Observable<PwaDocument<T> | null>;
 
-        //     this.cache.set(cacheKey, doc);
-        // }
+            this.cache.set(cacheKey, doc);
+        }
 
-        // return this.cache.get(cacheKey);
+        return this.cache.get(cacheKey);
 
-        return this.collection$.pipe(
-
-            switchMap(col => col.findOne({selector: { tenantUrl: {$eq: this.makeTenantUrl(tenant, url)}}} as MangoQuery<PwaDocType<T>>).$),
-
-            // auditTime(1000 / 60),
-
-            // shareReplay(1),
-
-            enterZone<PwaDocument<T> | null>(this.config.ngZone),
-
-        ) as Observable<PwaDocument<T> | null>;
     }
 
     get(tenant: string, url: string): Observable<PwaDocument<T> | null> {
