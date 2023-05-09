@@ -118,7 +118,7 @@ export class SyncCollectionService {
 
                 Object.keys(databasesSchema).forEach(schema => {
 
-                    const pwaDatabaseService = new PwaDatabaseService<any>({dbCreator: {...JSON.parse(schema), ignoreDuplicate: true}});
+                    const pwaDatabaseService = new PwaDatabaseService<any>({dbCreator: {...JSON.parse(schema)}});
 
                     databasesMap.push({database: pwaDatabaseService.db$, collectionInfo: databasesSchema[schema]});
                 });
