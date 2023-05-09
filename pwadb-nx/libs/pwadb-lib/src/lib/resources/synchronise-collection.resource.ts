@@ -226,12 +226,32 @@ export class SyncCollectionService {
 
         return this.storedCollections.pipe(
 
-            switchMap(v => interval(checkIntervalTime).pipe(
+            // switchMap(v => interval(checkIntervalTime).pipe(
 
-                startWith(null),
+            //     startWith(null),
 
-                map(() => v),
-            )),
+            //     map(() => v),
+            // )),
+
+            // concatMap(collectionsInfo => {
+
+            //     const query = {
+            //         selector: {
+            //             matchUrl: {$regex: new RegExp(`^${tenant}.*`)},
+            //             method: {$ne: 'GET'}
+            //         }
+            //     };
+
+            //     const sortedDocs$ = collectionsInfo.map(k => from(k.collection.find(query).exec()));
+
+            //     return from(sortedDocs$).pipe(
+
+            //         mergeMap(docs$ => docs$),
+
+            //         bufferCount(sortedDocs$.length),
+            //     );
+
+            // }),
 
             concatMap(collectionsInfo => {
 
@@ -242,7 +262,7 @@ export class SyncCollectionService {
                     }
                 };
 
-                const sortedDocs$ = collectionsInfo.map(k => from(k.collection.find(query).exec()));
+                const sortedDocs$ = collectionsInfo.map(k => k.collection.find(query).$);
 
                 return from(sortedDocs$).pipe(
 
@@ -271,7 +291,7 @@ export class SyncCollectionService {
 
         const hit = () => unsynchronised$.pipe(
 
-            map(sortedDocs => sortedDocs),
+            // map(sortedDocs => sortedDocs),
 
             filter(sortedDocs => sortedDocs.length > 0),
 
@@ -561,10 +581,7 @@ export class SyncCollectionService {
 
         if (!!doc && doc.method !== 'GET') {
 
-            return from(doc.incrementalPatch({error: null})).pipe(
-
-                switchMap(() => from(doc.incrementalRemove())),
-            );
+            return from(doc.incrementalRemove());
         }
 
         return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
