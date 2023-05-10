@@ -55,7 +55,7 @@ export class PwaDatabaseService<T> {
                  * a new cleanup is started after [runEach] milliseconds
                  * [default=5 minutes]
                  */
-                runEach: 5,//1000 * 60 * 5, // 5 minutes
+                runEach: 3000,//1000 * 60 * 5, // 3 seconds
                 /**
                  * If set to true,
                  * RxDB will await all running replications
@@ -83,8 +83,6 @@ export class PwaDatabaseService<T> {
 
             db$ = of(window['pwadb-lib']['databaseMap'][dbCreator.name]);
 
-            console.log('PwaDatabaseService: db fetch from cache', dbCreator.name);
-
         } else {
 
             db$ = from(createRxDatabase<any>(dbCreator)).pipe(
@@ -98,8 +96,6 @@ export class PwaDatabaseService<T> {
                     window['pwadb-lib']['databaseMap'][dbCreator.name] = db;
                 }),
             );
-
-            console.log('PwaDatabaseService: db created', dbCreator.name);
         }
 
         this.db$ = db$.pipe(

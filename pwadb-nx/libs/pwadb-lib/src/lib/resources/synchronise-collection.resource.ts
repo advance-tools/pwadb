@@ -1,8 +1,8 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollection, RxCollectionCreator, RxDatabase } from 'rxdb';
-import { BehaviorSubject, combineLatest, empty, from, Observable, of, throwError } from 'rxjs';
-import { bufferCount, catchError, concatMap, debounceTime, distinctUntilChanged, filter, finalize, map, mergeMap, shareReplay, startWith, switchMap, take, tap } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, empty, from, interval, Observable, of, throwError } from 'rxjs';
+import { bufferCount, catchError, concatMap, debounceTime, distinctUntilChanged, filter, finalize, map, mergeMap, shareReplay, switchMap, take, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
@@ -188,7 +188,7 @@ export class SyncCollectionService {
 
                     if (!docType?.collection?.hooks?.save?.pre?.series?.length) {
 
-                        docType.collection.preSave((plainData, rxDocument) => {
+                        docType.collection.preSave((plainData, _) => {
 
                             // modify anyField before saving
                             plainData.createdAt = plainData.createdAt || new Date().getTime();
@@ -266,7 +266,10 @@ export class SyncCollectionService {
                     }
                 };
 
-                const sortedDocs$ = collectionsInfo.map(k => k.collection.find(query).$);
+                const sortedDocs$ = collectionsInfo.map(k => {
+
+                    return interval(checkIntervalTime).pipe(switchMap(() => k.collection.find(query).exec()));
+                });
 
                 return from(sortedDocs$).pipe(
 

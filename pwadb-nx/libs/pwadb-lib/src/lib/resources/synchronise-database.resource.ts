@@ -60,7 +60,7 @@ export class SyncDatabaseService {
                  * a new cleanup is started after [runEach] milliseconds
                  * [default=5 minutes]
                  */
-                runEach: 5,//1000 * 60 * 5, // 5 minutes
+                runEach: 3000,//1000 * 60 * 5, // 3 seconds
                 /**
                  * If set to true,
                  * RxDB will await all running replications
@@ -88,8 +88,6 @@ export class SyncDatabaseService {
 
             db$ = of(window['pwadb-lib']['databaseMap'][dbCreator.name]);
 
-            console.log('SyncDatabaseService: db fetched from cache', dbCreator.name);
-
         } else {
 
             db$ = from(createRxDatabase<any>(dbCreator)).pipe(
@@ -103,8 +101,6 @@ export class SyncDatabaseService {
                     window['pwadb-lib']['databaseMap'][dbCreator.name] = db;
                 }),
             );
-
-            console.log('SyncDatabaseService: db created', dbCreator.name);
         }
 
         this.db$ = db$.pipe(
