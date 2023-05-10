@@ -58,34 +58,53 @@ export class SyncCollectionService {
         // RxCollection
         /////////////////////
 
-        const collectionSchema: Record<string, RxCollectionCreator> = {};
-
-        collectionSchema[this.config.name] = getSynchroniseCollectionCreator(
-            this.config.name,
-            synchroniseCollectionMethods,
-            synchroniseDocMethods,
-            this.config.attachments,
-            this.config.options,
-            this.config.migrationStrategies,
-            this.config.autoMigrate
-        );
-
         this.collection$ = this.config.db$.pipe(
 
             switchMap((db: RxDatabase) => {
 
-                const cacheCollections = {};
+                let col$: Observable<SynchroniseCollection> = null;
 
-                this.config.name in db ? cacheCollections[this.config.name] = db[this.config.name] : null;
+                if ('pwadb-lib' in window && 'collectionMap' in (window['pwadb-lib'] as Record<string, any>) && this.config?.name in (window['pwadb-lib']['collectionMap'] as Record<string, RxCollection>)) {
 
-                return this.config.name in db ? of(cacheCollections) : db.addCollections(collectionSchema);
+                    col$ = of(window['pwadb-lib']['collectionMap'][this.config?.name]);
+
+                    console.log('SynchroniseCollectionAPI: collection fetch from cache', this.config?.name);
+
+                } else {
+
+                    const collectionSchema: Record<string, RxCollectionCreator> = {};
+
+                    collectionSchema[this.config?.name] = getSynchroniseCollectionCreator(
+                        this.config.name,
+                        synchroniseCollectionMethods,
+                        synchroniseDocMethods,
+                        this.config.attachments,
+                        this.config.options,
+                        this.config.migrationStrategies,
+                        this.config.autoMigrate
+                    );
+
+                    col$ = from(db.addCollections(collectionSchema)).pipe(
+
+                        map((collections: Record<string, SynchroniseCollection>) => {
+
+                            if (!('pwadb-lib' in window)) window['pwadb-lib'] = {};
+
+                            if (!('collectionMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['collectionMap'] = {};
+
+                            window['pwadb-lib']['collectionMap'][this.config?.name] = collections[this.config?.name];
+
+                            return window['pwadb-lib']['collectionMap'][this.config?.name];
+                        }),
+                    );
+
+                    console.log('SynchroniseCollectionAPI: collection created', this.config?.name);
+                }
+
+                return col$;
             }),
 
-            map(collections => collections[this.config.name]),
-
             shareReplay(1),
-
-            // first()
         );
 
         /////////////////////
@@ -230,34 +249,14 @@ export class SyncCollectionService {
 
         return this.storedCollections.pipe(
 
-            switchMap(v => interval(checkIntervalTime).pipe(
+            // switchMap(v => interval(checkIntervalTime).pipe(
 
-                startWith(null),
+            //     startWith(null),
 
-                map(() => v),
-            )),
+            //     map(() => v),
+            // )),
 
-            concatMap(collectionsInfo => {
-
-                const query = {
-                    selector: {
-                        matchUrl: {$regex: new RegExp(`^${tenant}.*`)},
-                        method: {$ne: 'GET'}
-                    }
-                };
-
-                const sortedDocs$ = collectionsInfo.map(k => from(k.collection.find(query).exec()));
-
-                return from(sortedDocs$).pipe(
-
-                    mergeMap(docs$ => docs$),
-
-                    bufferCount(sortedDocs$.length),
-                );
-
-            }),
-
-            // switchMap(collectionsInfo => {
+            // concatMap(collectionsInfo => {
 
             //     const query = {
             //         selector: {
@@ -266,10 +265,7 @@ export class SyncCollectionService {
             //         }
             //     };
 
-            //     const sortedDocs$ = collectionsInfo.map(k => {
-
-            //         return interval(checkIntervalTime).pipe(switchMap(() => k.collection.find(query).exec()));
-            //     });
+            //     const sortedDocs$ = collectionsInfo.map(k => from(k.collection.find(query).exec()));
 
             //     return from(sortedDocs$).pipe(
 
@@ -279,6 +275,20 @@ export class SyncCollectionService {
             //     );
 
             // }),
+
+            switchMap(collectionsInfo => {
+
+                const query = {
+                    selector: {
+                        matchUrl: {$regex: new RegExp(`^${tenant}.*`)},
+                        method: {$ne: 'GET'}
+                    }
+                };
+
+                const sortedDocs$ = collectionsInfo.map(k => k.collection.find(query).$);
+
+                return combineLatest(sortedDocs$);
+            }),
 
             // auditTime(1000/60),
 

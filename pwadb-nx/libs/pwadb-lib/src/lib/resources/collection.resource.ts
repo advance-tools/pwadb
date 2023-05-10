@@ -4,7 +4,7 @@ import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take
 import { Observable, of, from, throwError, combineLatest, empty } from 'rxjs';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
-import { MangoQuery, RxCollectionCreator, RxDatabase, RxDatabaseCreator } from 'rxdb';
+import { MangoQuery, RxCollection, RxCollectionCreator, RxDatabase, RxDatabaseCreator } from 'rxdb';
 import { NgZone } from '@angular/core';
 import { enterZone } from './operators.resource';
 import { ApiProgressService } from './apiProgress.resource';
@@ -234,37 +234,58 @@ export class CollectionAPI<T extends Datatype, Database> {
             ...this._config
         };
 
-        const collectionSchema: Record<string, RxCollectionCreator> = {};
-
-        collectionSchema[this.config?.name] = getCollectionCreator(
-            this.config?.name,
-            pwaCollectionMethods,
-            pwaDocMethods,
-            this.config.attachments,
-            this.config.options,
-            this.config.migrationStrategies,
-            this.config.autoMigrate
-        );
-
         this.collection$ = this.config.db$.pipe(
 
             switchMap(db => {
 
-                // if (this.config.name in db) { return of(db[this.config.name]); }
+                let col$: Observable<PwaCollection<T>> = null;
 
-                const cacheCollections = {};
+                if ('pwadb-lib' in window && 'collectionMap' in (window['pwadb-lib'] as Record<string, any>) && this.config?.name in (window['pwadb-lib']['collectionMap'] as Record<string, RxCollection>)) {
 
-                this.config.name in db ? cacheCollections[this.config.name] = db[this.config.name] : null;
+                    col$ = of(window['pwadb-lib']['collectionMap'][this.config?.name]);
+
+                    console.log('CollectionAPI: collection fetch from cache', this.config?.name);
+
+                } else {
+
+                    const collectionSchema: Record<string, RxCollectionCreator> = {};
+
+                    collectionSchema[this.config?.name] = getCollectionCreator(
+                        this.config?.name,
+                        pwaCollectionMethods,
+                        pwaDocMethods,
+                        this.config.attachments,
+                        this.config.options,
+                        this.config.migrationStrategies,
+                        this.config.autoMigrate
+                    );
+
+                    col$ = from(db.addCollections(collectionSchema)).pipe(
+
+                        map((collections: Record<string, RxCollection<T>>) => {
+
+                            if (!('pwadb-lib' in window)) window['pwadb-lib'] = {};
+
+                            if (!('collectionMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['collectionMap'] = {};
+
+                            window['pwadb-lib']['collectionMap'][this.config?.name] = collections[this.config?.name];
+
+                            return window['pwadb-lib']['collectionMap'][this.config?.name];
+                        }),
+                    );
+
+                    console.log('CollectionAPI: collection created', this.config?.name);
+                }
 
                 return combineLatest([
-                    this.config.name in db ? of(cacheCollections) : db.addCollections(collectionSchema),
+                    col$,
                     this.config.collectionEvictTime$,
                     this.config.collectionSkipDocuments$
                 ]).pipe(
 
                     // take(1),
 
-                    switchMap(([collections, collectionEvictTime, collectionSkipDocuments]) => {
+                    switchMap(([col, collectionEvictTime, collectionSkipDocuments]) => {
 
                         if (this.config.synchroniseService) {
 
@@ -285,30 +306,26 @@ export class CollectionAPI<T extends Datatype, Database> {
                                 collectionOptions: JSON.stringify({
                                     name: this.config.name,
                                     schema: getSchema(this.config.name),
-                                    attachments: collections[this.config.name].attachments,
+                                    attachments: col.attachments,
                                     autoMigrate: true,
-                                    cacheReplacementPolicy: collections[this.config.name].cacheReplacementPolicy,
-                                    methods: collections[this.config.name].methods,
-                                    migrationStrategies: collections[this.config.name].migrationStrategies,
-                                    options: collections[this.config.name].options,
-                                    statics: collections[this.config.name].statics,
+                                    cacheReplacementPolicy: col.cacheReplacementPolicy,
+                                    methods: col.methods,
+                                    migrationStrategies: col.migrationStrategies,
+                                    options: col.options,
+                                    statics: col.statics,
                                 })
                             };
 
                             // add collection to synchronise collection service
                             return this.config.synchroniseService.addSynchroniseDocument(data).pipe(
 
-                                map(() => collections[this.config.name] as PwaCollection<T>)
+                                map(() => col)
                             );
 
                         } else {
 
-                            return of(collections).pipe(
-
-                                map(() => collections[this.config.name] as PwaCollection<T>)
-                            );
+                            return of(col);
                         }
-
                     })
                 );
             }),
