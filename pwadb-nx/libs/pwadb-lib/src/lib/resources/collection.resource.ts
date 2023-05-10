@@ -277,6 +277,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                                     options: db.options,
                                     password: db.password,
                                     allowSlowCount: db.allowSlowCount,
+                                    cleanupPolicy: db.cleanupPolicy,
                                 } as RxDatabaseCreator),
                                 collectionEvictTime,
                                 collectionSkipDocuments,
@@ -649,7 +650,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                     return from(doc.incrementalPatch({method:'POST', error: null}));
                 }
 
-                return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
+                return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toMutableJSON() || {})}`);
             }),
 
         );
@@ -666,7 +667,7 @@ export class CollectionAPI<T extends Datatype, Database> {
                     return doc.incrementalRemove();
                 }
 
-                return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
+                return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toMutableJSON() || {})}`);
             }),
         );
     }
@@ -804,7 +805,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
         if (ids.length === limit) {
 
             // pass if all results are excluded
-            return of({next: res.next, previous: res.previous, results: /*res.results.map(r => r.toJSON().data)*/ []});
+            return of({next: res.next, previous: res.previous, results: /*res.results.map(r => r.toMutableJSON().data)*/ []});
         }
 
         params = params || new CustomHttpParams();

@@ -326,7 +326,7 @@ export class SyncCollectionService {
                             // Multipart/form
                             //////////////////
 
-                            formData = createFormData(doc.toJSON().data) as FormData;
+                            formData = createFormData(doc.toMutableJSON().data) as FormData;
 
                             doc.fileFields.forEach(k => {
 
@@ -350,7 +350,7 @@ export class SyncCollectionService {
                             // Application/json
                             ////////////////////
 
-                            formData = doc.toJSON().data;
+                            formData = doc.toMutableJSON().data;
                         }
 
                         const params = Object.keys(doc.toMutableJSON().params || {}).reduce((acc, cur) => {
@@ -398,7 +398,7 @@ export class SyncCollectionService {
                             // Multipart/form
                             //////////////////
 
-                            formData = createFormData(doc.toJSON().data) as FormData;
+                            formData = createFormData(doc.toMutableJSON().data) as FormData;
 
                             doc.fileFields.forEach(k => {
 
@@ -422,7 +422,7 @@ export class SyncCollectionService {
                             // Application/json
                             ////////////////////
 
-                            formData = doc.toJSON().data;
+                            formData = doc.toMutableJSON().data;
                         }
 
                         const params = Object.keys(doc.toMutableJSON().params || {}).reduce((acc, cur) => {
@@ -498,7 +498,7 @@ export class SyncCollectionService {
                     console.log(e);
                 }
 
-                // console.error(`Document doesn\'t have valid method. Document: ${JSON.stringify(doc?.toJSON())}`);
+                // console.error(`Document doesn\'t have valid method. Document: ${JSON.stringify(doc?.toMutableJSON())}`);
 
                 return of(null);
             }),
@@ -581,7 +581,7 @@ export class SyncCollectionService {
             return from(doc.incrementalPatch({method: 'POST', error: null}));
         }
 
-        return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
+        return throwError(`Cannot duplicate this document. Document: ${JSON.stringify(doc?.toMutableJSON() || {})}`);
     }
 
     deleteConflict(doc: PwaDocument<any>): Observable<PwaDocument<any>> {
@@ -591,6 +591,6 @@ export class SyncCollectionService {
             return from(doc.incrementalRemove());
         }
 
-        return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toJSON() || {})}`);
+        return throwError(`Cannot delete this document. Document: ${JSON.stringify(doc?.toMutableJSON() || {})}`);
     }
 }
