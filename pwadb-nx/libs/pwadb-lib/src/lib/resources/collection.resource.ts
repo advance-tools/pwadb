@@ -312,14 +312,20 @@ export class CollectionAPI<T extends Datatype, Database> {
                 );
             }),
 
-            tap(col => col.preSave((plainData, rxDocument) => {
+            tap(col => {
 
-                // modify anyField before saving
-                // add hook in synchronise-collection as well
-                plainData.createdAt = plainData.createdAt || new Date().getTime();
-                plainData.updatedAt = new Date().getTime();
+                if (!col.hooks.save.pre.series.length) {
 
-            }, false)),
+                    col.preSave((plainData, rxDocument) => {
+
+                        // modify anyField before saving
+                        // add hook in synchronise-collection as well
+                        plainData.createdAt = plainData.createdAt || new Date().getTime();
+                        plainData.updatedAt = new Date().getTime();
+
+                    }, false);
+                }
+            }),
 
             shareReplay(1),
 

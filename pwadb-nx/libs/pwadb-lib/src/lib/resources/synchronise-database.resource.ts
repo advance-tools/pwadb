@@ -40,17 +40,30 @@ export class SyncDatabaseService {
             ...this._config.dbCreator
         };
 
-        const db$ = 'pwadb-lib' in window && 'databaseMap' in (window['pwadb-lib'] as Record<string, any>) && dbCreator.name in (window['pwadb-lib']['databaseMap'] as Record<string, RxDatabase>) ? of(window['pwadb-lib']['databaseMap'][dbCreator.name]) : from(createRxDatabase<any>(dbCreator)).pipe(
+        let db$ = null;
 
-            tap((db: RxDatabase<any>) => {
+        if ('pwadb-lib' in window && 'databaseMap' in (window['pwadb-lib'] as Record<string, any>) && dbCreator.name in (window['pwadb-lib']['databaseMap'] as Record<string, RxDatabase>)) {
 
-                if (!('pwadb-lib' in window)) window['pwadb-lib'] = {};
+            db$ = of(window['pwadb-lib']['databaseMap'][dbCreator.name]);
 
-                if (!('databaseMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['databaseMap'] = {};
+            console.log('SyncDatabaseService: db fetched from cache', dbCreator.name);
 
-                window['pwadb-lib']['databaseMap'][dbCreator.name] = db;
-            }),
-        );
+        } else {
+
+            db$ = from(createRxDatabase<any>(dbCreator)).pipe(
+
+                tap((db: RxDatabase<any>) => {
+
+                    if (!('pwadb-lib' in window)) window['pwadb-lib'] = {};
+
+                    if (!('databaseMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['databaseMap'] = {};
+
+                    window['pwadb-lib']['databaseMap'][dbCreator.name] = db;
+                }),
+            );
+
+            console.log('SyncDatabaseService: db created', dbCreator.name);
+        }
 
         this.db$ = db$.pipe(
 

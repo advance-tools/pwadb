@@ -46,7 +46,6 @@ export class SyncCollectionService {
     };
 
     storedCollections: Observable<SynchroniseDocTypeExtras[]>;
-    databasesMap: {pwaDatabaseService: PwaDatabaseService<any>, collectionInfo: SynchroniseDocType[]}[] = [];
 
     constructor(private _config: Partial<SyncCollectionServiceCreator>) {
 
@@ -114,16 +113,16 @@ export class SyncCollectionService {
                 });
 
                 // map RxDatabase and collectionNames
-                this.databasesMap = [];
+                const databasesMap: {pwaDatabaseService: PwaDatabaseService<any>, collectionInfo: SynchroniseDocType[]}[] = [];
 
                 Object.keys(databasesSchema).forEach(schema => {
 
                     const pwaDatabaseService = new PwaDatabaseService<any>({dbCreator: {...JSON.parse(schema)}});
 
-                    this.databasesMap.push({pwaDatabaseService: pwaDatabaseService, collectionInfo: databasesSchema[schema]});
+                    databasesMap.push({pwaDatabaseService, collectionInfo: databasesSchema[schema]});
                 });
 
-                return this.databasesMap;
+                return databasesMap;
             }),
 
             switchMap(databasesMap => combineLatest(databasesMap.map(m => {
@@ -185,13 +184,16 @@ export class SyncCollectionService {
 
                 v.forEach(docType => {
 
-                    docType.collection.preSave((plainData, rxDocument) => {
+                    if (!docType.collection.hooks.save.pre.series.length) {
 
-                        // modify anyField before saving
-                        plainData.createdAt = plainData.createdAt || new Date().getTime();
-                        plainData.updatedAt = new Date().getTime();
+                        docType.collection.preSave((plainData, rxDocument) => {
 
-                    }, false);
+                            // modify anyField before saving
+                            plainData.createdAt = plainData.createdAt || new Date().getTime();
+                            plainData.updatedAt = new Date().getTime();
+
+                        }, false);
+                    }
 
                 });
             }),
@@ -253,7 +255,7 @@ export class SyncCollectionService {
 
             // }),
 
-            concatMap(collectionsInfo => {
+            switchMap(collectionsInfo => {
 
                 const query = {
                     selector: {
