@@ -314,7 +314,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
             tap(col => {
 
-                if (!col.hooks.save.pre.series.length) {
+                if (!col?.hooks?.save?.pre?.series?.length) {
 
                     col.preSave((plainData, rxDocument) => {
 

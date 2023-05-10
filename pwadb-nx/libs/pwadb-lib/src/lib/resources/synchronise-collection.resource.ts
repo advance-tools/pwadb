@@ -184,7 +184,7 @@ export class SyncCollectionService {
 
                 v.forEach(docType => {
 
-                    if (!docType.collection.hooks.save.pre.series.length) {
+                    if (!docType?.collection?.hooks?.save?.pre?.series?.length) {
 
                         docType.collection.preSave((plainData, rxDocument) => {
 
