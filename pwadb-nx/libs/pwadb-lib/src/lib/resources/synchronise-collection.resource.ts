@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollection, RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, empty, from, Observable, of, throwError } from 'rxjs';
-import { bufferCount, catchError, concatMap, distinctUntilChanged, filter, finalize, map, mergeMap, shareReplay, startWith, switchMap, take, tap } from 'rxjs/operators';
+import { bufferCount, catchError, concatMap, debounceTime, distinctUntilChanged, filter, finalize, map, mergeMap, shareReplay, startWith, switchMap, take, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
@@ -98,7 +98,9 @@ export class SyncCollectionService {
 
             switchMap(col => col.find().$),
 
-            map(docs => docs.map(d => d.toJSON())),
+            debounceTime(500),
+
+            map(docs => docs.map(d => d.toMutableJSON())),
 
             map(docTypes => {
 
@@ -291,7 +293,7 @@ export class SyncCollectionService {
 
         if (!this.config.httpClient) return empty();
 
-        const hit = () => unsynchronised$.pipe(
+        const hit$ = unsynchronised$.pipe(
 
             // map(sortedDocs => sortedDocs),
 
@@ -301,7 +303,10 @@ export class SyncCollectionService {
 
             distinctUntilChanged((prev, cur) => prev.tenantUrl === cur.tenantUrl),
 
-            // debounceTime(1000),
+            shareReplay(1),
+        );
+
+        const hit = () => hit$.pipe(
 
             concatMap((doc: PwaDocument<any>) => {
 
