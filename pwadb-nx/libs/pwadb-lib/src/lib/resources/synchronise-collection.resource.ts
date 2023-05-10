@@ -70,6 +70,18 @@ export class SyncCollectionService {
 
                     console.log('SynchroniseCollectionAPI: collection fetch from cache', this.config?.name);
 
+                } else if (this.config?.name in db) {
+
+                    if (!('pwadb-lib' in window)) window['pwadb-lib'] = {};
+
+                    if (!('collectionMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['collectionMap'] = {};
+
+                    window['pwadb-lib']['collectionMap'][this.config?.name] = db[this.config?.name];
+
+                    col$ = of(window['pwadb-lib']['collectionMap'][this.config?.name]);
+
+                    console.log('SynchroniseCollectionAPI: collection fetch from db', this.config?.name);
+
                 } else {
 
                     const collectionSchema: Record<string, RxCollectionCreator> = {};

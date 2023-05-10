@@ -246,6 +246,18 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                     console.log('CollectionAPI: collection fetch from cache', this.config?.name);
 
+                } else if (this.config?.name in db) {
+
+                    if (!('pwadb-lib' in window)) window['pwadb-lib'] = {};
+
+                    if (!('collectionMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['collectionMap'] = {};
+
+                    window['pwadb-lib']['collectionMap'][this.config?.name] = db[this.config?.name];
+
+                    col$ = of(window['pwadb-lib']['collectionMap'][this.config?.name]);
+
+                    console.log('CollectionAPI: collection fetch from db', this.config?.name);
+
                 } else {
 
                     const collectionSchema: Record<string, RxCollectionCreator> = {};
