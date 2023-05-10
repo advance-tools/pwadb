@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollection, RxCollectionCreator, RxDatabase } from 'rxdb';
 import { BehaviorSubject, combineLatest, empty, from, interval, Observable, of, throwError } from 'rxjs';
-import { bufferCount, catchError, concatMap, debounceTime, distinctUntilChanged, filter, finalize, map, mergeMap, shareReplay, switchMap, take, tap } from 'rxjs/operators';
+import { bufferCount, catchError, concatMap, debounceTime, distinctUntilChanged, filter, finalize, map, mergeMap, shareReplay, startWith, switchMap, take, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
@@ -230,34 +230,14 @@ export class SyncCollectionService {
 
         return this.storedCollections.pipe(
 
-            // switchMap(v => interval(checkIntervalTime).pipe(
+            switchMap(v => interval(checkIntervalTime).pipe(
 
-            //     startWith(null),
+                startWith(null),
 
-            //     map(() => v),
-            // )),
+                map(() => v),
+            )),
 
-            // concatMap(collectionsInfo => {
-
-            //     const query = {
-            //         selector: {
-            //             matchUrl: {$regex: new RegExp(`^${tenant}.*`)},
-            //             method: {$ne: 'GET'}
-            //         }
-            //     };
-
-            //     const sortedDocs$ = collectionsInfo.map(k => from(k.collection.find(query).exec()));
-
-            //     return from(sortedDocs$).pipe(
-
-            //         mergeMap(docs$ => docs$),
-
-            //         bufferCount(sortedDocs$.length),
-            //     );
-
-            // }),
-
-            switchMap(collectionsInfo => {
+            concatMap(collectionsInfo => {
 
                 const query = {
                     selector: {
@@ -266,10 +246,7 @@ export class SyncCollectionService {
                     }
                 };
 
-                const sortedDocs$ = collectionsInfo.map(k => {
-
-                    return interval(checkIntervalTime).pipe(switchMap(() => k.collection.find(query).exec()));
-                });
+                const sortedDocs$ = collectionsInfo.map(k => from(k.collection.find(query).exec()));
 
                 return from(sortedDocs$).pipe(
 
@@ -279,6 +256,29 @@ export class SyncCollectionService {
                 );
 
             }),
+
+            // switchMap(collectionsInfo => {
+
+            //     const query = {
+            //         selector: {
+            //             matchUrl: {$regex: new RegExp(`^${tenant}.*`)},
+            //             method: {$ne: 'GET'}
+            //         }
+            //     };
+
+            //     const sortedDocs$ = collectionsInfo.map(k => {
+
+            //         return interval(checkIntervalTime).pipe(switchMap(() => k.collection.find(query).exec()));
+            //     });
+
+            //     return from(sortedDocs$).pipe(
+
+            //         mergeMap(docs$ => docs$),
+
+            //         bufferCount(sortedDocs$.length),
+            //     );
+
+            // }),
 
             // auditTime(1000/60),
 
