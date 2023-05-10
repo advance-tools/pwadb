@@ -272,7 +272,6 @@ export class CollectionAPI<T extends Datatype, Database> {
                                 id: db.name + '-' + this.config.name,
                                 databaseOptions: JSON.stringify({
                                     name: db.name,
-                                    ignoreDuplicate: true,
                                     eventReduce: db.eventReduce,
                                     multiInstance: db.multiInstance,
                                     options: db.options,

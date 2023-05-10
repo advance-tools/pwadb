@@ -1,5 +1,5 @@
 import { addRxPlugin, createRxDatabase, RxDatabase, RxDatabaseCreator, RxStorage } from 'rxdb';
-import { from, Observable } from 'rxjs';
+import { from, Observable, of } from 'rxjs';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration';
 import { finalize, map, shareReplay, tap } from 'rxjs/operators';
@@ -22,7 +22,6 @@ export interface SyncDatabaseServiceCreator {
 
 export class SyncDatabaseService {
 
-    db: RxDatabase;
     // tslint:disable-next-line: variable-name
     db$: Observable<RxDatabase>;
 
@@ -32,14 +31,28 @@ export class SyncDatabaseService {
             storage: getRxStorageDexie(),
         }) as RxStorage<any, any>;
 
-        this.db$ = from(createRxDatabase<any>({
+        const dbCreator = {
             name: 'synchronise/pwadb',
             storage: encryptedDexieStorage,
             password: 'ubT6LIL7ne2bdpze0V1DaeOGKKqYMWVF',
             multiInstance: true,
             eventReduce: true,
             ...this._config.dbCreator
-        })).pipe(
+        };
+
+        const db$ = 'pwadb-lib' in window && 'databaseMap' in (window['pwadb-lib'] as Record<string, any>) && dbCreator.name in (window['pwadb-lib']['databaseMap'] as Record<string, RxDatabase>) ? of(window['pwadb-lib']['databaseMap'][dbCreator.name]) : from(createRxDatabase<any>(dbCreator)).pipe(
+
+            tap((db: RxDatabase<any>) => {
+
+                if (!('pwadb-lib' in window)) window['pwadb-lib'] = {};
+
+                if (!('databaseMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['databaseMap'] = {};
+
+                window['pwadb-lib']['databaseMap'][dbCreator.name] = db;
+            }),
+        );
+
+        this.db$ = db$.pipe(
 
             // switchMap((db: any) => from(db.waitForLeadership()).pipe(
 
@@ -47,12 +60,6 @@ export class SyncDatabaseService {
 
             //     map(() => db),
             // )),
-
-            map((db: RxDatabase<any>) => db),
-
-            tap((db: RxDatabase<any>) => this.db = db),
-
-            finalize(() => !!this.db ? this.db.destroy() : null),
 
             shareReplay(1),
         );

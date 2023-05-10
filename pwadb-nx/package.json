@@ -23,7 +23,7 @@
         "@angular/router": "15.2.2",
         "@nrwl/angular": "15.8.6",
         "guid-typescript": "^1.0.9",
-        "rxdb": "^14.2.3",
+        "rxdb": "^14.11.1",
         "rxjs": "~7.5.0",
         "trigram-similarity": "^1.0.7",
         "tslib": "^2.0.0",
