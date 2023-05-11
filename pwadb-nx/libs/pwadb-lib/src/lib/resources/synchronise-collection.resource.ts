@@ -326,7 +326,7 @@ export class SyncCollectionService {
 
             map(sortedDocs => sortedDocs[0]),
 
-            distinctUntilChanged((prev, cur) => prev.tenantUrl === cur.tenantUrl && prev.method === cur.method && prev.time === cur.time),
+            distinctUntilChanged((prev, cur) => prev?.tenantUrl === cur?.tenantUrl && prev?.method === cur?.method && prev?.time === cur?.time),
 
             // shareReplay(1),
         );
