@@ -7,7 +7,6 @@ import { wrappedKeyEncryptionCryptoJsStorage } from 'rxdb/plugins/encryption-cry
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { RxDBCleanupPlugin } from 'rxdb/plugins/cleanup';
 
-
 // add leader election plugin
 addRxPlugin(RxDBLeaderElectionPlugin);
 
@@ -77,7 +76,7 @@ export class SyncDatabaseService {
                  * only one instance will start the cleanup.
                  * [default=true]
                  */
-                waitForLeadership: false
+                waitForLeadership: true
             },
             ...this._config.dbCreator
         };
@@ -99,6 +98,9 @@ export class SyncDatabaseService {
                     if (!('databaseMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['databaseMap'] = {};
 
                     window['pwadb-lib']['databaseMap'][dbCreator.name] = db;
+
+                    // wait for leadership among the tabs
+                    db.waitForLeadership();
                 }),
             );
         }
