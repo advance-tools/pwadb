@@ -368,7 +368,7 @@ export function searchQuery(field: string, inputValue, docs: PwaDocument<any>[])
 
         return {doc, similarity, lexems};
     })
-    .filter(v => { console.log(inputValue, v); return v.similarity >= 0.07 || !!v.lexems.find(l => l.includes(inputValue)); })
+    .filter(v => v.similarity >= 0.07 || !!v.lexems.find(l => l.toLowerCase().includes(inputValue?.toLowerCase())))
     .sort((a, b) => b.similarity - a.similarity)
     .map(v => v.doc);
 }
