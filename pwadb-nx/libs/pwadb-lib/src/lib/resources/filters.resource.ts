@@ -362,13 +362,13 @@ export function searchQuery(field: string, inputValue, docs: PwaDocument<any>[])
     return docs.map(doc => {
 
         // Ex. "'+91239898343':2A '395008':8B 'custom':10A 'gujarat':7B 'india':9B 'nanpura':4B,5B 'surat':6B 'testcustom':1A 'testcustomer2@gmail.com':3A"
-        const lexems = doc.data[field].split(' ').map(v => v.split(':')[0].replaceAll("'",' ')).join('');
+        const lexems = doc.data[field].split(' ').map(v => v.split(':')[0].replaceAll("'",' '));
 
-        const similarity = trigramSimilarity(inputValue, lexems);
+        const similarity = trigramSimilarity(inputValue, lexems.join(''));
 
-        return {doc, similarity};
+        return {doc, similarity, lexems};
     })
-    .filter(v => v.similarity >= 0.07)
+    .filter(v => { console.log(inputValue, v); return v.similarity >= 0.07 || !!v.lexems.find(l => l.includes(inputValue)); })
     .sort((a, b) => b.similarity - a.similarity)
     .map(v => v.doc);
 }
