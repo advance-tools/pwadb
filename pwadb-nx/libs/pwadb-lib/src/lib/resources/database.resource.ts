@@ -72,7 +72,7 @@ export class PwaDatabaseService<T> {
                  * only one instance will start the cleanup.
                  * [default=true]
                  */
-                waitForLeadership: false
+                waitForLeadership: true
             },
             ...this._config.dbCreator
         };
@@ -94,6 +94,9 @@ export class PwaDatabaseService<T> {
                     if (!('databaseMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['databaseMap'] = {};
 
                     window['pwadb-lib']['databaseMap'][dbCreator.name] = db;
+
+                    // wait for leadership among the tabs
+                    db.waitForLeadership();
                 }),
             );
         }

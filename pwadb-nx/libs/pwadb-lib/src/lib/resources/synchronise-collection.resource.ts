@@ -68,8 +68,6 @@ export class SyncCollectionService {
 
                     col$ = of(window['pwadb-lib']['collectionMap'][this.config?.name]);
 
-                    console.log('SynchroniseCollectionAPI: collection fetch from cache', this.config?.name);
-
                 } else if (this.config?.name in db) {
 
                     if (!('pwadb-lib' in window)) window['pwadb-lib'] = {};
@@ -79,8 +77,6 @@ export class SyncCollectionService {
                     window['pwadb-lib']['collectionMap'][this.config?.name] = db[this.config?.name];
 
                     col$ = of(window['pwadb-lib']['collectionMap'][this.config?.name]);
-
-                    console.log('SynchroniseCollectionAPI: collection fetch from db', this.config?.name);
 
                 } else {
 
@@ -110,7 +106,6 @@ export class SyncCollectionService {
                         }),
                     );
 
-                    console.log('SynchroniseCollectionAPI: collection created', this.config?.name);
                 }
 
                 return col$;
@@ -326,9 +321,9 @@ export class SyncCollectionService {
 
             map(sortedDocs => sortedDocs[0]),
 
-            distinctUntilChanged((prev, cur) => prev.tenantUrl === cur.tenantUrl),
+            distinctUntilChanged((prev, cur) => prev?.tenantUrl === cur?.tenantUrl && prev?.method === cur?.method && prev?.time === cur?.time),
 
-            shareReplay(1),
+            // shareReplay(1),
         );
 
         const hit = () => hit$.pipe(

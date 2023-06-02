@@ -244,8 +244,6 @@ export class CollectionAPI<T extends Datatype, Database> {
 
                     col$ = of(window['pwadb-lib']['collectionMap'][this.config?.name]);
 
-                    console.log('CollectionAPI: collection fetch from cache', this.config?.name);
-
                 } else if (this.config?.name in db) {
 
                     if (!('pwadb-lib' in window)) window['pwadb-lib'] = {};
@@ -255,8 +253,6 @@ export class CollectionAPI<T extends Datatype, Database> {
                     window['pwadb-lib']['collectionMap'][this.config?.name] = db[this.config?.name];
 
                     col$ = of(window['pwadb-lib']['collectionMap'][this.config?.name]);
-
-                    console.log('CollectionAPI: collection fetch from db', this.config?.name);
 
                 } else {
 
@@ -286,7 +282,6 @@ export class CollectionAPI<T extends Datatype, Database> {
                         }),
                     );
 
-                    console.log('CollectionAPI: collection created', this.config?.name);
                 }
 
                 return combineLatest([
