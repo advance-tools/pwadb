@@ -77,41 +77,23 @@ export class PwaDatabaseService<T> {
             ...this._config.dbCreator
         };
 
-        let db$ = null;
-
         if ('pwadb-lib' in window && 'databaseMap' in (window['pwadb-lib'] as Record<string, any>) && dbCreator.name in (window['pwadb-lib']['databaseMap'] as Record<string, RxDatabase>)) {
 
-            db$ = of(window['pwadb-lib']['databaseMap'][dbCreator.name]);
+            this.db$ = window['pwadb-lib']['databaseMap'][dbCreator.name];
 
         } else {
 
-            db$ = from(createRxDatabase<any>(dbCreator)).pipe(
+            if (!('pwadb-lib' in window)) window['pwadb-lib'] = {};
 
-                tap((db: RxDatabase<any>) => {
+            if (!('databaseMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['databaseMap'] = {};
 
-                    if (!('pwadb-lib' in window)) window['pwadb-lib'] = {};
+            window['pwadb-lib']['databaseMap'][dbCreator.name] = from(createRxDatabase<any>(dbCreator)).pipe(
 
-                    if (!('databaseMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['databaseMap'] = {};
-
-                    window['pwadb-lib']['databaseMap'][dbCreator.name] = db;
-
-                    // wait for leadership among the tabs
-                    db.waitForLeadership();
-                }),
+                shareReplay(1),
             );
+
+            this.db$ = window['pwadb-lib']['databaseMap'][dbCreator.name];
         }
-
-        this.db$ = db$.pipe(
-
-            // switchMap((db: any) => from(db.waitForLeadership()).pipe(
-
-            //     startWith(null),
-
-            //     map(() => db),
-            // )),
-
-            shareReplay(1),
-        );
     }
 
 }
