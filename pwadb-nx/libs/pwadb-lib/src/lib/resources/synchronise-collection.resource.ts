@@ -66,7 +66,7 @@ export class SyncCollectionService {
 
                 if ('pwadb-lib' in window && 'collectionMap' in (window['pwadb-lib'] as Record<string, any>) && this.config?.name in (window['pwadb-lib']['collectionMap'] as Record<string, RxCollection>)) {
 
-                    col$ = of(window['pwadb-lib']['collectionMap'][this.config?.name]);
+                    col$ = window['pwadb-lib']['collectionMap'][this.config?.name];
 
                 } else if (this.config?.name in db) {
 
@@ -74,9 +74,12 @@ export class SyncCollectionService {
 
                     if (!('collectionMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['collectionMap'] = {};
 
-                    window['pwadb-lib']['collectionMap'][this.config?.name] = db[this.config?.name];
+                    window['pwadb-lib']['collectionMap'][this.config?.name] = of(db[this.config?.name]).pipe(
 
-                    col$ = of(window['pwadb-lib']['collectionMap'][this.config?.name]);
+                        shareReplay(1)
+                    );
+
+                    col$ = window['pwadb-lib']['collectionMap'][this.config?.name];
 
                 } else {
 
@@ -92,19 +95,18 @@ export class SyncCollectionService {
                         this.config.autoMigrate
                     );
 
-                    col$ = from(db.addCollections(collectionSchema)).pipe(
+                    if (!('pwadb-lib' in window)) window['pwadb-lib'] = {};
 
-                        map((collections: Record<string, SynchroniseCollection>) => {
+                    if (!('collectionMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['collectionMap'] = {};
 
-                            if (!('pwadb-lib' in window)) window['pwadb-lib'] = {};
+                    window['pwadb-lib']['collectionMap'][this.config?.name] = from(db.addCollections(collectionSchema)).pipe(
 
-                            if (!('collectionMap' in (window['pwadb-lib'] as Record<string, any>))) window['pwadb-lib']['collectionMap'] = {};
+                        map((collections: Record<string, SynchroniseCollection>) => collections[this.config?.name]),
 
-                            window['pwadb-lib']['collectionMap'][this.config?.name] = collections[this.config?.name];
-
-                            return window['pwadb-lib']['collectionMap'][this.config?.name];
-                        }),
+                        shareReplay(1),
                     );
+
+                    col$ = window['pwadb-lib']['collectionMap'][this.config?.name];
 
                 }
 
