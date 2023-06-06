@@ -869,11 +869,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
                     if (atomicWrites.length > 0) {
 
-                        return from(atomicWrites).pipe(
-
-                            concatMap(v => col.incrementalUpsert(v)),
-
-                            bufferCount(atomicWrites.length),
+                        return from(col.bulkUpsert(atomicWrites)).pipe(
 
                             map(() => networkRes)
                         );

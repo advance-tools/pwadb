@@ -21,9 +21,9 @@
     "@angular/platform-browser": "16.0.1",
     "@angular/platform-browser-dynamic": "16.0.1",
     "@angular/router": "16.0.1",
-    "@nx/angular": "16.2.1",
+    "@nx/angular": "16.3.2",
     "guid-typescript": "^1.0.9",
-    "rxdb": "^14.11.5",
+    "rxdb": "^14.13.0",
     "rxjs": "~7.5.0",
     "trigram-similarity": "^1.0.7",
     "tslib": "^2.0.0",
@@ -39,11 +39,11 @@
     "@angular/cli": "~16.0.0",
     "@angular/compiler-cli": "16.0.1",
     "@angular/language-service": "16.0.1",
-    "@nx/cypress": "16.2.1",
-    "@nx/eslint-plugin": "16.2.1",
-    "@nx/jest": "16.2.1",
-    "@nx/linter": "16.2.1",
-    "@nx/workspace": "16.2.1",
+    "@nx/cypress": "16.3.2",
+    "@nx/eslint-plugin": "16.3.2",
+    "@nx/jest": "16.3.2",
+    "@nx/linter": "16.3.2",
+    "@nx/workspace": "16.3.2",
     "@schematics/angular": "16.0.1",
     "@types/jest": "29.4.0",
     "@types/node": "16.11.7",
@@ -57,7 +57,7 @@
     "jest-environment-jsdom": "29.4.3",
     "jest-preset-angular": "13.1.0",
     "ng-packagr": "16.0.1",
-    "nx": "16.2.1",
+    "nx": "16.3.2",
     "nx-cloud": "16.0.5",
     "postcss": "^8.4.5",
     "postcss-import": "~14.1.0",
@@ -69,3 +69,4 @@
     "typescript": "5.0.4"
   }
 }
+
