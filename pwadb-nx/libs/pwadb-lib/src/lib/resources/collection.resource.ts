@@ -1,6 +1,6 @@
 import { Datatype, FileConfig, getSchema, pwaDocMethods, PwaDocType, PwaDocument } from '../definitions/document';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods, ListResponse, PwaListResponse, CollectionListResponse } from '../definitions/collection';
-import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take, auditTime, timeout, bufferCount } from 'rxjs/operators';
+import { switchMap, map, catchError, shareReplay, tap, finalize, startWith, take, auditTime, timeout, bufferCount, concatMap } from 'rxjs/operators';
 import { Observable, of, from, throwError, combineLatest, empty } from 'rxjs';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { queryFilter } from './filters.resource';
@@ -871,7 +871,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
                         return from(atomicWrites).pipe(
 
-                            switchMap(v => col.incrementalUpsert(v)),
+                            concatMap(v => col.incrementalUpsert(v)),
 
                             bufferCount(atomicWrites.length),
 
