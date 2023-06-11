@@ -1,8 +1,8 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { NgZone } from '@angular/core';
 import { RxCollection, RxCollectionCreator, RxDatabase } from 'rxdb';
-import { BehaviorSubject, combineLatest, empty, from, interval, Observable, of, throwError } from 'rxjs';
-import { bufferCount, catchError, concatMap, debounceTime, distinctUntilChanged, filter, finalize, map, mergeMap, shareReplay, startWith, switchMap, take, tap } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, concat, empty, from, Observable, of, throwError } from 'rxjs';
+import { catchError, concatMap, debounceTime, distinctUntilChanged, filter, finalize, map, shareReplay, switchMap, take, tap } from 'rxjs/operators';
 import { getCollectionCreator, PwaCollection, pwaCollectionMethods } from '../definitions/collection';
 import { pwaDocMethods, PwaDocument } from '../definitions/document';
 import { getSynchroniseCollectionCreator, SynchroniseCollection, synchroniseCollectionMethods } from '../definitions/synchronise-collection';
@@ -254,7 +254,7 @@ export class SyncCollectionService {
         this.retryChange.next(false);
     }
 
-    unsynchronised(tenant: string, order: 'desc' | 'asc' = 'asc', checkIntervalTime=1000): Observable<PwaDocument<any>[]> {
+    unsynchronised(tenant: string, order: 'desc' | 'asc' = 'asc'): Observable<PwaDocument<any>[]> {
 
         return this.storedCollections.pipe(
 
@@ -558,14 +558,10 @@ export class SyncCollectionService {
 
                     const cacheAllowedAge = new Date().getTime() - (k.collectionEvictTime * 1000);
 
-                    return k.collection.insert$.pipe(
-
-                        switchMap(() => k.collection.find({selector: {$and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]}}).remove())
-                    );
-
+                    return from(k.collection.find({selector: {$and: [{method: {$eq: 'GET'}}, {time: {$lt: cacheAllowedAge}}]}}).remove());
                 });
 
-                return combineLatest(evicts);
+                return concat(...evicts);
             }),
         );
 
@@ -581,13 +577,10 @@ export class SyncCollectionService {
 
                 const skipTrims = collectionInfo.map(k => {
 
-                    return k.collection.insert$.pipe(
-
-                        switchMap(() => k.collection.find({selector: {method: {$eq: 'GET'}}, sort: [{time: 'desc'}], skip: k.collectionSkipDocuments}).remove())
-                    );
+                    return from(k.collection.find({selector: {method: {$eq: 'GET'}}, sort: [{time: 'desc'}], skip: k.collectionSkipDocuments}).remove());
                 });
 
-                return combineLatest(skipTrims);
+                return concat(...skipTrims);
             }),
         );
     }
