@@ -294,7 +294,11 @@ export class SyncCollectionService {
                     }
                 };
 
-                const sortedDocs$ = collectionsInfo.map(k => k.collection.find(query).$);
+                const sortedDocs$ = collectionsInfo.map(k => k.collection.find(query).$.pipe(
+
+                    // added because regex is not working correctly sometimes
+                    map(v => v.filter(d => d.method !== 'GET' && d.tenantUrl.startsWith(tenant)))
+                ));
 
                 return combineLatest(sortedDocs$);
             }),

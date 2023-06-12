@@ -453,8 +453,6 @@ export class CollectionAPI<T extends Datatype, Database> {
                 map(v => v.filter(d => d.matchUrl.startsWith(this.makeTenantUrl(tenant, url)))),
 
                 shareReplay(1),
-
-                tap(v => console.log(this.makeTenantUrl(tenant, url), v)),
             );
 
             this.cache.set(cacheKey, docs);
