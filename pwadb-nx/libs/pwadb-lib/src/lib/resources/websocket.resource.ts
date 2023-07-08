@@ -1,6 +1,6 @@
 import { HttpParams } from "@angular/common/http";
 import { MangoQuery } from "rxdb";
-import { BehaviorSubject, buffer, concat, concatMap, debounceTime, filter, Observable, shareReplay, Subscription, switchMap, take } from "rxjs";
+import { BehaviorSubject, buffer, concat, concatMap, debounceTime, filter, Observable, shareReplay, Subscription, switchMap, take, tap } from "rxjs";
 import { WebSocketSubject } from "rxjs/webSocket";
 import { PwaListResponse } from "../definitions/collection";
 import { Datatype, PwaDocType, PwaDocument } from "../definitions/document";
@@ -131,8 +131,17 @@ export class SocketOperationWithoutId<T extends Datatype, Database> {
 
                             default: {
 
+                                // clear cache
+                                const cacheTimeInSeconds = apiService.config.cacheTimeInSeconds;
+
+                                apiService.config.cacheTimeInSeconds = 0;
+
                                 // retrieve data for latest changes
-                                return apiService.retrieve();
+                                return apiService.retrieve().pipe(
+
+                                    // set cache again
+                                    tap(() => apiService.config.cacheTimeInSeconds = cacheTimeInSeconds),
+                                );
                             }
                         }
                     })

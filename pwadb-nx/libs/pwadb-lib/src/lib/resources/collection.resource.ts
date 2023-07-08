@@ -26,9 +26,9 @@ export interface CollectionAPICreator<Database> {
     collectionEvictTime$: Observable<number>;
     collectionSkipDocuments$: Observable<number>;
     synchroniseService?: SyncCollectionService;
-    attachments?: {};
-    options?: {};
-    migrationStrategies?: {};
+    attachments?: Record<any, any>;
+    options?: Record<any, any>;
+    migrationStrategies?: Record<any, any>;
     autoMigrate?: boolean;
     ngZone: NgZone | null;
 }
@@ -73,7 +73,7 @@ export class RestAPI<T extends Datatype> {
 
         const req = of(true).pipe(
 
-            tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
+            tap(() => { if (this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
             // switchMap(() => this.config?.httpClient?.get(cacheKey, {headers}) as Observable<T> || empty()),
             switchMap(() => this.config?.httpClient?.get(url, {headers, params}) as Observable<T> || empty()),
@@ -82,7 +82,7 @@ export class RestAPI<T extends Datatype> {
 
             finalize(() => {
 
-                if (!!this.config.apiProgress) { this.config.apiProgress.remove(); }
+                if (this.config.apiProgress) { this.config.apiProgress.remove(); }
 
                 if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
             }),
@@ -102,13 +102,13 @@ export class RestAPI<T extends Datatype> {
 
         const req = of(true).pipe(
 
-            tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
+            tap(() => { if (this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
             switchMap(() => this.config?.httpClient?.post(url, data, {headers}) as Observable<T> || empty()),
 
             finalize(() => {
 
-                if (!!this.config.apiProgress) { this.config.apiProgress.remove(); }
+                if (this.config.apiProgress) { this.config.apiProgress.remove(); }
 
                 if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
             }),
@@ -128,13 +128,13 @@ export class RestAPI<T extends Datatype> {
 
         const req = of(true).pipe(
 
-            tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
+            tap(() => { if (this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
             switchMap(() => this.config?.httpClient?.put(url, data, {headers}) as Observable<T> || empty()),
 
             finalize(() => {
 
-                if (!!this.config.apiProgress) { this.config.apiProgress.remove(); }
+                if (this.config.apiProgress) { this.config.apiProgress.remove(); }
 
                 if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
             }),
@@ -158,7 +158,7 @@ export class RestAPI<T extends Datatype> {
 
         const req = of(true).pipe(
 
-            tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
+            tap(() => { if (this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
             // switchMap(() => this.config?.httpClient?.get(cacheKey, {headers}) as Observable<ListResponse<T>> || empty()),
             switchMap(() => this.config?.httpClient?.get(url, {headers, params}) as Observable<ListResponse<T>> || empty()),
@@ -167,7 +167,7 @@ export class RestAPI<T extends Datatype> {
 
             finalize(() => {
 
-                if (!!this.config.apiProgress) { this.config.apiProgress.remove(); }
+                if (this.config.apiProgress) { this.config.apiProgress.remove(); }
 
                 if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
             }),
@@ -187,13 +187,13 @@ export class RestAPI<T extends Datatype> {
 
         const req = of(true).pipe(
 
-            tap(() => { if (!!this.config.apiProgress) { this.config.apiProgress.add(); } }),
+            tap(() => { if (this.config.apiProgress) { this.config.apiProgress.add(); } }),
 
             switchMap(() => this.config?.httpClient?.delete(url, {headers}) as Observable<any> || empty()),
 
             finalize(() => {
 
-                if (!!this.config.apiProgress) { this.config.apiProgress.remove(); }
+                if (this.config.apiProgress) { this.config.apiProgress.remove(); }
 
                 if (this.cache.has(cacheKey)) { this.cache.delete(cacheKey); }
             }),
@@ -703,7 +703,7 @@ export class CollectionAPI<T extends Datatype, Database> {
 
 export class PwaCollectionAPI<T extends Datatype, Database> {
 
-    private config: PwaCollectionAPICreator<Database> = {
+    config: PwaCollectionAPICreator<Database> = {
         restApiCreator: {
             apiTimeoutInSeconds: 120
         },
@@ -768,7 +768,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
                 time: new Date().getTime(),
             })),
 
-            catchError((err) => of(doc)),
+            catchError(() => of(doc)),
         );
     }
 
@@ -852,7 +852,7 @@ export class PwaCollectionAPI<T extends Datatype, Database> {
 
         return this.restAPI.list(url, params, headers).pipe(
 
-            catchError((err) => of({next: null, previous: null, results: []} as ListResponse<T>)),
+            catchError(() => of({next: null, previous: null, results: []} as ListResponse<T>)),
 
             switchMap(networkRes => this.collectionAPI.collection$.pipe(
 
